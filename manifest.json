@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "Loyalty Program Autofill & Tracker",
+    "name": "Birthday Subscriber",
     "version": "1.0.0",
-    "description": "Streamlines loyalty program enrollment by automatically filling web forms and tracking submission status",
+    "description": "A basic Chrome extension that lets you join company loyalty programs easily.",
     "permissions": [
         "storage",
         "activeTab",

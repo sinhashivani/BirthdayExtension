@@ -33,6 +33,108 @@
   initMessageListeners();
   initMutationObserver();
 
+  /**
+ * Shows the field preview overlay with data from the fill process.
+ * @param {Object} formData - Object containing the field types and values that were filled.
+ */
+  function displayFieldPreview(formData) {
+    if (!fieldPreviewTemplate) {
+      console.error("Content script: Field preview template not found!");
+      return;
+    }
+    console.log("Content script: Displaying field preview.");
+
+    // Remove any existing preview overlay
+    const existingPreview = document.querySelector('.loyalty-form-overlay');
+    if (existingPreview) {
+      existingPreview.remove(); // Remove from DOM
+    }
+
+    // Clone the template
+    const previewOverlay = fieldPreviewTemplate.content.cloneNode(true).firstElementChild;
+
+    // ... (populate previewOverlay with data and setup internal button listeners) ...
+    // Ensure listeners for closeBtn, cancelBtn, confirmBtn are set up here
+    // IMPORTANT: Update the close/cancel button listeners to set display: none immediately on click
+
+
+    // Add the populated overlay to the body
+    document.body.appendChild(previewOverlay);
+
+    // --- ADD THIS ---
+    // Make the element a block element *before* adding the active class
+    // This allows the CSS transition to work from display: none to display: block + transform
+    previewOverlay.style.display = 'block';
+    // --- END ADD THIS ---
+
+    // Add 'active' class to trigger CSS transition (slide-in effect)
+    // Use a slight timeout to ensure the element is added to the DOM before transition
+    setTimeout(() => {
+      previewOverlay.classList.add('active');
+      console.log("Content script: Preview overlay should now be visible.");
+    }, 10); // Small delay
+
+
+    // --- Update Close/Cancel Button Listeners Here ---
+    // Inside displayFieldPreview function, after getting closeBtn and cancelBtn:
+    closeBtn.addEventListener('click', () => {
+      console.log("Content script: Preview overlay closed.");
+      const overlay = document.querySelector('.loyalty-form-overlay');
+      if (overlay) {
+        overlay.style.display = 'none'; // Hide immediately
+        overlay.remove(); // Remove from DOM
+        formPreviewData = null; // Clear stored data
+      }
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      console.log("Content script: Field preview cancelled.");
+      const overlay = document.querySelector('.loyalty-form-overlay');
+      if (overlay) {
+        overlay.style.display = 'none'; // Hide immediately
+        overlay.remove(); // Remove from DOM
+        formPreviewData = null;
+      }
+      showStatus('Form filling cancelled.', 'info'); // Show status on popup
+    });
+    // --- End Update Close/Cancel Button Listeners ---
+
+
+  }
+
+
+  /**
+   * Hides the field preview overlay.
+   */
+  function hideFieldPreview() {
+    console.log("Content script: Hiding field preview.");
+    const previewOverlay = document.querySelector('.loyalty-form-overlay');
+    if (previewOverlay) {
+      // Trigger CSS transition (slide-out effect)
+      previewOverlay.classList.remove('active');
+
+      // --- MODIFIED ---
+      // Listen for the end of the transition
+      previewOverlay.addEventListener('transitionend', function handler() {
+        // Check if the 'active' class was removed (ensures it's the closing transition)
+        if (!previewOverlay.classList.contains('active')) {
+          previewOverlay.style.display = 'none'; // Hide element from layout
+          previewOverlay.remove(); // Remove from DOM
+          formPreviewData = null; // Clear stored data
+          console.log("Content script: Field preview element hidden and removed after transition.");
+        }
+        // Remove the event listener itself after it runs once
+        previewOverlay.removeEventListener('transitionend', handler);
+      });
+      // --- END MODIFIED ---
+
+      // If transitionend doesn't fire (e.g., display was already none, or error),
+      // you might need a fallback mechanism or rely on the immediate display: none on close/cancel clicks.
+    }
+  }
+
+
+
   // Listen for messages from the popup
   function initMessageListeners() {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -378,7 +480,7 @@
         box-shadow: 0 0 3px rgba(66, 133, 244, 0.5) !important;
         transition: all 0.2s ease-in-out !important;
       }
-      
+
       .loyalty-filled-field {
         background-color: rgba(52, 168, 83, 0.1) !important;
         border-color: #34a853 !important;
