@@ -1,20 +1,47 @@
-popup.css:root {
+/* popup.css */
+/* Basic variables for colors and spacing */
+:root {
     --primary-color: #4285f4;
+    /* Google Blue */
     --primary-hover: #3367d6;
     --danger-color: #ea4335;
+    /* Google Red */
     --danger-hover: #d32f2f;
     --success-color: #34a853;
+    /* Google Green */
     --warning-color: #fbbc05;
+    /* Google Yellow */
     --info-color: #1a73e8;
+    /* Slightly different blue for info */
     --text-color: #202124;
+    /* Almost black */
     --text-light: #5f6368;
+    /* Dark gray */
     --border-color: #dadce0;
+    /* Light gray border */
     --background-light: #f8f9fa;
+    /* Very light gray */
     --background-hover: #eef1f5;
+    /* Light blue-gray for hover */
     --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    /* Subtle shadow */
     --radius: 4px;
+    /* Standard border radius */
+    --padding-md: 16px;
+    /* Medium padding */
+    --padding-sm: 8px;
+    /* Small padding */
+    --margin-md: 16px;
+    /* Medium margin */
+    --margin-sm: 8px;
+    /* Small margin */
+    --gap-md: 12px;
+    /* Medium gap */
+    --gap-sm: 8px;
+    /* Small gap */
 }
 
+/* Reset and basic body styles */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -23,175 +50,169 @@ popup.css:root {
 
 body {
     font-family: 'Roboto', Arial, sans-serif;
+    /* Use Roboto if available */
     font-size: 14px;
+    /* Default base font size */
     color: var(--text-color);
     background-color: #ffffff;
-    /* --- MODIFIED --- */
     width: 320px;
-    /* Set a fixed width (adjust from 300px-360px as desired) */
+    /* Fixed width for the popup */
     height: auto;
-    /* Allow body to grow with content */
+    /* Height determined by content */
     max-height: 600px;
-    /* Max height before body scrolls (Chrome also imposes a limit) */
+    /* Max height before the body scrolls */
     overflow-x: hidden;
-    /* Keep horizontal scroll hidden */
+    /* Hide horizontal scrollbar */
     overflow-y: auto;
-    /* Allow body to scroll if content exceeds max-height */
-    /* --- END MODIFIED --- */
+    /* Add vertical scrollbar if content exceeds max-height */
     padding: 0;
     margin: 0;
+    display: flex;
+    /* Use flex to structure container/modal overlays */
+    flex-direction: column;
+    min-height: 0;
+    /* Allow body to shrink if content is smaller than max-height */
 }
 
+/* Main container for layout */
 .container {
-    padding: 0;
-    /* Remove padding here, apply to views or header/footer directly if needed */
     display: flex;
     flex-direction: column;
-    /* --- MODIFIED --- */
-    height: auto;
-    /* Let container grow with content, remove 100vh */
+    padding: var(--padding-md);
+    /* Apply padding to the container */
     min-height: 100%;
-    /* If body has overflow, container should at least fill that scrollable height */
-    /* --- END MODIFIED --- */
+    /* Ensure container takes full height if body scrolls */
 }
 
-
+/* Header */
 header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 16px;
+    padding: 0 0 var(--padding-md) 0;
+    /* Padding below header */
     border-bottom: 1px solid var(--border-color);
-    background-color: var(--background-light);
-    /* margin-bottom: 0; */
-    /* Already was 0 */
+    margin-bottom: var(--margin-md);
+    /* Margin below header */
     flex-shrink: 0;
     /* Prevent header from shrinking */
 }
 
-header .logo {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-header .logo img {
-    width: 32px;
-    height: 32px;
-}
-
-header .logo h1 {
+header h1 {
     font-size: 18px;
     font-weight: 500;
     margin: 0;
-    text-align: left;
     color: var(--primary-color);
 }
 
-header .actions {
+/* View Switcher (Tab-like navigation) */
+.view-switcher {
     display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.section {
-    margin-bottom: 20px;
-    padding-bottom: 20px;
     border-bottom: 1px solid var(--border-color);
+    margin-bottom: var(--margin-md);
 }
 
-.section:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-    margin-bottom: 0;
+.tab-button {
+    background: none;
+    border: none;
+    padding: var(--padding-sm) var(--padding-md);
+    cursor: pointer;
+    flex: 1;
+    /* Make buttons fill the space */
+    text-align: center;
+    color: var(--text-light);
+    font-size: 14px;
+    transition: all 0.2s ease;
+    border-bottom: 2px solid transparent;
+    /* Space for active indicator */
 }
 
-.section h2 {
-    font-size: 16px;
+.tab-button:hover {
+    background-color: var(--background-hover);
+}
+
+.tab-button.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
     font-weight: 500;
-    margin-bottom: 12px;
 }
 
+/* Main content area - contains the views */
 main {
     flex-grow: 1;
-    /* --- MODIFIED --- */
-    /* overflow-y: hidden; */
-    /* Remove this, allow content to expand */
-    /* --- END MODIFIED --- */
-    padding: 0;
+    /* Allow main content to grow */
+    /* No overflow-y: auto here, body handles scrolling */
 }
 
+
+/* View Management */
 .view {
     display: none;
-    padding: 16px;
-    box-sizing: border-box;
-    /* --- MODIFIED --- */
-    /* height: 100%; */
-    /* Remove fixed height */
-    /* overflow-y: auto; */
-    /* Remove internal scroll */
-    /* --- END MODIFIED --- */
+    /* Hide views by default */
+    padding: 0;
+    /* Padding handled by container or sections */
+    /* No fixed height or internal scroll here */
 }
 
 .view.active {
     display: block;
+    /* Show the active view */
 }
 
-.back-button {
-    margin-bottom: 16px;
-    margin-right: auto;
-}
-
-/* ... (rest of your existing styles for .tabs, .forms, .buttons etc. remain largely the same) ... */
-/* Ensure no other elements inside .view have fixed heights or overflow-y: auto unless intended */
-
-/* Tabs (if still using them) */
-.tabs {
-    display: flex;
+/* Section styling within views */
+.section {
+    margin-bottom: var(--margin-md);
+    /* Space between sections */
+    padding-bottom: var(--padding-md);
+    /* Add padding to bottom */
     border-bottom: 1px solid var(--border-color);
-    margin-bottom: 16px;
+    /* Add separator */
 }
 
-.tab {
-    background: none;
-    border: none;
-    padding: 8px 16px;
-    cursor: pointer;
-    flex: 1;
+.section:last-child {
+    border-bottom: none;
+    /* No separator on the last section */
+    padding-bottom: 0;
+    margin-bottom: 0;
+}
+
+.view h2 {
+    /* Style for the main heading within a view */
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: var(--margin-sm);
+    /* Space below heading */
+}
+
+.view p {
+    /* Style for descriptive text below heading */
+    font-size: 14px;
     color: var(--text-light);
-    transition: all 0.2s ease;
-    text-align: center;
+    margin-bottom: var(--margin-md);
+    /* Space below paragraph */
+    line-height: 1.4;
 }
 
-.tab:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-}
-
-.tab.active {
-    color: var(--primary-color);
-    border-bottom: 2px solid var(--primary-color);
-}
-
-.tab-content {
-    /* This might be unused if views are handled by .view.active */
-    display: none;
-}
-
-.tab-content.active {
-    /* This might be unused */
-    display: block;
-}
 
 /* Forms (General field styles) */
+#profile-form {
+    /* Style for the profile form specifically */
+    /* Add any specific form layout styles here if needed */
+}
+
 .form-group {
-    margin-bottom: 12px;
+    margin-bottom: var(--gap-sm);
+    /* Space between form groups */
 }
 
 label {
     display: block;
     margin-bottom: 4px;
+    /* Smaller space below label */
     font-weight: 500;
     font-size: 13px;
+    color: var(--text-light);
+    /* Lighter color for labels */
 }
 
 input[type="text"],
@@ -201,11 +222,14 @@ input[type="date"],
 select,
 textarea {
     width: 100%;
-    padding: 8px;
+    padding: var(--padding-sm);
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
     font-size: 14px;
+    color: var(--text-color);
+    background-color: white;
     box-sizing: border-box;
+    /* Ensure padding is included in width */
 }
 
 input:focus,
@@ -214,29 +238,24 @@ textarea:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+    /* Standard focus ring */
 }
 
-#profile-selector-container {
-    margin-bottom: 16px;
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
 
-#profile-selector-container select {
-    flex: 1;
-}
-
-/* Buttons */
+/* Buttons (using the btn- naming from HTML) */
 button {
     cursor: pointer;
     font-size: 14px;
     transition: all 0.2s ease;
-    padding: 8px 16px;
+    padding: var(--padding-sm) var(--padding-md);
     border-radius: var(--radius);
     border: none;
+    /* Default no border */
     background: none;
+    /* Default no background */
     color: inherit;
+    /* Default text color */
+    text-align: center;
 }
 
 .btn-primary {
@@ -248,6 +267,13 @@ button {
 .btn-primary:hover {
     background-color: var(--primary-hover);
 }
+
+.btn-primary:disabled {
+    background-color: #ccc;
+    color: #999;
+    cursor: not-allowed;
+}
+
 
 .btn-secondary {
     background-color: var(--background-light);
@@ -261,6 +287,13 @@ button {
     border-color: var(--text-light);
 }
 
+.btn-secondary:disabled {
+    background-color: #eee;
+    color: #bbb;
+    border-color: #ddd;
+    cursor: not-allowed;
+}
+
 .btn-danger {
     background-color: white;
     color: var(--danger-color);
@@ -272,11 +305,21 @@ button {
     background-color: rgba(234, 67, 53, 0.05);
 }
 
+.btn-danger:disabled {
+    color: #ff9999;
+    border-color: #ff9999;
+    cursor: not-allowed;
+}
+
+
 .btn-text {
     background: none;
     border: none;
     color: var(--primary-color);
     padding: 4px 8px;
+    /* Smaller padding for text buttons */
+    font-size: 13px;
+    /* Smaller font size */
 }
 
 .btn-text:hover {
@@ -287,252 +330,270 @@ button {
     color: var(--danger-color);
 }
 
+.btn-text:disabled {
+    color: #aaa;
+    cursor: not-allowed;
+    text-decoration: none;
+}
+
+
 .btn-icon {
+    /* Style for buttons containing only an icon */
     background: none;
     border: none;
     padding: 4px;
+    /* Smaller padding */
     color: var(--text-light);
+    /* Icon color */
     font-size: 18px;
+    /* Size for icon */
     display: flex;
+    /* Center icon */
     align-items: center;
     justify-content: center;
     border-radius: 50%;
+    /* Round shape */
     width: 28px;
+    /* Fixed size for round button */
     height: 28px;
+    flex-shrink: 0;
+    /* Prevent icon buttons from shrinking in flex */
 }
 
 .btn-icon:hover {
     background-color: rgba(0, 0, 0, 0.05);
 }
 
+.btn-icon:disabled {
+    color: #bbb;
+    cursor: not-allowed;
+}
+
+
 .button-group {
+    /* Style for button groups */
     display: flex;
-    gap: 8px;
-    margin-top: 16px;
+    gap: var(--gap-sm);
+    /* Space between buttons */
+    margin-top: var(--margin-md);
+    /* Space above button group */
+    /* Add wrap behavior for smaller screens if needed */
+    flex-wrap: wrap;
+    align-items: center;
+    /* Align items vertically */
 }
 
 .button-group button {
     flex: 1;
-    text-align: center;
+    /* Allow buttons in a group to grow */
+    min-width: 80px;
+    /* Minimum width before stacking */
 }
 
 /* Toggle Switch */
 .toggle-container {
+    /* Wrapper div */
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 12px;
-}
-
-.toggle-label {
+    /* Space between toggle and label */
+    margin-bottom: var(--gap-sm);
     font-size: 14px;
 }
 
+.toggle-label {
+    /* Styles for the text label next to the toggle */
+    color: var(--text-color);
+    /* Match body text color */
+    flex-grow: 1;
+    /* Allow label to take space */
+    margin-right: var(--gap-sm);
+    /* Space between label and toggle */
+}
+
 .toggle {
+    /* The label element acting as the toggle clickable area */
     position: relative;
     display: inline-block;
+    /* Needed for width/height */
     width: 40px;
+    /* Width of the toggle track */
     height: 24px;
+    /* Height of the toggle track */
     flex-shrink: 0;
-    margin-right: 8px;
+    /* Prevent toggle from shrinking in flex container */
 }
 
 .toggle input[type="checkbox"] {
+    /* The actual hidden checkbox input */
     opacity: 0;
     width: 0;
     height: 0;
 }
 
 .slider {
+    /* The span element acting as the slider track */
     position: absolute;
     cursor: pointer;
+    /* Apply cursor here */
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
     background-color: var(--border-color);
+    /* Default off color */
     transition: .4s;
     border-radius: 24px;
+    /* Round shape */
 }
 
 .slider:before {
+    /* The pseudo-element acting as the slider knob */
     position: absolute;
     content: "";
     height: 16px;
+    /* Size of the knob */
     width: 16px;
+    /* Size of the knob */
     left: 4px;
+    /* Initial position from the left */
     bottom: 4px;
+    /* Vertical alignment */
     background-color: white;
+    /* Knob color */
     transition: .4s;
     border-radius: 50%;
+    /* Round knob */
 }
 
 input[type="checkbox"]:checked+.slider {
     background-color: var(--success-color);
+    /* On color */
 }
 
+/* Focus style for the *input* */
 input[type="checkbox"]:focus+.slider {
     box-shadow: 0 0 1px var(--primary-color);
+    /* Focus indicator on the slider */
 }
 
 input[type="checkbox"]:checked+.slider:before {
     transform: translateX(16px);
+    /* Move knob when checked (width of track - knob width - 2*padding) */
 }
 
-/* Tracker Overview Section */
-.tracker-overview {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-}
-
-.stat-box {
-    background-color: var(--background-light);
-    padding: 10px;
-    border-radius: var(--radius);
-    flex: 1;
-    min-width: 120px;
-    text-align: center;
-}
-
-.stat-box h4 {
-    font-size: 12px;
-    color: var(--text-light);
-    margin-bottom: 4px;
-    font-weight: 400;
-}
-
-.stat-number {
-    font-size: 18px;
-    font-weight: 500;
-    color: var(--primary-color);
-}
-
-.view-all-container {
-    text-align: right;
-}
-
-.arrow {
-    margin-left: 4px;
-}
 
 /* Status Message Styles */
-#statusContainer {
+.status-container {
+    /* Wrapper div for status message */
     margin-top: 10px;
     min-height: 20px;
+    /* Reserve space to prevent layout shifts */
     text-align: center;
     transition: opacity 0.3s ease;
+    /* Add transition for opacity */
     opacity: 0;
+    /* Initially hidden */
+    display: flex;
+    /* Center content vertically */
+    align-items: center;
+    justify-content: center;
 }
 
-#statusTextElement {
-    font-size: 14px;
-    display: inline-block;
+.status-message {
+    /* The span element with the actual text */
+    font-size: 13px;
+    /* Smaller font size for status */
+    /* Styles for text content */
+    display: inline-flex;
+    /* Use flex to align icon and text */
+    align-items: center;
     padding: 4px 8px;
     border-radius: var(--radius);
+    border: 1px solid transparent;
+    /* Add border for color variants */
+    /* Remove opacity here, managed by .status-container */
 }
 
-#statusContainer.info {
+/* Status type colors applied to the container or message */
+.status-container.info .status-message {
     background-color: #e8f0fe;
     color: var(--info-color);
-    border: 1px solid #a8c7fa;
+    border-color: #a8c7fa;
 }
 
-#statusContainer.success {
+.status-container.success .status-message {
     background-color: #e6f4ea;
     color: var(--success-color);
-    border: 1px solid #a3daab;
+    border-color: #a3daab;
 }
 
-#statusContainer.error {
+.status-container.error .status-message {
     background-color: #fce8e6;
     color: var(--danger-color);
-    border: 1px solid #f0b5b2;
+    border-color: #f0b5b2;
 }
 
-#statusContainer.warning {
+.status-container.warning .status-message {
     background-color: #fffbe5;
     color: var(--warning-color);
-    border: 1px solid #f7e3b6;
+    border-color: #f7e3b6;
 }
 
 .status-icon {
+    /* Icon within the status message */
     margin-right: 4px;
     font-size: 1em;
+    /* Keep icon size relative to text */
     vertical-align: middle;
-}
-
-/* Tracker Table Styles */
-#trackerTable {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 12px;
-}
-
-#trackerTable th,
-#trackerTable td {
-    text-align: left;
-    padding: 8px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-#trackerTable th {
-    font-weight: 500;
-    background-color: var(--background-light);
-    position: sticky;
-    top: 0;
-    /* This might only work if the parent (.view) has a fixed height and overflow. If .view is auto, sticky might not behave as expected. */
-    z-index: 10;
-    font-size: 13px;
-    color: var(--text-light);
-}
-
-#trackerTable tbody tr:hover {
-    background-color: var(--background-hover);
-}
-
-.status-success {
-    color: var(--success-color);
-    font-weight: 500;
-}
-
-.status-warning {
-    color: var(--warning-color);
-    font-weight: 500;
-}
-
-.warning-icon {
-    margin-left: 4px;
-    font-size: 0.9em;
-    vertical-align: middle;
+    /* Align icon vertically */
+    line-height: 1;
+    /* Ensure consistent vertical alignment */
 }
 
 /* Footer */
 footer {
-    margin-top: 20px;
+    margin-top: var(--margin-md);
+    /* Space above footer */
+    padding-top: var(--padding-sm);
+    /* Padding inside footer top */
+    border-top: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 16px;
-    /* Give footer its own padding */
-    border-top: 1px solid var(--border-color);
-    background-color: var(--background-light);
-    /* Background for footer */
     flex-shrink: 0;
     /* Prevent footer from shrinking */
-}
-
-footer .version {
     font-size: 12px;
+    /* Smaller font for footer */
     color: var(--text-light);
 }
 
-/* --- MODAL & DYNAMIC OVERLAY STYLES --- */
-/* These styles are for elements created by JavaScript, like the help modal, consent dialog, export dialog, and field preview overlay */
-.modal-overlay,
-.consent-dialog,
-.export-dialog {
+footer .version {
+    font-size: 1em;
+    /* Inherit footer size */
+    color: inherit;
+    /* Inherit footer color */
+}
+
+footer .btn-text {
+    /* Style for text buttons in footer */
+    font-size: 12px;
+    padding: 4px;
+    /* Smaller padding */
+    color: var(--primary-color);
+    /* Use primary color for links */
+}
+
+footer .btn-text:hover {
+    color: var(--primary-hover);
+    text-decoration: underline;
+}
+
+
+/* --- Modal Styles (for Help Modal) --- */
+/* Using the class names from the helpModalTemplate */
+.modal-overlay {
+    /* Base overlay */
     position: fixed;
     top: 0;
     left: 0;
@@ -545,62 +606,72 @@ footer .version {
     justify-content: center;
     z-index: 1000;
     opacity: 0;
+    /* Start invisible */
     visibility: hidden;
+    /* Hide from screen readers and events */
     transition: opacity 0.3s ease, visibility 0s 0.3s;
-    /* Delay visibility transition */
+    /* Fade in, show immediately */
 }
 
-.modal-overlay.active,
-.consent-dialog.active,
-.export-dialog.active {
+.modal-overlay.active {
     /* Add .active class via JS to show */
     opacity: 1;
     visibility: visible;
     transition: opacity 0.3s ease, visibility 0s 0s;
+    /* Fade out, hide after fade */
 }
 
-.modal-content,
-.consent-content,
-.export-content {
+.modal-content {
+    /* Content box within the modal overlay */
     background-color: white;
-    padding: 20px;
+    padding: var(--padding-md);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     max-width: 90%;
-    width: 320px;
+    width: 300px;
     /* Consistent width with popup */
     position: relative;
+    /* Needed for close button absolute positioning */
+    max-height: 80vh;
+    /* Limit modal height */
+    display: flex;
+    /* Use flex for modal content layout */
+    flex-direction: column;
 }
 
-.modal-header,
-.consent-header,
-.export-header {
-    /* Assuming similar header structure if needed */
+.modal-header {
+    /* Header within the modal content */
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: var(--gap-sm);
     border-bottom: 1px solid var(--border-color);
-    padding-bottom: 10px;
+    padding-bottom: var(--gap-sm);
+    flex-shrink: 0;
+    /* Prevent header from shrinking */
 }
 
-.modal-header h3,
-.consent-content h3,
-.export-content h3 {
-    /* Target existing h3 in consent/export */
+.modal-header h3 {
     margin: 0;
+    /* Reset margin */
     font-size: 16px;
     font-weight: 500;
+    color: var(--text-color);
 }
 
 .modal-body {
-    max-height: 300px;
+    flex-grow: 1;
+    /* Allow body to grow and take space */
     overflow-y: auto;
-    padding-right: 10px;
+    /* Add scrolling within the modal body */
+    padding-right: var(--gap-sm);
+    /* Add padding for scrollbar space */
+    font-size: 14px;
+    line-height: 1.4;
 }
 
 .help-section {
-    margin-bottom: 15px;
+    margin-bottom: var(--margin-md);
 }
 
 .help-section:last-child {
@@ -609,96 +680,106 @@ footer .version {
 
 .help-section h4 {
     font-size: 14px;
-    margin-bottom: 8px;
+    margin-bottom: var(--gap-sm);
     color: var(--primary-color);
+    font-weight: 500;
 }
 
 .help-section ol,
 .help-section ul {
-    padding-left: 20px;
+    padding-left: var(--padding-md);
+    /* Indent lists */
 }
 
 .help-section li {
     margin-bottom: 5px;
+    /* Smaller space between list items */
     line-height: 1.4;
     font-size: 13px;
+    /* Slightly smaller font for list items */
+    color: var(--text-light);
 }
 
+
+/* Close button within the modal header */
 .close-modal {
     background: none;
     border: none;
     font-size: 20px;
+    /* Larger size */
     cursor: pointer;
     color: var(--text-light);
     padding: 4px;
+    /* Clickable area */
     border-radius: 4px;
+    flex-shrink: 0;
+    /* Prevent button from shrinking */
+    margin-left: var(--gap-sm);
+    /* Space from title */
 }
 
 .close-modal:hover {
     background-color: var(--background-hover);
 }
 
-.consent-buttons,
-.export-buttons {
-    margin-top: 15px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-}
 
-.consent-buttons button,
-.export-buttons button {
-    /* Inherit general button styles, or re-apply specifics if needed */
-}
-
-.export-content select {
-    padding: 8px;
-    border-radius: var(--radius);
-    border: 1px solid var(--border-color);
-    margin-bottom: 15px;
-    display: block;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-
-/* Field Preview Overlay Styles */
+/* --- Field Preview Overlay Styles --- */
+/* Using the class names from the fieldPreviewTemplate */
 .field-preview-overlay {
     position: fixed;
     top: 0;
     right: 0;
     width: 300px;
     height: 100vh;
-    /* Full height of the popup window */
     background-color: rgba(255, 255, 255, 0.98);
+    /* Slightly less opaque */
     border-left: 1px solid var(--border-color);
     box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
     z-index: 999;
-    /* Below modals but above page */
+    /* Below modals, above page */
     overflow-y: auto;
     /* Allow scrolling within the preview itself */
-    padding: 16px;
+    padding: var(--padding-md);
+    /* Added transition properties */
     transform: translateX(100%);
+    /* Start off-screen */
     transition: transform 0.3s ease;
+
+    /* --- ADD THIS (Crucial for layout) --- */
+    display: none;
+    /* Hide from layout by default */
+    /* --- END ADD THIS --- */
+
+    /* Ensure consistent typography */
+    font-family: 'Roboto', Arial, sans-serif;
+    color: var(--text-color);
+    font-size: 14px;
 }
 
 .field-preview-overlay.active {
     transform: translateX(0);
+    /* Slide in */
+    /* --- ADD THIS --- */
+    display: block;
+    /* Make it visible when active */
+    /* --- END ADD THIS --- */
 }
 
 .field-preview-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: var(--gap-sm);
     border-bottom: 1px solid var(--border-color);
-    padding-bottom: 10px;
+    padding-bottom: var(--gap-sm);
 }
 
 .field-preview-header h3 {
     margin: 0;
-    font-size: 1.1em;
+    font-size: 1em;
+    /* Relative to parent font size */
     font-weight: 500;
+    color: var(--text-color);
 }
 
 .close-preview {
@@ -715,13 +796,17 @@ footer .version {
     background-color: var(--background-hover);
 }
 
+.field-preview-content {
+    /* Content inside the preview */
+}
+
 .field-list {
-    margin-bottom: 15px;
+    margin-bottom: var(--margin-md);
 }
 
 .field-item {
-    margin-bottom: 8px;
-    padding-bottom: 8px;
+    margin-bottom: var(--gap-sm);
+    padding-bottom: var(--gap-sm);
     border-bottom: 1px solid var(--border-color);
 }
 
@@ -734,6 +819,8 @@ footer .version {
     font-size: 0.9em;
     display: inline-block;
     margin-right: 5px;
+    color: var(--primary-color);
+    /* Highlight field names */
 }
 
 .field-value {
@@ -745,93 +832,54 @@ footer .version {
 
 .field-preview-actions {
     display: flex;
-    gap: 10px;
+    gap: var(--gap-sm);
     justify-content: flex-end;
 }
 
 .field-preview-actions button {
-    padding: 8px 15px;
+    /* Inherits base button styles, add specifics */
+    padding: var(--padding-sm) var(--padding-md);
     border-radius: var(--radius);
     font-weight: 500;
-}
-
-.field-preview-actions .confirm-fill {
-    background-color: var(--primary-color);
-    color: white;
-    border: 1px solid var(--primary-color);
-}
-
-.field-preview-actions .confirm-fill:hover {
-    background-color: var(--primary-hover);
-    border-color: var(--primary-hover);
-}
-
-.field-preview-actions .cancel-fill {
-    background-color: var(--background-light);
-    color: var(--text-color);
-    border: 1px solid var(--border-color);
-}
-
-.field-preview-actions .cancel-fill:hover {
-    background-color: var(--background-hover);
-    border-color: var(--text-light);
+    flex: 1;
+    /* Allow buttons to grow in the group */
+    min-width: 80px;
 }
 
 
 /* --- Accessibility (High Contrast) --- */
-/* Your existing high contrast styles were good, I'm keeping them mostly as is,
-   just ensuring they target the correct elements and properties. */
+/* Ensure these styles provide sufficient contrast and visual cues */
 body.high-contrast {
     background-color: black !important;
     color: white !important;
 }
 
-body.high-contrast * {
-    /* Be careful with wildcard color, it might override too much.
-       Target specific elements if possible. */
+body.high-contrast .container,
+body.high-contrast .view,
+body.high-contrast header,
+body.high-contrast footer,
+body.high-contrast main,
+body.high-contrast .view-switcher {
+    background-color: black !important;
     color: white !important;
     border-color: white !important;
-    /* Makes many elements have white borders */
 }
 
-body.high-contrast header,
-body.high-contrast footer {
-    background-color: #111 !important;
-    /* Slightly off-black for sections */
+body.high-contrast h1,
+body.high-contrast h2,
+body.high-contrast h3,
+body.high-contrast h4 {
+    color: white !important;
 }
 
-body.high-contrast a,
-body.high-contrast button.btn-text,
-body.high-contrast button.btn-icon {
-    color: yellow !important;
-    border-color: yellow !important;
-    /* For text/icon buttons with borders if any */
-}
-
-body.high-contrast button.btn-primary {
-    background-color: yellow !important;
-    color: black !important;
-    border-color: yellow !important;
-}
-
-body.high-contrast button.btn-secondary {
-    background-color: black !important;
-    color: yellow !important;
-    border-color: yellow !important;
-}
-
-body.high-contrast button.btn-danger {
-    background-color: black !important;
-    color: #FF5555 !important;
-    /* Brighter red for contrast on black */
-    border-color: #FF5555 !important;
+body.high-contrast label {
+    color: white !important;
 }
 
 body.high-contrast input,
 body.high-contrast select,
 body.high-contrast textarea {
-    background-color: #222 !important;
-    /* Slightly off-black for inputs */
+    background-color: black !important;
     color: white !important;
     border-color: white !important;
 }
@@ -839,7 +887,6 @@ body.high-contrast textarea {
 body.high-contrast input::placeholder,
 body.high-contrast textarea::placeholder {
     color: #ccc !important;
-    /* Lighter placeholder text */
 }
 
 body.high-contrast input:focus,
@@ -849,6 +896,81 @@ body.high-contrast button:focus {
     outline: 2px solid yellow !important;
     outline-offset: 2px !important;
     box-shadow: none !important;
+}
+
+body.high-contrast .tab-button {
+    color: white !important;
+    border-bottom-color: transparent !important;
+}
+
+body.high-contrast .tab-button.active {
+    color: yellow !important;
+    border-bottom-color: yellow !important;
+}
+
+body.high-contrast .tab-button:hover {
+    background-color: #333 !important;
+}
+
+
+body.high-contrast .btn-primary {
+    background-color: yellow !important;
+    color: black !important;
+    border-color: yellow !important;
+}
+
+body.high-contrast .btn-primary:hover {
+    background-color: #ffff33 !important;
+    border-color: #ffff33 !important;
+}
+
+body.high-contrast .btn-secondary {
+    background-color: black !important;
+    color: white !important;
+    border-color: white !important;
+}
+
+body.high-contrast .btn-secondary:hover {
+    background-color: #333 !important;
+    border-color: white !important;
+}
+
+body.high-contrast .btn-danger {
+    background-color: black !important;
+    color: red !important;
+    border-color: red !important;
+}
+
+body.high-contrast .btn-danger:hover {
+    background-color: #333 !important;
+    border-color: red !important;
+}
+
+body.high-contrast .btn-text {
+    color: yellow !important;
+    border-color: yellow !important;
+    /* If they have borders */
+}
+
+body.high-contrast .btn-text:hover {
+    color: #ffff33 !important;
+}
+
+body.high-contrast .btn-icon {
+    color: white !important;
+    /* Or yellow */
+    background-color: black !important;
+    /* Or #333 */
+    border-color: white !important;
+    /* Or yellow */
+}
+
+body.high-contrast .btn-icon:hover {
+    background-color: #333 !important;
+}
+
+body.high-contrast .toggle-label {
+    color: white !important;
 }
 
 body.high-contrast .slider {
@@ -869,57 +991,38 @@ body.high-contrast input[type="checkbox"]:checked+.slider:before {
     border-color: yellow !important;
 }
 
-body.high-contrast #statusContainer {
-    background-color: black !important;
+body.high-contrast .status-container {
     border-color: white !important;
-    color: white !important;
+    /* For border variants */
 }
 
-body.high-contrast #statusContainer.success {
-    border-color: lime !important;
-    color: lime !important;
-}
-
-body.high-contrast #statusContainer.warning {
-    border-color: yellow !important;
-    color: yellow !important;
-}
-
-body.high-contrast #statusContainer.error {
-    border-color: #FF5555 !important;
-    color: #FF5555 !important;
-}
-
-body.high-contrast #statusContainer.info {
-    border-color: cyan !important;
+body.high-contrast .status-container.info .status-message {
+    background-color: black !important;
     color: cyan !important;
+    border-color: cyan !important;
 }
 
-body.high-contrast #trackerTable th,
-body.high-contrast #trackerTable td {
-    border-color: white !important;
+body.high-contrast .status-container.success .status-message {
     background-color: black !important;
-}
-
-body.high-contrast #trackerTable th {
-    background-color: #333 !important;
-}
-
-body.high-contrast #trackerTable tbody tr:hover {
-    background-color: #555 !important;
-}
-
-body.high-contrast .status-success {
     color: lime !important;
+    border-color: lime !important;
 }
 
-body.high-contrast .status-warning {
-    color: yellow !important;
+body.high-contrast .status-container.error .status-message {
+    background-color: black !important;
+    color: red !important;
+    border-color: red !important;
 }
+
+body.high-contrast .status-container.warning .status-message {
+    background-color: black !important;
+    color: yellow !important;
+    border-color: yellow !important;
+}
+
 
 body.high-contrast .modal-content,
-body.high-contrast .consent-content,
-body.high-contrast .export-content {
+body.high-contrast .field-preview-overlay {
     background-color: black !important;
     color: white !important;
     border-color: white !important;
@@ -929,6 +1032,19 @@ body.high-contrast .modal-header,
 body.high-contrast .field-preview-header {
     border-color: white !important;
 }
+
+body.high-contrast .modal-body {
+    color: white !important;
+}
+
+body.high-contrast .help-section h4 {
+    color: yellow !important;
+}
+
+body.high-contrast .help-section li {
+    color: white !important;
+}
+
 
 body.high-contrast .close-modal,
 body.high-contrast .close-preview {
@@ -945,27 +1061,4 @@ body.high-contrast .field-name {
 
 body.high-contrast .field-value {
     color: white !important;
-}
-
-body.high-contrast .stat-box {
-    background-color: #222 !important;
-    border-color: white !important;
-}
-
-body.high-contrast .stat-number {
-    color: yellow !important;
-}
-
-/* Ensure color is not the only means of conveying information */
-.status-success::before {
-    content: "● ";
-    /* Added space */
-    /* margin-right: 4px; */
-    /* Can remove if space in content is preferred */
-}
-
-.status-warning::before {
-    content: "▲ ";
-    /* Added space */
-    /* margin-right: 4px; */
 }

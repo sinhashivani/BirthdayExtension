@@ -4,445 +4,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loyalty Program Assistant</title>
+    <title>Autofill Profile</title>
     <link rel="stylesheet" href="popup.css">
-    <style>
-        /* Basic view management styles - customize or move to popup.css */
-        .view {
-            display: none;
-            /* Hide views by default */
-            padding: 16px;
-            /* Example padding */
-            height: 100%;
-            /* Ensure views take full height */
-            box-sizing: border-box;
-            /* Include padding in height */
-            overflow-y: auto;
-            /* Add scrolling if content overflows */
-        }
-
-        .view.active {
-            display: block;
-            /* Show the active view */
-        }
-
-        .back-button {
-            margin-bottom: 16px;
-            /* Space below the back button */
-        }
-
-        /* Add styles for status message display */
-        .status-container {
-            margin-top: 10px;
-            min-height: 20px;
-            /* Reserve space */
-            text-align: center;
-            /* Center status text */
-        }
-
-        .status-message {
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            padding: 5px;
-            border-radius: 4px;
-            display: inline-block;
-            /* Allow padding/margin and centering */
-        }
-
-        .status-message.info {
-            background-color: #e8f0fe;
-            color: #1a73e8;
-        }
-
-        .status-message.success {
-            background-color: #e6f4ea;
-            color: #1e8e3e;
-        }
-
-        .status-message.error {
-            background-color: #fce8e6;
-            color: #d93025;
-        }
-
-        .status-message.warning {
-            background-color: #fffbe5;
-            color: #fbbc05;
-        }
-
-
-        /* Add styles for the dynamic consent dialog */
-        .consent-dialog,
-        .export-dialog {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            /* Higher than other content */
-        }
-
-        .consent-content,
-        .export-content {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 300px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        .consent-content h3,
-        .export-content h3 {
-            margin-top: 0;
-            margin-bottom: 12px;
-        }
-
-        .consent-content p {
-            margin-bottom: 16px;
-        }
-
-        .consent-buttons,
-        .export-buttons {
-            margin-top: 15px;
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-        }
-
-        .consent-buttons button,
-        .export-buttons button {
-            padding: 8px 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            cursor: pointer;
-            background-color: #eee;
-        }
-
-        .consent-buttons button.primary,
-        .export-buttons button.primary {
-            background-color: #4285f4;
-            color: white;
-            border-color: #4285f4;
-        }
-
-        .export-content select {
-            padding: 8px;
-            border-radius: 4px;
-            border: 1px solid #dadce0;
-            margin-bottom: 15px;
-            display: block;
-            /* Make select take full width */
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-
-        /* Add styles for the dynamic field preview overlay */
-        .field-preview-overlay {
-            position: fixed;
-            top: 0;
-            right: 0;
-            width: 300px;
-            height: 100vh;
-            background-color: rgba(255, 255, 255, 0.95);
-            border-left: 1px solid #dadce0;
-            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
-            z-index: 999;
-            /* Below dialogs, above page content */
-            overflow-y: auto;
-            padding: 16px;
-            /* Initially hidden or off-screen */
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
-        }
-
-        .field-preview-overlay.active {
-            transform: translateX(0);
-            /* Slide in */
-        }
-
-        .field-preview-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-        }
-
-        .field-preview-header h3 {
-            margin: 0;
-            font-size: 1.1em;
-        }
-
-        .close-preview {
-            background: none;
-            border: none;
-            font-size: 1.2em;
-            cursor: pointer;
-            color: #555;
-        }
-
-        .field-list {
-            margin-bottom: 15px;
-        }
-
-        .field-item {
-            margin-bottom: 8px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .field-item:last-child {
-            border-bottom: none;
-        }
-
-        .field-name {
-            font-weight: bold;
-            font-size: 0.9em;
-        }
-
-        .field-value {
-            font-size: 0.8em;
-            color: #666;
-            word-break: break-all;
-        }
-
-        .field-preview-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-        }
-
-        .field-preview-actions button {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .field-preview-actions .confirm-fill {
-            background-color: #4285f4;
-            color: white;
-        }
-
-        .field-preview-actions .cancel-fill {
-            background-color: #ddd;
-            color: #333;
-        }
-    </style>
 </head>
 
 <body>
     <div class="container">
         <header>
-            <div class="logo">
-                <img src="icons/icon48.png" alt="Loyalty Program Assistant Logo">
-                <h1>Loyalty Program Assistant</h1>
-            </div>
-            <div class="actions">
-                <button id="settingsBtn" class="btn-icon" title="Settings">
-                    <span class="icon">⚙️</span>
-                </button>
-                <button id="backBtn" class="btn-text back-button" style="display: none;">← Back</button>
-            </div>
+            <h1>Autofill Profile</h1>
         </header>
 
-        <div id="main-view" class="view active">
-            <section class="section profile-section">
-                <h2>Select Profile</h2>
-                <div class="profile-selector" id="profile-selector-container"> <select id="profileSelect">
-                        <option value="" disabled selected>Select a profile</option>
-                    </select>
-                    <button id="manageProfilesBtn" class="btn-secondary">Manage Profiles</button>
-                </div>
-            </section>
+        <div class="view-switcher">
+            <button id="profileViewBtn" class="tab-button active">Profile</button>
+            <button id="autofillViewBtn" class="tab-button">Autofill</button>
+        </div>
 
-            <section class="section controls-section">
-                <div class="control-group">
-                    <h3>Autofill Controls</h3>
-                    <div class="toggle-container">
-                        <label class="toggle">
-                            <input type="checkbox" id="autofillToggle" checked> <span class="slider"></span>
-                        </label>
-                        <span class="toggle-label">Enable Autofill</span>
+        <main>
+            <div id="profile-view" class="view active">
+                <h2>Your Information</h2>
+                <p>Enter your personal details for autofilling forms.</p>
+                <form id="profile-form">
+                    <div class="form-group">
+                        <label for="profile-firstName">First Name:</label>
+                        <input type="text" id="profile-firstName" name="firstName" required>
                     </div>
-                    <div class="toggle-container">
-                        <label class="toggle">
-                            <input type="checkbox" id="manual-override-toggle"> <span class="slider"></span>
-                        </label>
-                        <span class="toggle-label">Manual Override</span>
+                    <div class="form-group">
+                        <label for="profile-lastName">Last Name:</label>
+                        <input type="text" id="profile-lastName" name="lastName" required>
                     </div>
-                </div>
+                    <div class="form-group">
+                        <label for="profile-email">Email:</label>
+                        <input type="email" id="profile-email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-birthday">Birthday:</label>
+                        <input type="date" id="profile-birthday" name="birthday">
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-phone">Phone:</label>
+                        <input type="tel" id="profile-phone" name="phone">
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-address">Address Line 1:</label>
+                        <input type="text" id="profile-address" name="address">
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-city">City:</label>
+                        <input type="text" id="profile-city" name="city">
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-state">State/Province:</label>
+                        <input type="text" id="profile-state" name="state">
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-zip">Zip/Postal Code:</label>
+                        <input type="text" id="profile-zip" name="zip">
+                    </div>
+                    <div class="button-group">
+                        <button type="submit" id="saveProfileBtn" class="btn-primary">Save Profile</button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="autofill-view" class="view">
+                <h2>Autofill Page</h2>
+                <p>Click the button below to automatically fill forms on the current page with your saved profile data.
+                </p>
 
                 <div class="button-group">
-                    <button id="scanPageBtn" class="btn-primary">Scan Page</button> <button id="fillFormsBtn"
-                        class="btn-primary">Fill Forms</button> <button id="resetFormsBtn" class="btn-secondary">Reset
-                        Forms</button>
-                </div>
-            </section>
-
-            <section class="section tracker-section">
-                <div class="section-header">
-                    <h2>Submission Tracker</h2>
-                    <div class="tracker-actions">
-                        <button id="exportTrackerBtn" class="btn-icon" title="Export Tracker Data"> <span
-                                class="icon">📤</span>
-                        </button>
-                        <select id="exportFormatSelect">
-                            <option value="csv">CSV</option>
-                            <option value="json">JSON</option>
-                        </select>
-                    </div>
+                    <button id="triggerAutofillBtn" class="btn-primary">Autofill Page</button>
                 </div>
 
-                <div class="tracker-overview">
-                    <div class="stat-box">
-                        <h4>Total Submissions</h4>
-                        <span id="totalSubmissions" class="stat-number">0</span>
+                <div class="control-group" style="margin-top: 20px;">
+                    <div class="toggle-container">
+                        <span class="toggle-label">Enable Auto-Highlighting</span>
+                        <label class="toggle">
+                            <input type="checkbox" id="autofillHighlightToggle" checked> <span class="slider"></span>
+                        </label>
                     </div>
-                    <div class="stat-box">
-                        <h4>With Birthday Fields</h4>
-                        <span id="birthdayFields" class="stat-number">0</span>
+                    <div class="toggle-container">
+                        <span class="toggle-label">High Contrast Mode</span>
+                        <label class="toggle">
+                            <input type="checkbox" id="highContrastToggle"> <span class="slider"></span>
+                        </label>
                     </div>
-                    <div class="stat-box">
-                        <h4>Success Rate</h4>
-                        <span id="successRate" class="stat-number">0%</span>
-                    </div>
-                </div>
-
-                <div class="view-all-container">
-                    <button id="viewTrackerBtn" class="btn-text">View Full Tracker <span class="arrow">→</span></button>
-                </div>
-            </section>
-
-            <section class="section status-section">
-                <div id="statusContainer" class="status-container">
-                    <div class="status-message">
-                        <span class="status-icon">✅</span>
-                        <span id="statusTextElement" class="status-text">Ready to assist with loyalty program
-                            enrollments</span>
-                    </div>
-                </div>
-            </section>
-        </div>
-        <div id="settings-view" class="view">
-            <h2>Settings</h2>
-            <div class="control-group">
-                <h3>Appearance</h3>
-                <div class="toggle-container">
-                    <label class="toggle">
-                        <input type="checkbox" id="high-contrast-toggle"> <span class="slider"></span>
-                    </label>
-                    <span class="toggle-label">High Contrast Mode</span>
-                </div>
-                <div class="control-group">
-                    <label for="font-size-selector">Font Size:</label>
-                    <select id="font-size-selector">
-                        <option value="normal">Normal</option>
-                        <option value="large">Large</option>
-                        <option value="x-large">Extra Large</option>
-                    </select>
                 </div>
             </div>
-            <div class="control-group">
-                <h3>Custom Keywords</h3>
-                <p>Enter comma-separated keywords to improve field detection.</p>
-                <textarea id="customKeywordsInput" rows="4" cols="30"></textarea> <button id="saveSettingsBtn"
-                    class="btn-primary">Save Custom Keywords</button>
-            </div>
-        </div>
-        <div id="tracker-view" class="view">
-            <h2>Submission Tracker</h2>
-            <table id="trackerTable" class="tracker-table">
-                <thead>
-                    <tr>
-                        <th>Website</th>
-                        <th>Date</th>
-                        <th>Birthday Field</th>
-                        <th>Reward Likelihood</th>
-                    </tr>
-                </thead>
-                <tbody id="trackerBody"> </tbody>
-            </table>
-            <div class="button-group" style="margin-top: 16px;">
-                <button id="exportDataBtn" class="btn-secondary">Export Data</button> <button id="deleteDataBtn"
-                    class="btn-danger">Clear All Data</button>
-            </div>
-        </div>
-        <div id="profile-manager-view" class="view">
-            <h2>Manage Profiles</h2>
-            <p>Profile management UI goes here.</p>
-            <button id="addProfileBtn" class="btn-primary">Add New Profile</button>
-            <div class="profile-form" id="profile-form" style="display: none;">
-                <h3>Edit Profile</h3>
-                <div class="form-group">
-                    <label for="form-firstName">First Name:</label>
-                    <input type="text" id="form-firstName" data-field="firstName">
-                </div>
+        </main>
+
+        <div id="statusContainer" class="status-container" style="margin-top: 15px;">
+            <div class="status-message">
+                <span class="status-icon"></span>
+                <span id="statusTextElement" class="status-text"></span>
             </div>
         </div>
         <footer>
-            <button id="helpBtn" class="btn-text">How to Use</button> <span class="version">v1.0</span>
+            <button id="helpBtn" class="btn-text">Help</button>
+            <span class="version">v1.0</span>
         </footer>
     </div>
 
-    <template id="fieldPreviewTemplate">
-        <div class="field-preview-overlay">
-            <div class="field-preview-header">
-                <h3>Fields Detected</h3>
-                <button class="close-preview">×</button>
-            </div>
-            <div class="field-preview-content">
-                <div class="field-list">
-                </div>
-                <div class="field-preview-actions">
-                    <button class="btn-secondary cancel-fill">Cancel</button>
-                    <button class="btn-primary confirm-fill">Confirm & Fill</button>
-                </div>
-            </div>
-        </div>
-    </template>
-
-    <template id="helpModalTemplate">
-        <div class="modal-overlay">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>How to Use Loyalty Program Assistant</h3>
-                    <button class="close-modal">×</button>
-                </div>
-                <div class="modal-body">
-                    <div class="help-section">
-                        <h4>Quick Start Guide</h4>
-                        <ol>
-                            <li>Create a profile with your information in the Settings page</li>
-                            <li>Browse to a loyalty program signup form</li>
-                            <li>Click "Scan Page" to detect form fields</li>
-                            <li>Review the detected fields and click "Confirm & Fill"</li>
-                            <li>Submit the form manually after reviewing</li>
-                            <li>The extension will track your submission</li>
-                        </ol>
-                    </div>
-                    <div class="help-section">
-                        <h4>Tips</h4>
-                        <ul>
-                            <li>Green entries in the tracker indicate forms with birthday fields - these are likely to
-                                provide birthday rewards!</li>
-                            <li>You can create multiple profiles for different purposes</li>
-                            <li>The extension works best on standard web forms</li>
-                            <li>Check the submission tracker regularly to keep track of your enrollments</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </template>
+    <template id="fieldPreviewTemplate">...</template>
+    <template id="helpModalTemplate">...</template>
 
 
     <script src="utils.js"></script>
