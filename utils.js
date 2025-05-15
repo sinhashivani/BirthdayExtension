@@ -1,100 +1,31 @@
-/**
- * Loyalty Form Filler Extension - Utils
- * Common utility functions for the extension
- */
+// utils.js - Utility functions for form detection and field matching
 
 /**
- * Simple encryption function for data protection
- * Note: This is not cryptographically secure, but provides basic obfuscation
- * For a production extension, consider using the Web Crypto API
- * 
- * @param {string} text - Text to encrypt
- * @param {string} key - Encryption key
- * @returns {string} Encrypted text
+ * Fuzzy matches text against a set of keywords
+ * @param {string} text - The text to check
+ * @param {string[]} keywords - Array of keywords to match against
+ * @param {number} threshold - Similarity threshold (0-1)
+ * @returns {boolean} Whether the text matches any keyword
  */
-function encryptData(text, key = 'loyalty-program-filler') {
-    const textToChars = text => text.split('').map(c => c.charCodeAt(0));
-    const byteHex = n => ("0" + Number(n).toString(16)).substr(-2);
-    const applySaltToChar = code => textToChars(key).reduce((a, b) => a ^ b, code);
+function fuzzyMatch(text, keywords, threshold = 0.8) {
+    if (!text) return false;
 
-    return text
-        .split('')
-        .map(textToChars)
-        .map(applySaltToChar)
-        .map(byteHex)
-        .join('');
-}
+    // Normalize text for comparison
+    const normalizedText = text.toLowerCase().trim();
 
-/**
- * Simple decryption function matching the encryption
- * 
- * @param {string} encoded - Encrypted text
- * @param {string} key - Encryption key
- * @returns {string} Decrypted text
- */
-function decryptData(encoded, key = 'loyalty-program-filler') {
-    const textToChars = text => text.split('').map(c => c.charCodeAt(0));
-    const applySaltToChar = code => textToChars(key).reduce((a, b) => a ^ b, code);
-
-    return encoded
-        .match(/.{1,2}/g)
-        .map(hex => parseInt(hex, 16))
-        .map(applySaltToChar)
-        .map(charCode => String.fromCharCode(charCode))
-        .join('');
-}
-
-/**
- * Field detection patterns for different types of form fields
- */
-const fieldPatterns = {
-    firstName: {
-        attributes: ['first_name', 'firstname', 'fname', 'first-name', 'given-name', 'givenname'],
-        labels: ['first name', 'given name', 'first', 'forename']
-    },
-    lastName: {
-        attributes: ['last_name', 'lastname', 'lname', 'last-name', 'family-name', 'familyname', 'surname'],
-        labels: ['last name', 'family name', 'last', 'surname']
-    },
-    email: {
-        attributes: ['email', 'e-mail', 'email_address', 'emailaddress', 'email-address'],
-        labels: ['email', 'e-mail', 'email address']
-    },
-    birthdate: {
-        attributes: ['birth_date', 'birthdate', 'bday', 'dob', 'date_of_birth', 'dateofbirth', 'birthday'],
-        labels: ['birth date', 'birthdate', 'date of birth', 'birthday', 'birth day', 'dob', 'mm/dd/yyyy', 'dd/mm/yyyy']
-    },
-    phone: {
-        attributes: ['phone', 'telephone', 'phone_number', 'phonenumber', 'phone-number', 'mobile', 'cell'],
-        labels: ['phone', 'telephone', 'phone number', 'mobile', 'cell', 'cellular']
-    }
-};
-
-/**
- * Check if a field matches a specific type based on its attributes or labels
- * 
- * @param {HTMLElement} field - Form field element
- * @param {HTMLElement} label - Associated label element (if any)
- * @param {string} type - Field type to check
- * @returns {boolean} Whether the field matches the type
- */
-function matchesFieldType(field, label, type) {
-    const patterns = fieldPatterns[type];
-    if (!patterns) return false;
-
-    const id = field.id?.toLowerCase() || '';
-    const name = field.name?.toLowerCase() || '';
-    const placeholder = field.placeholder?.toLowerCase() || '';
-
-    // Check attributes
-    if (patterns.attributes.some(attr => id.includes(attr) || name.includes(attr) || placeholder.includes(attr))) {
-        return true;
+    // Direct match check
+    for (const keyword of keywords) {
+        const normalizedKeyword = keyword.toLowerCase().trim();
+        if (normalizedText.includes(normalizedKeyword)) {
+            return true;
+        }
     }
 
-    // Check label if provided
-    if (label) {
-        const labelText = label.textContent.toLowerCase();
-        if (patterns.labels.some(text => labelText.includes(text))) {
+    // Levenshtein distance-based fuzzy matching for more complex cases
+    for (const keyword of keywords) {
+        const normalizedKeyword = keyword.toLowerCase().trim();
+        const similarity = levenshteinSimilarity(normalizedText, normalizedKeyword);
+        if (similarity >= threshold) {
             return true;
         }
     }
@@ -103,114 +34,335 @@ function matchesFieldType(field, label, type) {
 }
 
 /**
- * Calculate the string similarity score using Levenshtein distance
- * Used for fuzzy matching field names
- * 
- * @param {string} s1 - First string
- * @param {string} s2 - Second string
+ * Calculate normalized Levenshtein similarity between two strings
+ * @param {string} str1 - First string
+ * @param {string} str2 - Second string
  * @returns {number} Similarity score (0-1)
  */
-function stringSimilarity(s1, s2) {
-    if (!s1 || !s2) return 0;
+function levenshteinSimilarity(str1, str2) {
+    if (!str1 || !str2) return 0;
+    if (str1 === str2) return 1;
 
-    s1 = s1.toLowerCase();
-    s2 = s2.toLowerCase();
+    // Calculate Levenshtein distance matrix
+    const m = str1.length;
+    const n = str2.length;
 
-    const costs = [];
+    // Handle edge cases
+    if (m === 0) return 0;
+    if (n === 0) return 0;
 
-    for (let i = 0; i <= s1.length; i++) {
-        let lastValue = i;
-        for (let j = 0; j <= s2.length; j++) {
-            if (i === 0) {
-                costs[j] = j;
-            } else if (j > 0) {
-                let newValue = costs[j - 1];
-                if (s1.charAt(i - 1) !== s2.charAt(j - 1)) {
-                    newValue = Math.min(
-                        Math.min(newValue, lastValue),
-                        costs[j]
-                    ) + 1;
+    // Initialize matrix
+    const matrix = Array(m + 1).fill().map(() => Array(n + 1).fill(0));
+
+    // Fill the first row and column
+    for (let i = 0; i <= m; i++) matrix[i][0] = i;
+    for (let j = 0; j <= n; j++) matrix[0][j] = j;
+
+    // Fill the matrix
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+            matrix[i][j] = Math.min(
+                matrix[i - 1][j] + 1, // deletion
+                matrix[i][j - 1] + 1, // insertion
+                matrix[i - 1][j - 1] + cost // substitution
+            );
+        }
+    }
+
+    const distance = matrix[m][n];
+    const maxLength = Math.max(m, n);
+
+    // Return normalized similarity score (1 - normalized distance)
+    return 1 - (distance / maxLength);
+}
+
+/**
+ * Identifies the field type based on attributes and associated labels
+ * @param {Element} element - Form element to analyze
+ * @param {Object} customKeywords - Custom keywords for field detection
+ * @returns {string|null} Identified field type or null if not recognized
+ */
+function identifyFieldType(element, customKeywords) {
+    // Skip hidden fields and submit buttons
+    if (element.type === 'hidden' || element.type === 'submit' || element.type === 'button') {
+        return null;
+    }
+
+    const attributes = {
+        id: (element.id || '').toLowerCase(),
+        name: (element.name || '').toLowerCase(),
+        className: (element.className || '').toLowerCase(),
+        placeholder: (element.placeholder || '').toLowerCase(),
+        type: (element.type || '').toLowerCase()
+    };
+
+    // Get associated label text
+    let labelText = '';
+
+    // Check for explicit label
+    const labels = document.querySelectorAll(`label[for="${element.id}"]`);
+    if (labels.length > 0) {
+        labelText = labels[0].textContent.trim();
+    } else {
+        // Check for parent label
+        const parentLabel = element.closest('label');
+        if (parentLabel) {
+            // Get text excluding any nested input values
+            const clone = parentLabel.cloneNode(true);
+            const inputs = clone.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => input.remove());
+            labelText = clone.textContent.trim();
+        }
+    }
+
+    // Check for aria-label
+    if (!labelText && element.getAttribute('aria-label')) {
+        labelText = element.getAttribute('aria-label').trim();
+    }
+
+    // Check nearby text if no label found
+    if (!labelText) {
+        // Get preceding text node or element
+        let prev = element.previousSibling;
+        while (prev) {
+            if (prev.nodeType === Node.TEXT_NODE && prev.textContent.trim()) {
+                labelText = prev.textContent.trim();
+                break;
+            } else if (prev.nodeType === Node.ELEMENT_NODE &&
+                prev.tagName !== 'INPUT' &&
+                prev.tagName !== 'SELECT' &&
+                prev.tagName !== 'TEXTAREA') {
+                if (prev.textContent.trim()) {
+                    labelText = prev.textContent.trim();
+                    break;
                 }
-                costs[j - 1] = lastValue;
-                lastValue = newValue;
+            }
+            prev = prev.previousSibling;
+        }
+    }
+
+    // Field type detection using all available information
+    const fieldTypes = {
+        firstName: ['first', 'fname', 'firstname', 'givenname', ...(customKeywords.firstName || [])],
+        lastName: ['last', 'lname', 'lastname', 'surname', 'familyname', ...(customKeywords.lastName || [])],
+        email: ['email', 'e-mail', 'emailaddress', ...(customKeywords.email || [])],
+        birthday: ['birth', 'bday', 'birthday', 'dob', 'dateofbirth', ...(customKeywords.birthday || [])],
+        phone: ['phone', 'tel', 'telephone', 'mobile', 'cell', ...(customKeywords.phone || [])],
+        address: ['address', 'street', 'addressline', ...(customKeywords.address || [])],
+        city: ['city', 'town', 'locality', ...(customKeywords.city || [])],
+        state: ['state', 'province', 'region', ...(customKeywords.state || [])],
+        zip: ['zip', 'zipcode', 'postal', 'postalcode', ...(customKeywords.zip || [])]
+    };
+
+    // Check field attributes and associated text against keywords
+    for (const [fieldType, keywords] of Object.entries(fieldTypes)) {
+        // Check each attribute
+        for (const [attr, value] of Object.entries(attributes)) {
+            if (fuzzyMatch(value, keywords)) {
+                return fieldType;
             }
         }
-        if (i > 0) costs[s2.length] = lastValue;
+
+        // Check label text
+        if (fuzzyMatch(labelText, keywords)) {
+            return fieldType;
+        }
     }
 
-    const maxLen = Math.max(s1.length, s2.length);
-    if (maxLen === 0) return 1.0;
-
-    return (maxLen - costs[s2.length]) / maxLen;
-}
-
-/**
- * Format a date string to the specified format
- * 
- * @param {string} dateStr - Date string in YYYY-MM-DD format
- * @param {string} format - Target format (MM/DD/YYYY, DD/MM/YYYY, etc.)
- * @returns {string} Formatted date string
- */
-function formatDate(dateStr, format = 'MM/DD/YYYY') {
-    if (!dateStr) return '';
-
-    const date = new Date(dateStr);
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear();
-
-    switch (format) {
-        case 'MM/DD/YYYY':
-            return `${month}/${day}/${year}`;
-        case 'DD/MM/YYYY':
-            return `${day}/${month}/${year}`;
-        case 'YYYY-MM-DD':
-            return `${year}-${month}-${day}`;
-        case 'MM-DD-YYYY':
-            return `${month}-${day}-${year}`;
-        default:
-            return `${month}/${day}/${year}`;
-    }
-}
-
-/**
- * Determine if an input is a date input and what format it requires
- * 
- * @param {HTMLElement} input - Input element
- * @returns {string|null} Date format or null if not a date input
- */
-function detectDateFormat(input) {
-    // Check input type
-    if (input.type === 'date') {
-        return 'YYYY-MM-DD'; // HTML date input format
-    }
-
-    // Check placeholder or pattern attribute
-    const placeholder = (input.placeholder || '').toLowerCase();
-    const pattern = (input.pattern || '').toLowerCase();
-
-    if (placeholder.includes('mm/dd/yyyy') || pattern.includes('mm/dd/yyyy')) {
-        return 'MM/DD/YYYY';
-    }
-
-    if (placeholder.includes('dd/mm/yyyy') || pattern.includes('dd/mm/yyyy')) {
-        return 'DD/MM/YYYY';
-    }
-
-    if (placeholder.includes('yyyy-mm-dd') || pattern.includes('yyyy-mm-dd')) {
-        return 'YYYY-MM-DD';
-    }
-
-    // Check if this is a birthday field
-    const id = (input.id || '').toLowerCase();
-    const name = (input.name || '').toLowerCase();
-
-    if (id.includes('birth') || name.includes('birth') ||
-        id.includes('dob') || name.includes('dob') ||
-        id.includes('bday') || name.includes('bday')) {
-        // Default to MM/DD/YYYY for US-centric sites
-        return 'MM/DD/YYYY';
+    // Special case for birthday - look for date inputs with specific patterns
+    if (element.type === 'date' ||
+        (attributes.id.includes('date') || attributes.name.includes('date')) &&
+        (labelText.toLowerCase().includes('birth') ||
+            attributes.placeholder.includes('MM/DD') ||
+            attributes.placeholder.includes('DD/MM'))) {
+        return 'birthday';
     }
 
     return null;
 }
+
+/**
+ * Validates form data before submission
+ * @param {Object} data - Form data to validate
+ * @returns {Object} Validation result with success status and error messages
+ */
+function validateFormData(data) {
+    const errors = {};
+
+    // Email validation
+    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+        errors.email = 'Invalid email format';
+    }
+
+    // Phone validation (basic format check)
+    if (data.phone && !/^[\d\s\-\(\)\+]+$/.test(data.phone)) {
+        errors.phone = 'Invalid phone format';
+    }
+
+    // ZIP/Postal code validation (US format as default)
+    if (data.zip && !/^\d{5}(-\d{4})?$/.test(data.zip)) {
+        errors.zip = 'Invalid ZIP code format';
+    }
+
+    // Birthday validation
+    if (data.birthday) {
+        const date = new Date(data.birthday);
+        if (isNaN(date.getTime())) {
+            errors.birthday = 'Invalid date format';
+        } else {
+            // Check if date is in the past and not too far in the past (>120 years)
+            const now = new Date();
+            if (date > now) {
+                errors.birthday = 'Birthday cannot be in the future';
+            } else if (date < new Date(now.getFullYear() - 120, now.getMonth(), now.getDate())) {
+                errors.birthday = 'Birthday seems too far in the past';
+            }
+        }
+    }
+
+    return {
+        valid: Object.keys(errors).length === 0,
+        errors
+    };
+}
+
+/**
+ * Creates a CSV string from submission tracker data
+ * @param {Array} submissions - Array of submission objects
+ * @returns {string} CSV formatted string
+ */
+function exportToCSV(submissions) {
+    if (!submissions || submissions.length === 0) {
+        return 'No data to export';
+    }
+
+    // Define columns
+    const columns = [
+        'Website',
+        'Submission Date',
+        'Birthday Field Detected',
+        'Reward Likelihood'
+    ];
+
+    // Create CSV header
+    let csv = columns.join(',') + '\n';
+
+    // Add rows
+    submissions.forEach(submission => {
+        const row = [
+            `"${submission.domain}"`,
+            `"${new Date(submission.timestamp).toLocaleDateString()}"`,
+            `"${submission.birthdayFieldDetected ? 'Yes' : 'No'}"`,
+            `"${submission.birthdayFieldDetected ? 'High' : 'Unlikely'}"`,
+        ];
+        csv += row.join(',') + '\n';
+    });
+
+    return csv;
+}
+
+/**
+ * Creates a JSON string from submission tracker data
+ * @param {Array} submissions - Array of submission objects
+ * @returns {string} Formatted JSON string
+ */
+function exportToJSON(submissions) {
+    if (!submissions || submissions.length === 0) {
+        return '[]';
+    }
+
+    return JSON.stringify(submissions, null, 2);
+}
+
+/**
+ * Detects if a page has a CAPTCHA
+ * @returns {boolean} Whether CAPTCHA is detected
+ */
+function detectCaptcha() {
+    const captchaKeywords = [
+        'captcha',
+        'recaptcha',
+        'hcaptcha',
+        'cf-turnstile',
+        'g-recaptcha',
+        'h-captcha'
+    ];
+
+    // Check for CAPTCHA in class names, IDs, and iframe sources
+    const allElements = document.querySelectorAll('*');
+    for (const element of allElements) {
+        if (element.id && captchaKeywords.some(keyword => element.id.toLowerCase().includes(keyword))) {
+            return true;
+        }
+        if (element.className && typeof element.className === 'string' &&
+            captchaKeywords.some(keyword => element.className.toLowerCase().includes(keyword))) {
+            return true;
+        }
+    }
+
+    // Check for CAPTCHA iframes
+    const iframes = document.querySelectorAll('iframe');
+    for (const iframe of iframes) {
+        if (iframe.src && captchaKeywords.some(keyword => iframe.src.toLowerCase().includes(keyword))) {
+            return true;
+        }
+    }
+
+    // Check for CAPTCHA scripts
+    const scripts = document.querySelectorAll('script');
+    for (const script of scripts) {
+        if (script.src && captchaKeywords.some(keyword => script.src.toLowerCase().includes(keyword))) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Detects if a form spans multiple pages
+ * @param {HTMLFormElement} form - The form element to check
+ * @returns {boolean} Whether the form appears to be multi-page
+ */
+function detectMultiPageForm(form) {
+    // Check for pagination indicators
+    const paginationKeywords = ['next', 'continue', 'proceed', 'step', 'page'];
+
+    // Check for buttons that suggest multi-page flow
+    const buttons = form.querySelectorAll('button, input[type="button"], input[type="submit"]');
+    for (const button of buttons) {
+        const buttonText = button.textContent || button.value || '';
+        if (paginationKeywords.some(keyword => buttonText.toLowerCase().includes(keyword))) {
+            // Avoid false positives with common buttons like "Next day" or "Continue shopping"
+            if (!buttonText.toLowerCase().includes('day') &&
+                !buttonText.toLowerCase().includes('shopping')) {
+                return true;
+            }
+        }
+    }
+
+    // Check for progress indicators
+    const progressIndicators = document.querySelectorAll(
+        '.progress, .progress-bar, .stepper, .wizard, [role="progressbar"]'
+    );
+    if (progressIndicators.length > 0) {
+        return true;
+    }
+
+    // Check for step indicators in the URL
+    if (window.location.href.includes('step=') ||
+        window.location.href.includes('page=') ||
+        window.location.href.includes('wizard')) {
+        return true;
+    }
+
+    return false;
+}
+
+// Export utility functions
+export {
+    detectCaptcha,
+    detectMultiPageForm, exportToCSV,
+    exportToJSON, fuzzyMatch, identifyFieldType, levenshteinSimilarity, validateFormData
+};

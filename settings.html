@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Loyalty Program Assistant</title>
+    <link rel="stylesheet" href="settings.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Loyalty Program Assistant Settings</h1>
+            <div class="tabs">
+                <button id="profilesTab" class="tab-btn active">Profiles</button>
+                <button id="keywordsTab" class="tab-btn">Field Keywords</button>
+                <button id="validationTab" class="tab-btn">Validation Rules</button>
+                <button id="privacyTab" class="tab-btn">Privacy</button>
+            </div>
+        </header>
+
+        <main>
+            <!-- Profiles Section -->
+            <section id="profilesSection" class="tab-content active">
+                <h2>Profile Management</h2>
+                <div class="profile-list">
+                    <div id="profilesContainer"></div>
+                    <button id="addProfileBtn" class="btn primary">Add New Profile</button>
+                </div>
+
+                <div id="profileEditor" class="profile-editor hidden">
+                    <h3 id="profileEditorTitle">Create New Profile</h3>
+                    <form id="profileForm">
+                        <div class="form-group">
+                            <label for="profileName">Profile Name</label>
+                            <input type="text" id="profileName" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="firstName">First Name</label>
+                            <input type="text" id="firstName" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="lastName">Last Name</label>
+                            <input type="text" id="lastName" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <input type="tel" id="phone">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="birthdate">Date of Birth</label>
+                            <input type="date" id="birthdate">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="address">Address</label>
+                            <input type="text" id="address">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="city">City</label>
+                            <input type="text" id="city">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="state">State/Province</label>
+                            <input type="text" id="state">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="zipCode">ZIP/Postal Code</label>
+                            <input type="text" id="zipCode">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="country">Country</label>
+                            <input type="text" id="country">
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" id="cancelProfileBtn" class="btn secondary">Cancel</button>
+                            <button type="submit" id="saveProfileBtn" class="btn primary">Save Profile</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Field Keywords Section -->
+            <section id="keywordsSection" class="tab-content">
+                <h2>Field Detection Keywords</h2>
+                <p>Add custom keywords to help the extension detect form fields more accurately.</p>
+
+                <div class="keywords-container">
+                    <div class="keyword-category">
+                        <h3>First Name</h3>
+                        <div id="firstNameKeywords" class="keyword-list"></div>
+                        <div class="keyword-add">
+                            <input type="text" id="newFirstNameKeyword" placeholder="Add keyword...">
+                            <button class="btn small" data-field="firstName">Add</button>
+                        </div>
+                    </div>
+
+                    <div class="keyword-category">
+                        <h3>Last Name</h3>
+                        <div id="lastNameKeywords" class="keyword-list"></div>
+                        <div class="keyword-add">
+                            <input type="text" id="newLastNameKeyword" placeholder="Add keyword...">
+                            <button class="btn small" data-field="lastName">Add</button>
+                        </div>
+                    </div>
+
+                    <div class="keyword-category">
+                        <h3>Email</h3>
+                        <div id="emailKeywords" class="keyword-list"></div>
+                        <div class="keyword-add">
+                            <input type="text" id="newEmailKeyword" placeholder="Add keyword...">
+                            <button class="btn small" data-field="email">Add</button>
+                        </div>
+                    </div>
+
+                    <div class="keyword-category">
+                        <h3>Birthdate</h3>
+                        <div id="birthdateKeywords" class="keyword-list"></div>
+                        <div class="keyword-add">
+                            <input type="text" id="newBirthdateKeyword" placeholder="Add keyword...">
+                            <button class="btn small" data-field="birthdate">Add</button>
+                        </div>
+                    </div>
+
+                    <div class="keyword-category">
+                        <h3>Phone</h3>
+                        <div id="phoneKeywords" class="keyword-list"></div>
+                        <div class="keyword-add">
+                            <input type="text" id="newPhoneKeyword" placeholder="Add keyword...">
+                            <button class="btn small" data-field="phone">Add</button>
+                        </div>
+                    </div>
+
+                    <button id="resetKeywordsBtn" class="btn warning">Reset to Defaults</button>
+                </div>
+            </section>
+
+            <!-- Validation Rules Section -->
+            <section id="validationSection" class="tab-content">
+                <h2>Validation Rules</h2>
+                <p>Configure validation rules for form fields to ensure data integrity.</p>
+
+                <div class="validation-rules">
+                    <div class="rule">
+                        <h3>Email Validation</h3>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="emailValidationToggle" checked>
+                            <label for="emailValidationToggle"></label>
+                        </div>
+                        <select id="emailValidationLevel">
+                            <option value="basic">Basic (@ symbol required)</option>
+                            <option value="standard" selected>Standard (user@domain.tld)</option>
+                            <option value="strict">Strict (RFC compliant)</option>
+                        </select>
+                    </div>
+
+                    <div class="rule">
+                        <h3>Phone Validation</h3>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="phoneValidationToggle" checked>
+                            <label for="phoneValidationToggle"></label>
+                        </div>
+                        <select id="phoneValidationLevel">
+                            <option value="basic">Basic (numbers only)</option>
+                            <option value="standard" selected>Standard (allow common formats)</option>
+                            <option value="international">International (with country codes)</option>
+                        </select>
+                    </div>
+
+                    <div class="rule">
+                        <h3>Date Format</h3>
+                        <select id="dateFormatPreference">
+                            <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                            <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                            <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                        </select>
+                    </div>
+
+                    <div class="rule">
+                        <h3>ZIP/Postal Code</h3>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="zipValidationToggle" checked>
+                            <label for="zipValidationToggle"></label>
+                        </div>
+                        <select id="zipValidationRegion">
+                            <option value="US">US Format (5 or 9 digits)</option>
+                            <option value="CA">Canada Format (A1A 1A1)</option>
+                            <option value="UK">UK Format (Variable)</option>
+                            <option value="auto">Auto-detect by country</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Privacy Section -->
+            <section id="privacySection" class="tab-content">
+                <h2>Privacy Settings</h2>
+                <p>Manage your data and privacy preferences.</p>
+
+                <div class="privacy-settings">
+                    <div class="setting">
+                        <h3>Data Storage</h3>
+                        <p>Your data is stored locally on your device using Chrome's secure storage API.</p>
+                        <div class="setting-option">
+                            <label for="encryptionToggle">Encrypt stored data</label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="encryptionToggle" checked>
+                                <label for="encryptionToggle"></label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting">
+                        <h3>Submission Tracking</h3>
+                        <div class="setting-option">
+                            <label for="trackingToggle">Track form submissions</label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="trackingToggle" checked>
+                                <label for="trackingToggle"></label>
+                            </div>
+                        </div>
+                        <p>When enabled, the extension will maintain a history of your loyalty program submissions.</p>
+                    </div>
+
+                    <div class="setting">
+                        <h3>Export Data</h3>
+                        <button id="exportDataBtn" class="btn secondary">Export All Data</button>
+                        <p>Download all your stored profiles and submission history.</p>
+                    </div>
+
+                    <div class="setting danger-zone">
+                        <h3>Danger Zone</h3>
+                        <button id="clearTrackingBtn" class="btn warning">Clear Submission History</button>
+                        <button id="deleteAllDataBtn" class="btn danger">Delete All Data</button>
+                        <p>Warning: These actions cannot be undone.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Loyalty Program Assistant v1.0</p>
+            <a href="#" id="backToPopupLink">Back to Extension</a>
+        </footer>
+    </div>
+
+    <div id="confirmationModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Confirmation</h3>
+            <p id="confirmationMessage"></p>
+            <div class="modal-actions">
+                <button id="cancelAction" class="btn secondary">Cancel</button>
+                <button id="confirmAction" class="btn danger">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="utils.js"></script>
+    <script src="settings.js"></script>
+</body>
+
+</html>

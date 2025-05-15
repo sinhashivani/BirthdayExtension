@@ -4,192 +4,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loyalty Form Filler</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Loyalty Program Assistant</title>
+    <link rel="stylesheet" href="popup.css">
 </head>
 
 <body>
     <div class="container">
         <header>
-            <h1>Loyalty Form Filler</h1>
-            <div class="tab-container">
-                <button class="tab-btn active" data-tab="profiles">Profiles</button>
-                <button class="tab-btn" data-tab="tracker">Tracker</button>
-                <button class="tab-btn" data-tab="settings">Settings</button>
+            <div class="logo">
+                <img src="icons/icon48.png" alt="Loyalty Program Assistant Logo">
+                <h1>Loyalty Program Assistant</h1>
+            </div>
+            <div class="actions">
+                <button id="settingsBtn" class="btn-icon" title="Settings">
+                    <span class="icon">⚙️</span>
+                </button>
             </div>
         </header>
 
         <main>
-            <!-- Profiles Tab -->
-            <section id="profiles" class="tab-content active">
+            <!-- Profile Selection Section -->
+            <section class="section profile-section">
+                <h2>Select Profile</h2>
                 <div class="profile-selector">
-                    <h2>Select Profile</h2>
-                    <select id="profile-select">
-                        <option value="">-- Select a profile --</option>
+                    <select id="profileSelect">
+                        <option value="" disabled selected>Select a profile</option>
+                        <!-- Profiles will be loaded dynamically -->
                     </select>
-                    <button id="new-profile" class="btn">Create New</button>
+                    <button id="manageProfilesBtn" class="btn-secondary">Manage Profiles</button>
                 </div>
+            </section>
 
-                <div class="profile-details">
-                    <form id="profile-form">
-                        <div class="form-group">
-                            <label for="profile-name">Profile Name</label>
-                            <input type="text" id="profile-name" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="first-name">First Name</label>
-                            <input type="text" id="first-name" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="last-name">Last Name</label>
-                            <input type="text" id="last-name" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="email">Email</label>
-                            <input type="email" id="email" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="birthdate">Birthday (MM/DD/YYYY)</label>
-                            <input type="date" id="birthdate" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="phone">Phone Number</label>
-                            <input type="tel" id="phone">
-                        </div>
-
-                        <div class="form-actions">
-                            <button type="submit" class="btn primary">Save Profile</button>
-                            <button type="button" id="delete-profile" class="btn danger">Delete Profile</button>
-                        </div>
-                    </form>
-                </div>
-
-                <div class="autofill-controls">
+            <!-- Controls Section -->
+            <section class="section controls-section">
+                <div class="control-group">
                     <h3>Autofill Controls</h3>
                     <div class="toggle-container">
-                        <label for="autofill-toggle">Auto Fill Forms</label>
-                        <label class="switch">
-                            <input type="checkbox" id="autofill-toggle">
-                            <span class="slider round"></span>
+                        <label class="toggle">
+                            <input type="checkbox" id="autofillToggle" checked>
+                            <span class="slider"></span>
                         </label>
+                        <span class="toggle-label">Enable Autofill</span>
                     </div>
-                    <div class="toggle-container">
-                        <label for="manual-override">Manual Override</label>
-                        <label class="switch">
-                            <input type="checkbox" id="manual-override">
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-                    <button id="fill-now" class="btn primary">Fill Form Now</button>
-                    <button id="submit-form" class="btn primary">Submit Form</button>
+                </div>
+
+                <div class="button-group">
+                    <button id="scanPageBtn" class="btn-primary">Scan Page</button>
+                    <button id="fillFormsBtn" class="btn-primary">Fill Forms</button>
+                    <button id="resetFormsBtn" class="btn-secondary">Reset Forms</button>
                 </div>
             </section>
 
-            <!-- Tracker Tab -->
-            <section id="tracker" class="tab-content">
-                <div class="tracker-controls">
+            <!-- Tracker Overview Section -->
+            <section class="section tracker-section">
+                <div class="section-header">
                     <h2>Submission Tracker</h2>
                     <div class="tracker-actions">
-                        <button id="export-csv" class="btn">Export CSV</button>
-                        <button id="export-json" class="btn">Export JSON</button>
-                        <button id="clear-tracker" class="btn danger">Clear All</button>
+                        <button id="exportTrackerBtn" class="btn-icon" title="Export Tracker Data">
+                            <span class="icon">📤</span>
+                        </button>
+                        <select id="exportFormatSelect">
+                            <option value="csv">CSV</option>
+                            <option value="json">JSON</option>
+                        </select>
                     </div>
                 </div>
 
-                <div class="tracker-table-container">
-                    <table id="tracker-table">
-                        <thead>
-                            <tr>
-                                <th>Website</th>
-                                <th>Submission Date</th>
-                                <th>Birthday Field</th>
-                                <th>Reward Likelihood</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Table rows will be populated by JavaScript -->
-                        </tbody>
-                    </table>
+                <div class="tracker-overview">
+                    <div class="stat-box">
+                        <h4>Total Submissions</h4>
+                        <span id="totalSubmissions" class="stat-number">0</span>
+                    </div>
+                    <div class="stat-box">
+                        <h4>With Birthday Fields</h4>
+                        <span id="birthdayFields" class="stat-number">0</span>
+                    </div>
+                    <div class="stat-box">
+                        <h4>Success Rate</h4>
+                        <span id="successRate" class="stat-number">0%</span>
+                    </div>
+                </div>
+
+                <div class="view-all-container">
+                    <button id="viewTrackerBtn" class="btn-text">View Full Tracker <span class="arrow">→</span></button>
                 </div>
             </section>
 
-            <!-- Settings Tab -->
-            <section id="settings" class="tab-content">
-                <h2>Settings</h2>
-
-                <div class="settings-section">
-                    <h3>Form Detection</h3>
-                    <div class="form-group">
-                        <label for="custom-keywords">Custom Field Keywords</label>
-                        <textarea id="custom-keywords" rows="4"
-                            placeholder="Add custom keywords separated by commas"></textarea>
-                        <small>These keywords will be used to detect form fields in addition to the defaults.</small>
+            <!-- Status Section -->
+            <section class="section status-section">
+                <div id="statusContainer" class="status-container">
+                    <div class="status-message">
+                        <span class="status-icon">✅</span>
+                        <span class="status-text">Ready to assist with loyalty program enrollments</span>
                     </div>
-                </div>
-
-                <div class="settings-section">
-                    <h3>Privacy Settings</h3>
-                    <div class="toggle-container">
-                        <label for="data-encryption">Encrypt Stored Data</label>
-                        <label class="switch">
-                            <input type="checkbox" id="data-encryption" checked>
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-                    <div class="toggle-container">
-                        <label for="show-consent">Show Consent Dialog</label>
-                        <label class="switch">
-                            <input type="checkbox" id="show-consent" checked>
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-                    <button id="delete-all-data" class="btn danger">Delete All Data (GDPR)</button>
-                </div>
-
-                <div class="settings-section">
-                    <h3>Accessibility</h3>
-                    <div class="form-group">
-                        <label for="font-size">Font Size</label>
-                        <select id="font-size">
-                            <option value="normal">Normal</option>
-                            <option value="large">Large</option>
-                            <option value="x-large">Extra Large</option>
-                        </select>
-                    </div>
-                    <div class="toggle-container">
-                        <label for="high-contrast">High Contrast Mode</label>
-                        <label class="switch">
-                            <input type="checkbox" id="high-contrast">
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="settings-actions">
-                    <button id="save-settings" class="btn primary">Save Settings</button>
-                    <button id="reset-settings" class="btn">Reset to Default</button>
                 </div>
             </section>
         </main>
 
-        <div id="status-message" class="status-message"></div>
+        <footer>
+            <button id="helpBtn" class="btn-text">How to Use</button>
+            <span class="version">v1.0</span>
+        </footer>
     </div>
 
-    <div id="consent-dialog" class="modal">
-        <div class="modal-content">
-            <h2>Confirm Form Submission</h2>
-            <p>You are about to submit the following data to <span id="domain-name"></span>:</p>
-            <div id="submission-preview"></div>
-            <p>The system has detected the following fields:</p>
-            <ul id="detected-fields"></ul>
-            <div class="modal-actions">
-                <button id="confirm-submit" class="btn primary">Submit Form</button>
-                <button id="cancel-submit" class="btn">Cancel</button>
+    <!-- Template for the field preview overlay -->
+    <template id="fieldPreviewTemplate">
+        <div class="field-preview-overlay">
+            <div class="field-preview-header">
+                <h3>Fields Detected</h3>
+                <button class="close-preview">×</button>
+            </div>
+            <div class="field-preview-content">
+                <div class="field-list">
+                    <!-- Field items will be inserted here -->
+                </div>
+                <div class="field-preview-actions">
+                    <button class="btn-secondary cancel-fill">Cancel</button>
+                    <button class="btn-primary confirm-fill">Confirm & Fill</button>
+                </div>
             </div>
         </div>
-    </div>
+    </template>
 
+    <!-- Template for the help modal -->
+    <template id="helpModalTemplate">
+        <div class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>How to Use Loyalty Program Assistant</h3>
+                    <button class="close-modal">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="help-section">
+                        <h4>Quick Start Guide</h4>
+                        <ol>
+                            <li>Create a profile with your information in the Settings page</li>
+                            <li>Browse to a loyalty program signup form</li>
+                            <li>Click "Scan Page" to detect form fields</li>
+                            <li>Review the detected fields and click "Confirm & Fill"</li>
+                            <li>Submit the form manually after reviewing</li>
+                            <li>The extension will track your submission</li>
+                        </ol>
+                    </div>
+                    <div class="help-section">
+                        <h4>Tips</h4>
+                        <ul>
+                            <li>Green entries in the tracker indicate forms with birthday fields - these are likely to
+                                provide birthday rewards!</li>
+                            <li>You can create multiple profiles for different purposes</li>
+                            <li>The extension works best on standard web forms</li>
+                            <li>Check the submission tracker regularly to keep track of your enrollments</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script src="utils.js"></script>
     <script src="popup.js"></script>
 </body>
 

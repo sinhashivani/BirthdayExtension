@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "Loyalty Program Enrollment Assistant",
+    "name": "Loyalty Program Autofill & Tracker",
     "version": "1.0.0",
-    "description": "Streamlines enrollment in loyalty programs by automatically filling web forms and tracking submission status",
+    "description": "Streamlines loyalty program enrollment by automatically filling web forms and tracking submission status",
     "permissions": [
         "storage",
         "activeTab",
@@ -12,8 +12,15 @@
         "<all_urls>"
     ],
     "background": {
-        "service_worker": "background.js",
-        "type": "module"
+        "service_worker": "background.js"
+    },
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": {
+            "16": "icons/icon16.png",
+            "48": "icons/icon48.png",
+            "128": "icons/icon128.png"
+        }
     },
     "content_scripts": [
         {
@@ -29,33 +36,21 @@
             ]
         }
     ],
-    "action": {
-        "default_popup": "popup.html",
-        "default_icon": {
-            "16": "icons/icon16.png",
-            "32": "icons/icon32.png",
-            "48": "icons/icon48.png",
-            "128": "icons/icon128.png"
-        }
-    },
-    "icons": {
-        "16": "icons/icon16.png",
-        "48": "icons/icon48.png",
-        "128": "icons/icon128.png"
-    },
     "options_page": "options.html",
     "web_accessible_resources": [
         {
             "resources": [
-                "icons/*",
-                "styles.css"
+                "onboarding.html",
+                "onboarding.js"
             ],
             "matches": [
                 "<all_urls>"
             ]
         }
     ],
-    "chrome_url_overrides": {
-        "newtab": "onboarding.html"
+    "icons": {
+        "16": "icons/icon16.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
     }
 }
