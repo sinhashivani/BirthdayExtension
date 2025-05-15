@@ -1,0 +1,61 @@
+{
+    "manifest_version": 3,
+    "name": "Loyalty Program Enrollment Assistant",
+    "version": "1.0.0",
+    "description": "Streamlines enrollment in loyalty programs by automatically filling web forms and tracking submission status",
+    "permissions": [
+        "storage",
+        "activeTab",
+        "scripting"
+    ],
+    "host_permissions": [
+        "<all_urls>"
+    ],
+    "background": {
+        "service_worker": "background.js",
+        "type": "module"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "utils.js",
+                "content.js"
+            ],
+            "css": [
+                "styles.css"
+            ]
+        }
+    ],
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": {
+            "16": "icons/icon16.png",
+            "32": "icons/icon32.png",
+            "48": "icons/icon48.png",
+            "128": "icons/icon128.png"
+        }
+    },
+    "icons": {
+        "16": "icons/icon16.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+    },
+    "options_page": "options.html",
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "icons/*",
+                "styles.css"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
+        }
+    ],
+    "chrome_url_overrides": {
+        "newtab": "onboarding.html"
+    }
+}

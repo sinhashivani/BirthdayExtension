@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Loyalty Program Auto-Enroll</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .onboarding-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .step {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .step h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+        }
+
+        .step-number {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background-color: #3498db;
+            color: white;
+            border-radius: 50%;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        .step-content {
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .step-image {
+            flex: 0 0 200px;
+            margin-right: 1.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .step-image img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .step-description {
+            flex: 1;
+        }
+
+        .action-buttons {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .next-button,
+        .setup-profile-button,
+        .finish-button {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .next-button:hover,
+        .setup-profile-button:hover,
+        .finish-button:hover {
+            background-color: #2980b9;
+        }
+
+        .progress-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .progress-dot {
+            width: 12px;
+            height: 12px;
+            background-color: #ddd;
+            border-radius: 50%;
+            margin: 0 5px;
+        }
+
+        .progress-dot.active {
+            background-color: #3498db;
+        }
+
+        .benefits-list {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .benefits-list li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .benefits-list li:before {
+            content: "✓";
+            color: #27ae60;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .profile-form {
+            display: none;
+            background-color: #fff;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            margin-top: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .date-field-info {
+            background-color: #ebf5fb;
+            padding: 10px;
+            border-left: 4px solid #3498db;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="onboarding-container">
+        <h1>Welcome to Loyalty Program Auto-Enroll</h1>
+        <p>Let's get you set up to streamline your enrollment in loyalty programs and maximize your rewards.</p>
+
+        <div class="progress-indicator">
+            <div class="progress-dot active" data-step="1"></div>
+            <div class="progress-dot" data-step="2"></div>
+            <div class="progress-dot" data-step="3"></div>
+            <div class="progress-dot" data-step="4"></div>
+        </div>
+
+        <div class="step" id="step-1">
+            <h2><span class="step-number">1</span> How It Works</h2>
+            <div class="step-content">
+                <div class="step-image">
+                    <img src="/images/how-it-works.svg" alt="Extension demonstration" width="200" height="150">
+                </div>
+                <div class="step-description">
+                    <p>This extension helps you quickly enroll in loyalty programs by:</p>
+                    <ul class="benefits-list">
+                        <li>Automatically detecting signup forms on websites</li>
+                        <li>Filling out your information with one click</li>
+                        <li>Tracking which sites you've enrolled in</li>
+                        <li>Highlighting sites that offer birthday rewards</li>
+                    </ul>
+                    <p>No more manually typing your information over and over!</p>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button class="next-button" data-goto="2">Next: Your Profile</button>
+            </div>
+        </div>
+
+        <div class="step" id="step-2" style="display: none;">
+            <h2><span class="step-number">2</span> Create Your Profile</h2>
+            <div class="step-content">
+                <div class="step-image">
+                    <img src="/images/profile-setup.svg" alt="Profile setup" width="200" height="150">
+                </div>
+                <div class="step-description">
+                    <p>Let's set up your profile information. This data will be stored securely in your browser and only
+                        used when you explicitly activate the extension.</p>
+                    <p>All information stays on your device - we don't collect or transmit your personal data.</p>
+                    <button class="setup-profile-button">Create Profile</button>
+
+                    <div class="profile-form" id="profile-form">
+                        <div class="form-group">
+                            <label for="profile-name">Profile Name</label>
+                            <input type="text" id="profile-name" placeholder="e.g., Personal, Work">
+                        </div>
+                        <div class="form-group">
+                            <label for="first-name">First Name</label>
+                            <input type="text" id="first-name">
+                        </div>
+                        <div class="form-group">
+                            <label for="last-name">Last Name</label>
+                            <input type="text" id="last-name">
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email">
+                        </div>
+                        <div class="form-group">
+                            <label for="birthday">Birthday (MM/DD/YYYY)</label>
+                            <input type="date" id="birthday">
+                            <div class="date-field-info">
+                                <strong>Tip:</strong> Many loyalty programs offer special rewards on your birthday!
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Phone Number (optional)</label>
+                            <input type="tel" id="phone">
+                        </div>
+                        <div class="form-group">
+                            <label for="address">Address (optional)</label>
+                            <input type="text" id="address">
+                        </div>
+                        <button id="save-profile" class="next-button">Save Profile</button>
+                    </div>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button class="next-button" data-goto="1">Previous</button>
+                <button class="next-button" data-goto="3">Next: Using the Extension</button>
+            </div>
+        </div>
+
+        <div class="step" id="step-3" style="display: none;">
+            <h2><span class="step-number">3</span> Using the Extension</h2>
+            <div class="step-content">
+                <div class="step-image">
+                    <img src="/images/extension-usage.svg" alt="Extension usage" width="200" height="150">
+                </div>
+                <div class="step-description">
+                    <p>Using the extension is simple:</p>
+                    <ol>
+                        <li>Visit a website with a signup form</li>
+                        <li>Click the extension icon in your browser toolbar</li>
+                        <li>Select your profile</li>
+                        <li>Click "Fill Form" to automatically fill the form</li>
+                        <li>Review the information before submitting</li>
+                    </ol>
+                    <p>The extension will track your submissions and highlight sites that offer birthday rewards!</p>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button class="next-button" data-goto="2">Previous</button>
+                <button class="next-button" data-goto="4">Next: Tracking & Privacy</button>
+            </div>
+        </div>
+
+        <div class="step" id="step-4" style="display: none;">
+            <h2><span class="step-number">4</span> Tracking & Privacy</h2>
+            <div class="step-content">
+                <div class="step-image">
+                    <img src="/images/tracking-privacy.svg" alt="Tracking and privacy" width="200" height="150">
+                </div>
+                <div class="step-description">
+                    <p>The extension includes a tracker that helps you manage your loyalty program enrollments:</p>
+                    <ul class="benefits-list">
+                        <li>See which websites you've enrolled in</li>
+                        <li>Know which sites offer birthday rewards</li>
+                        <li>Export your data for backup</li>
+                    </ul>
+                    <p><strong>Privacy commitment:</strong> Your data stays in your browser. We don't collect, transmit,
+                        or analyze your personal information or browsing habits.</p>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button class="next-button" data-goto="3">Previous</button>
+                <button class="finish-button">Get Started</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="onboarding.js"></script>
+</body>
+
+</html>
