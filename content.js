@@ -8,6 +8,8 @@
     firstName: ['first[-_]?name', 'fname', 'first', 'given[-_]?name'],
     lastName: ['last[-_]?name', 'lname', 'last', 'surname', 'family[-_]?name'],
     email: ['email', 'e[-_]?mail', 'mail'],
+    password: ['password', 'Password', 'current-password'],
+    countryCode: ['prefix', 'country[-_]?code', 'country[-_]?prefix'],
     phone: ['phone', 'telephone', 'tel', 'mobile', 'cell'],
     birthdate: ['birth[-_]?day', 'birth[-_]?date', 'dob', 'date[-_]?of[-_]?birth', 'bday'],
     address: ['address', 'street', 'addr', 'address[-_]?line[-_]?1'],
@@ -21,6 +23,8 @@
     firstName: ['first name', 'given name', 'first'],
     lastName: ['last name', 'surname', 'family name', 'last'],
     email: ['email', 'e-mail', 'email address'],
+    password: ['password', 'Password', 'current-password'],
+    countryCode: ['country code', 'prefix', 'country prefix', 'phone prefix', 'number prefix'],
     phone: ['phone', 'telephone', 'mobile', 'cell', 'phone number'],
     birthdate: ['birth date', 'birthday', 'date of birth', 'birth', 'dob', 'mm/dd/yyyy', 'dd/mm/yyyy'],
     address: ['address', 'street address', 'street', 'address line 1'],
@@ -141,47 +145,57 @@
   }
 
   // Set up mutation observer to detect new forms
+  // Set up mutation observer to detect new forms
   function initMutationObserver() {
-    const observer = new MutationObserver((mutations) => {
-      // Optimization: Check mutations more efficiently if performance is an issue on complex pages
-      let relevantChange = false;
+    // Corrected: The logic and the variable used within it are now inside the callback
+    const observerCallback = (mutations) => {
+      let relevantChangeDetected = false; // Variable scoped correctly to this callback
       for (const mutation of mutations) {
         if (mutation.type === 'childList') {
           if (mutation.addedNodes.length > 0) {
             for (const node of mutation.addedNodes) {
-              // Check if added node is a form or contains form-like elements
               if (node.nodeType === Node.ELEMENT_NODE) {
+                // Check if added node is a form or contains form-like elements
                 if (node.tagName === 'FORM' || node.querySelector('form, input, select, textarea')) {
-                  relevantChange = true;
+                  relevantChangeDetected = true; // Set variable inside callback
                   break;
                 }
               }
             }
           }
-          // If we found a relevant change in added nodes, no need to check further mutations
-          if (relevantChange) break;
+          if (relevantChangeDetected) break;
         }
+        // Add other mutation types if necessary (e.g., attributes if form properties change)
+      };
+
+      // Check the variable declared and set within *this* callback's scope
+      if (relevantChangeDetected && autofillActive && currentProfile) {
+        // Wait a bit for the form/inputs to be fully rendered/interactive
+        setTimeout(() => {
+          console.log("Content script: Mutation observer detected potential form change, re-highlighting.");
+          detectAndHighlightForms();
+        }, 500); // Small delay
       }
-      // Add other mutation types if necessary (e.g., attributes if form properties change)
+    }; // <-- End of the corrected callback function definition
+
+    // Create the observer instance with the correct callback
+    const observer = new MutationObserver(observerCallback);
+
+    // Start observing the document body (or document.documentElement) for childList and subtree changes
+    // observer.observe(document.body, { // Observing body is usually sufficient
+    //   childList: true,
+    //   subtree: true
+    // });
+    console.log("Content script: Mutation observer initialized.");
+
+
+    // Start observing the document body (or document.documentElement) for childList and subtree changes
+    observer.observe(document.body, { // Observing body is usually sufficient
+      childList: true,
+      subtree: true
     });
-
-
-    if (relevantChange && autofillActive && currentProfile) {
-      // Wait a bit for the form/inputs to be fully rendered/interactive
-      setTimeout(() => {
-        console.log("Content script: Mutation observer detected potential form change, re-highlighting.");
-        detectAndHighlightForms();
-      }, 500); // Small delay
-    }
-  };
-
-  // Start observing the document body (or document.documentElement) for childList and subtree changes
-  observer.observe(document.body, { // Observing body is usually sufficient
-    childList: true,
-    subtree: true
-  });
-  console.log("Content script: Mutation observer initialized.");
-
+    console.log("Content script: Mutation observer initialized.");
+  }
 
 
   function handleAutofillToggle() {
@@ -302,6 +316,8 @@
       if (autocomplete.includes('given-name')) return 'firstName';
       if (autocomplete.includes('family-name')) return 'lastName';
       if (autocomplete.includes('email')) return 'email';
+      if (autocomplete.includes('password')) return 'password';
+      if (autocomplete.includes('country-code')) return 'country-code'; // Or 'tel-national', etc.
       if (autocomplete.includes('tel')) return 'phone'; // Or 'tel-national', etc.
       if (autocomplete.includes('bday')) return 'birthdate';
       if (autocomplete.includes('street-address')) return 'address';

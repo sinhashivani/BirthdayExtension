@@ -26,7 +26,10 @@ const profileForm = document.getElementById('profile-form');
 const profileFirstNameInput = document.getElementById('profile-firstName');
 const profileLastNameInput = document.getElementById('profile-lastName');
 const profileEmailInput = document.getElementById('profile-email');
+const profilePasswordInput = document.getElementById('profile-password');
+console.log("Popup: Found profilePasswordInput:", profilePasswordInput); // <-- Add this line
 const profileBirthdayInput = document.getElementById('profile-birthday');
+const profileCountryCode = document.getElementById('profile-country-code');
 const profilePhoneInput = document.getElementById('profile-phone');
 const profileAddressInput = document.getElementById('profile-address');
 const profileCityInput = document.getElementById('profile-city');
@@ -35,6 +38,8 @@ const profileZipInput = document.getElementById('profile-zip');
 const saveProfileBtn = document.getElementById('saveProfileBtn'); // Button to save profile
 
 const triggerAutofillBtn = document.getElementById('triggerAutofillBtn');
+const togglePasswordVisibilityButton = document.getElementById('togglePasswordVisibility'); // Get the button by its ID
+console.log("Popup: Found togglePasswordVisibilityButton:", togglePasswordVisibilityButton); // <-- Add this line
 
 // --- CORRECT References for the general status message area ---
 const statusContainer = document.getElementById('statusContainer'); // General status container
@@ -67,7 +72,9 @@ const DEFAULT_PROFILE = {
     firstName: '',
     lastName: '',
     email: '',
+    password: '',
     birthday: '', // UseYYYY-MM-DD format internally
+    countryCode: '',
     phone: '',
     address: '',
     city: '',
@@ -156,6 +163,23 @@ function setupEventListeners() {
         // Save settings
         saveSettings({ highContrast: isEnabled }); // Use saveSettings helper
     });
+
+    // Add click listener to the toggle button
+    if (togglePasswordVisibilityButton && profilePasswordInput) {
+        togglePasswordVisibilityButton.addEventListener('click', () => {
+            // Toggle the input type between 'password' and 'text'
+            const currentType = profilePasswordInput.type;
+            if (currentType === 'password') {
+                profilePasswordInput.type = 'text';
+                // Change the button's text to "Hide"
+                togglePasswordVisibilityButton.textContent = 'Hide';
+            } else {
+                profilePasswordInput.type = 'password';
+                // Change the button's text back to "Show"
+                togglePasswordVisibilityButton.textContent = 'Show';
+            }
+        });
+    }
 
     // --- Form Actions (Autofill View) ---
     // This button triggers the scan, fill, and preview flow
@@ -262,7 +286,9 @@ function loadProfileDataIntoForm(profileData) {
     if (profileFirstNameInput) profileFirstNameInput.value = profileData.firstName || '';
     if (profileLastNameInput) profileLastNameInput.value = profileData.lastName || '';
     if (profileEmailInput) profileEmailInput.value = profileData.email || '';
+    if (profilePasswordInput) profilePasswordInput.value = profileData.password || '';
     if (profileBirthdayInput) profileBirthdayInput.value = profileData.birthday || '';
+    if (profileCountryCode) profileCountryCode.value = profileData.countryCode || '';
     if (profilePhoneInput) profilePhoneInput.value = profileData.phone || '';
     if (profileAddressInput) profileAddressInput.value = profileData.address || '';
     if (profileCityInput) profileCityInput.value = profileData.city || '';
@@ -291,7 +317,9 @@ function saveProfileFromForm() {
         firstName: profileFirstNameInput ? profileFirstNameInput.value.trim() : '',
         lastName: profileLastNameInput ? profileLastNameInput.value.trim() : '',
         email: profileEmailInput ? profileEmailInput.value.trim() : '',
+        password: profilePasswordInput ? profilePasswordInput.value.trim() : '',
         birthday: profileBirthdayInput ? profileBirthdayInput.value : '', // Date input value isYYYY-MM-DD
+        countryCode: profileCountryCode ? profileCountryCode.value.trim() : '',
         phone: profilePhoneInput ? profilePhoneInput.value.trim() : '',
         address: profileAddressInput ? profileAddressInput.value.trim() : '',
         city: profileCityInput ? profileCityInput.value.trim() : '',
@@ -300,26 +328,31 @@ function saveProfileFromForm() {
         // Add other fields here
     };
 
-    // Basic validation (optional, can use validateFormData from utils.js here)
-    if (!updatedProfile.firstName || !updatedProfile.lastName || !updatedProfile.email) {
-        // --- USE showStatus ---
-        showStatus('First Name, Last Name, and Email are required.', 'warning');
-        // --- END USE showStatus ---
-        return; // Stop if required fields are empty
+    const validationResult = validateFormData(updatedProfile); // Call the validation function
+    if (!validationResult.valid) {
+        console.warn("Popup: Profile validation failed:", validationResult.errors);
+        // Display validation errors to the user
+        let errorMessage = 'Validation errors:';
+        for (const field in validationResult.errors) {
+            errorMessage += ` ${field.replace(/([A-Z])/g, ' $1').trim().toLowerCase()} - ${validationResult.errors[field]};`;
+        }
+        // Use showStatus or update specific error elements
+        showStatus(errorMessage, 'warning', 8000); // Show validation errors as warnings for longer
+        // Consider adding specific error messages next to each field input
+        return; // Stop the save process if validation fails
     }
+    // --- End Add Validation Call ---
 
-    // Update the active profile variable
+
+    // If validation passed:
     activeProfile = updatedProfile;
     console.log("Popup: Active profile updated in memory:", activeProfile);
 
-    // Save the profile to Chrome Storage (assuming a single profile stored under 'profile')
     chrome.storage.sync.set({ profile: activeProfile }, () => {
         console.log("Popup: Profile saved to storage.");
-        // --- THIS LINE SHOWS THE 'Profile saved successfully!' MESSAGE ---
         showStatus('Profile saved successfully!', 'success', 3000);
-        // --- END LINE ---
-        // getCurrentTabStatus(); // Re-checking status after save might be unnecessary/confusing
     });
+
 }
 
 // --- Settings Management ---
@@ -454,18 +487,6 @@ function showStatus(message, type = 'info', duration = 3000) {
         });
     }, duration);
 }
-// --- END ADD THE CORRECT showStatus function ---
-
-
-// --- REMOVE the incorrect showAutofillStatus function ---
-// This function is no longer needed and uses non-existent element IDs.
-/*
-function showAutofillStatus(message, type = 'info', duration = 3000) {
-    // ... (code that uses autofillStatusText and autofillStatusContainer) ...
-}
-*/
-// --- END REMOVE ---
-
 
 /**
  * Sends a message to the content script in the active tab.

@@ -37,8 +37,21 @@
                         <input type="email" id="profile-email" name="email" required>
                     </div>
                     <div class="form-group">
+                        <label for="profile-password">Password:</label>
+                        <div class="password-input-group">
+                            <input type="password" id="profile-password" class="form-control">
+                            <button type="button" id="togglePasswordVisibility" class="btn btn-secondary btn-icon">
+                                Show
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
                         <label for="profile-birthday">Birthday:</label>
                         <input type="date" id="profile-birthday" name="birthday">
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-country-code">Country Code:</label>
+                        <input type="text" id="profile-country-code" class="form-control" maxlength="10">
                     </div>
                     <div class="form-group">
                         <label for="profile-phone">Phone:</label>

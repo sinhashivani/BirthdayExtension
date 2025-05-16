@@ -147,6 +147,7 @@ function identifyFieldType(element, customKeywords) {
         firstName: ['first', 'fname', 'firstname', 'givenname', ...(customKeywords.firstName || [])],
         lastName: ['last', 'lname', 'lastname', 'surname', 'familyname', ...(customKeywords.lastName || [])],
         email: ['email', 'e-mail', 'emailaddress', ...(customKeywords.email || [])],
+        password: ['password', 'Password', 'current-password', ...(customKeywords.password || [])],
         birthday: ['birth', 'bday', 'birthday', 'dob', 'dateofbirth', ...(customKeywords.birthday || [])],
         phone: ['phone', 'tel', 'telephone', 'mobile', 'cell', ...(customKeywords.phone || [])],
         address: ['address', 'street', 'addressline', ...(customKeywords.address || [])],
@@ -220,7 +221,32 @@ function validateFormData(data) {
             }
         }
     }
+    if (data.password) {
+        const password = data.password;
 
+        // Example Rules:
+        // Rule 1: Minimum length (e.g., 8 characters)
+        if (password.length < 8) {
+            errors.password = 'Password must be at least 8 characters long';
+        }
+        // Rule 2: Contains at least one uppercase letter
+        else if (!/[A-Z]/.test(password)) {
+            errors.password = 'Password must contain at least one uppercase letter';
+        }
+        // Rule 3: Contains at least one lowercase letter
+        else if (!/[a-z]/.test(password)) {
+            errors.password = 'Password must contain at least one lowercase letter';
+        }
+        // Rule 4: Contains at least one number
+        else if (!/[0-9]/.test(password)) {
+            errors.password = 'Password must contain at least one number';
+        }
+        // Rule 5: Optional - Contains at least one special character (uncomment to enable)
+        // else if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~` ]/.test(password)) {
+        //      errors.password = 'Password must contain at least one special character';
+        // }
+
+    }
     return {
         valid: Object.keys(errors).length === 0,
         errors
@@ -359,10 +385,3 @@ function detectMultiPageForm(form) {
 
     return false;
 }
-
-// Export utility functions
-export {
-    detectCaptcha,
-    detectMultiPageForm, exportToCSV,
-    exportToJSON, fuzzyMatch, identifyFieldType, levenshteinSimilarity, validateFormData
-};
