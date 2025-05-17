@@ -54,6 +54,7 @@ const highContrastToggle = document.getElementById('highContrastToggle');
 
 // Other elements from simplified HTML
 const helpBtn = document.getElementById('helpBtn'); // Button for Help modal
+const openOptionsLink = document.getElementById('openOptionsLink');
 
 // --- Templates ---
 const fieldPreviewTemplate = document.getElementById('fieldPreviewTemplate');
@@ -231,8 +232,20 @@ function setupEventListeners() {
 
     // Check if helpBtn exists before adding listener
     if (helpBtn) helpBtn.addEventListener('click', () => { showHelpModal(); }); // Help button in the footer
+    function setupEventListeners() {
+        console.log("Popup: Setting up event listeners.");
+        // ... existing listeners ...
 
-    console.log("Popup: All event listeners set up.");
+        // Add listener for the options link
+        if (openOptionsLink) {
+            openOptionsLink.addEventListener('click', (event) => {
+                event.preventDefault(); // Prevent default link behavior
+                chrome.runtime.openOptionsPage(); // Open the options page
+            });
+        }
+
+        console.log("Popup: All event listeners set up.");
+    }
 }
 
 /** Hides all main content views. */

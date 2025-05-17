@@ -1,241 +1,355 @@
 // content.js
+
+// Use an Immediately Invoked Function Expression (IIFE) to avoid polluting the global scope of the webpage
 (function () {
-  // Configuration
-  let autofillActive = true; // Needs to be loaded from storage/popup settings
-  let currentProfile = null; // Needs to be loaded from storage/popup
+  // Configuration Variables
+  // These variables need to be loaded with actual data/settings, typically from the popup or background script
+  let autofillActive = false; // State for autofill highlighting toggle (controlled by popup)
+  let currentProfile = null; // Stores the profile data loaded from storage (sent by popup/background)
+
+  // Field Identification Mapping
+  // Map our internal field types to common name/ID patterns found in HTML forms
+  // IMPORTANT: Ensure the keys here match the property names in your profile objects!
   let fieldMapping = {
-    // Common field name and ID patterns
+    // Common field name and ID patterns (using regex format)
     firstName: ['first[-_]?name', 'fname', 'first', 'given[-_]?name'],
     lastName: ['last[-_]?name', 'lname', 'last', 'surname', 'family[-_]?name'],
     email: ['email', 'e[-_]?mail', 'mail'],
-    password: ['password', 'Password', 'current-password'],
-    countryCode: ['prefix', 'country[-_]?code', 'country[-_]?prefix'],
-    phone: ['phone', 'telephone', 'tel', 'mobile', 'cell'],
+    password: ['password', 'Password', 'current-password'], // Consider adding patterns for 'new-password', 'confirm-password' if you fill those
+    // Add patterns for phone number components if stored separately
+    phoneCountryCode: ['country[-_]?code', 'dialing[-_]?code', 'intl[-_]?code', 'international[-_]?code', 'cc', 'phone[-_]?cc', 'prefix', 'phone[-_]?prefix'], // Added more patterns
+    phoneAreaCode: ['area[-_]?code', 'ac', 'phone[-_]?ac', 'prefix', 'phone[-_]?prefix'], // Added more patterns
+    phone: ['phone', 'telephone', 'tel', 'mobile', 'cell', 'phone[-_]?number'], // Main phone number
     birthdate: ['birth[-_]?day', 'birth[-_]?date', 'dob', 'date[-_]?of[-_]?birth', 'bday'],
-    address: ['address', 'street', 'addr', 'address[-_]?line[-_]?1'],
-    city: ['city', 'town', 'locality'],
-    state: ['state', 'province', 'region'],
-    zip: ['zip', 'postal[-_]?code', 'post[-_]?code', 'zip[-_]?code']
+    address: ['address', 'street', 'addr', 'address[-_]?line[-_]?1', 'street[-_]?address'], // Added street-address
+    city: ['city', 'town', 'locality', 'address[-_]?level2'], // address-level2 is often city
+    state: ['state', 'province', 'region', 'address[-_]?level1'], // address-level1 is often state
+    zip: ['zip', 'postal[-_]?code', 'post[-_]?code', 'zip[-_]?code'],
+    // Add other field types as needed (e.g., country, company, etc.)
   };
 
-  // Fuzzy matching patterns for labels (used by identifyField)
+  // Fuzzy matching patterns for labels, placeholders, and aria-labels (used by identifyField)
+  // These are simpler strings for case-insensitive substring matching
   const labelPatterns = {
     firstName: ['first name', 'given name', 'first'],
     lastName: ['last name', 'surname', 'family name', 'last'],
     email: ['email', 'e-mail', 'email address'],
-    password: ['password', 'Password', 'current-password'],
-    countryCode: ['country code', 'prefix', 'country prefix', 'phone prefix', 'number prefix'],
+    password: ['password', 'create password', 'new password', 'confirm password', 'current password'], // Keep password patterns
+    // Add label patterns for phone number components if stored separately
+    phoneCountryCode: ['country code', 'dialing code', 'international code', 'intl code', 'country', 'phone prefix', 'prefix'], // Added patterns
+    phoneAreaCode: ['area code', 'phone prefix', 'prefix'], // Added patterns
     phone: ['phone', 'telephone', 'mobile', 'cell', 'phone number'],
-    birthdate: ['birth date', 'birthday', 'date of birth', 'birth', 'dob', 'mm/dd/yyyy', 'dd/mm/yyyy'],
+    birthdate: ['birth date', 'birthday', 'date of birth', 'dateofbirth', 'birth', 'dob', 'mm/dd/yyyy', 'dd/mm/yyyy'],
     address: ['address', 'street address', 'street', 'address line 1'],
     city: ['city', 'town', 'locality'],
     state: ['state', 'province', 'region'],
-    zip: ['zip', 'zip code', 'postal code', 'post code']
+    zip: ['zip', 'zip code', 'postal code', 'post code'],
+    // Add other field types as needed
   };
 
-  // Initialize listeners and observers when the script starts running
-  initMessageListeners();
-  initMutationObserver();
-  addStyles(); // Add necessary CSS styles for highlighting/overlays
+
+  // --- Content Script Initialization ---
+  // These functions are called when the content script is injected and starts running.
+  initMessageListeners(); // Set up message handling
+  initMutationObserver(); // Start observing for DOM changes
+  addStyles(); // Inject necessary CSS for highlighting/overlays
 
   // Note: Initial settings and profile should be sent from popup.js
   // using the 'setInitialSettings' action shortly after content script loads.
 
+  // --- Message Listener ---
   /**
-   * Initializes message listeners for communication with the popup script.
+   * Initializes message listeners for communication with the popup script and background script.
+   * This function contains the single chrome.runtime.onMessage.addListener.
+   * Includes try...catch blocks for robust error handling during message processing.
    */
   function initMessageListeners() {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       console.log("Content script: Received message:", request.action);
-      // Indicate that the response will be sent asynchronously
-      let responseSent = false;
+
+      // We are planning to send a response for most handled actions to prevent "message port closed" errors.
+      // The try...catch ensures sendResponse is called even if an error occurs within a case.
+      let asyncResponse = true; // Assume we will send a response for handled cases
+
 
       switch (request.action) {
         case 'setInitialSettings':
-          // Receive initial settings and profile from popup on page load
-          autofillActive = request.settings.autofillHighlightEnabled; // Assuming this setting exists
-          currentProfile = request.activeProfile;
-          console.log("Content script: Initial settings and profile received.", { autofillActive, currentProfile });
-          // Perform initial highlighting if needed
-          if (autofillActive) {
-            // Use a slight delay to wait for the page content to render
-            setTimeout(detectAndHighlightForms, 500);
+          try {
+            // Receive initial settings and profile from popup on page load
+            autofillActive = request.settings.autofillHighlightEnabled; // Assuming this setting exists
+            currentProfile = request.activeProfile;
+            console.log("Content script: Initial settings and profile received.", { autofillActive, currentProfile });
+            // Perform initial highlighting if needed
+            if (autofillActive) {
+              // Use a slight delay to wait for the page content to render
+              setTimeout(detectAndHighlightForms, 500);
+            }
+            sendResponse({ success: true, message: 'Initial settings applied' });
+          } catch (error) {
+            console.error("Content script: Error applying initial settings:", error);
+            // Send back an error response
+            sendResponse({ success: false, error: error.message, action: request.action });
           }
-          sendResponse({ success: true, message: 'Initial settings applied' });
-          responseSent = true;
           break;
 
         case 'toggleAutofillHighlighting':
-          autofillActive = request.isActive;
-          handleAutofillToggle();
-          sendResponse({ success: true, message: 'Autofill highlighting toggled' });
-          responseSent = true;
+          try {
+            autofillActive = request.isActive;
+            handleAutofillToggle(); // Assuming handleAutofillToggle exists and applies/removes highlighting
+            sendResponse({ success: true, message: 'Autofill highlighting toggled' });
+          } catch (error) {
+            console.error("Content script: Error toggling highlighting:", error);
+            sendResponse({ success: false, error: error.message, action: request.action });
+          }
           break;
 
         case 'fillForm':
-          console.log("Content script: Received fillForm request.");
-          currentProfile = request.profile; // Ensure profile is up-to-date
-          const formData = detectAndFillForms(); // Fill the form fields
-          // Send back the data that was filled for preview
-          sendResponse({ formData: formData });
-          responseSent = true;
+          try {
+            console.log("Content script: Received fillForm request.");
+            currentProfile = request.profile; // Ensure profile is up-to-date
+
+            const filledFormData = {}; // Data that was actually filled (for preview/logging, exclude sensitive)
+            let fieldsFilledCount = 0;
+
+            const inputs = document.querySelectorAll('input, select, textarea');
+
+            inputs.forEach(input => {
+              // --- Add try...catch around processing each input to catch specific errors ---
+              try {
+                // Ensure input is visible and interactive before attempting to fill
+                if (input.offsetParent === null || input.disabled || input.readOnly) {
+                  return; // Skip hidden, disabled, or read-only fields
+                }
+
+                const fieldType = identifyField(input); // Identify the field type
+
+                // If a field type was identified AND we have a corresponding non-empty value in the current profile
+                if (fieldType && currentProfile && currentProfile[fieldType] !== undefined && currentProfile[fieldType] !== null && currentProfile[fieldType] !== '') {
+                  const valueToFill = currentProfile[fieldType];
+
+                  // --- Attempt to fill the field ---
+                  // Pass the fieldType to fillField so it can handle specific types (like select)
+                  const fillSuccess = fillField(input, valueToFill, fieldType); // Call the fillField function
+
+                  if (fillSuccess) {
+                    highlightField(input, fieldType, true); // Highlight as filled
+                    fieldsFilledCount++;
+                    // Add filled data to the response object (exclude sensitive passwords)
+                    filledFormData[fieldType] = (fieldType === 'password' || fieldType === 'confirmPassword') ? '[*****]' : valueToFill;
+                  } else {
+                    console.warn(`Content script: Failed to fill field for type ${fieldType} with value "${valueToFill}"`, input);
+                  }
+                  // --- End Attempt to fill the field ---
+                }
+                // Fields where identifyField returned null are skipped.
+                // Fields where we don't have profile data are skipped.
+                // Fields where the profile data is empty string, null, or undefined are skipped for filling.
+
+              } catch (inputError) {
+                // Log error for a specific input, but continue processing other inputs
+                console.error(`Content script: Error processing input ${input.id || input.name || input.tagName} during fillForm:`, inputError);
+              }
+              // --- End try...catch around processing each input ---
+            }); // End of inputs.forEach
+
+            console.log(`Content script: Attempted to fill ${fieldsFilledCount} fields.`);
+
+            // Send back the data that was actually filled (used by popup for preview)
+            // Send success: true even if 0 fields were filled, but include the count/data
+            sendResponse({ success: true, fieldsFilledCount: fieldsFilledCount, formData: filledFormData });
+
+          } catch (error) {
+            // This outer catch block captures errors that happen outside the forEach loop
+            console.error("Content script: Error during fillForm (outer catch):", error);
+            sendResponse({ success: false, error: error.message, action: request.action });
+          }
           break;
 
         case 'submitForm':
-          console.log("Content script: Received submitForm request.");
-          // The submitForm function in popup.js doesn't send formData in the message
-          // We need to rely on the fields that were already filled and highlighted
-          const submitSuccess = submitForm(); // Call the local submit function
-          // Determine if a birthday field was present on the page (for tracking)
-          const hasBirthday = hasBirthdayField(); // Check if the page had a birthday field
+          try {
+            console.log("Content script: Received submitForm request.");
+            const submitSuccess = submitForm(); // Call your local submit function
 
-          // Send response indicating success and potentially other info (like captcha detection)
-          // Note: Simple captcha detection is complex. For now, just indicate if submit was *attempted*.
-          // You might add more sophisticated checks here or in the background script later.
-          sendResponse({
-            success: submitSuccess, // Was a form submitted or button clicked?
-            hasBirthdayField: hasBirthday, // Was a birthday field found on this page?
-            captchaDetected: false // Placeholder - implement actual detection if needed
-          });
-          responseSent = true;
+            // Determine if a birthday field was present (if submitForm needs this info or it's checked here)
+            const hasBirthday = hasBirthdayField(); // Assuming this function checks for a birthday input
+
+            sendResponse({
+              success: submitSuccess, // Was a form submission *attempted* or successful?
+              hasBirthdayField: hasBirthday,
+              captchaDetected: false // Placeholder - implement actual detection if needed
+            });
+          } catch (error) {
+            console.error("Content script: Error during submitForm:", error);
+            sendResponse({ success: false, error: error.message, action: request.action });
+          }
           break;
 
         case 'getFormStatus':
-          console.log("Content script: Received getFormStatus request.");
-          // Scan the page for relevant form fields
-          const inputs = document.querySelectorAll('input, select, textarea');
-          let detectedFieldCount = 0;
-          let formDetected = false;
+          try {
+            console.log("Content script: Received getFormStatus request.");
+            const inputs = document.querySelectorAll('input, select, textarea');
+            let detectedFieldCount = 0;
+            let formDetected = false;
 
-          // Check if any relevant form fields exist
-          inputs.forEach(input => {
-            const fieldType = identifyField(input);
-            // Consider a form detected if we find any input fields that match our criteria
-            if (fieldType) {
-              detectedFieldCount++;
-              // Also consider a form detected if at least one input is found within a <form> tag
-              if (!formDetected && input.closest('form')) {
-                formDetected = true;
+            inputs.forEach(input => {
+              // --- Add try...catch around processing each input to catch specific errors ---
+              try {
+                const fieldType = identifyField(input); // Identify the field type
+
+                if (fieldType) {
+                  detectedFieldCount++;
+                  if (!formDetected && input.closest('form')) {
+                    formDetected = true;
+                  }
+                }
+              } catch (inputError) {
+                // Log error for a specific input, but continue processing other inputs
+                console.error(`Content script: Error processing input ${input.id || input.name || input.tagName} in getFormStatus:`, inputError);
               }
+              // --- End try...catch around processing each input ---
+            }); // End of inputs.forEach
+
+            // If no fields matched, check if there's at least one <form> element as a fallback for detection
+            if (!formDetected) {
+              formDetected = document.querySelectorAll('form').length > 0;
             }
-          });
 
-          // If no fields matched, check if there's at least one <form> element
-          if (!formDetected) {
-            formDetected = document.querySelectorAll('form').length > 0;
+            console.log("Content script: getFormStatus response:", { formDetected: formDetected, fieldCount: detectedFieldCount });
+            sendResponse({ formDetected: formDetected, fieldCount: detectedFieldCount });
+
+          } catch (error) {
+            // This outer catch block captures errors that happen outside the forEach loop
+            console.error("Content script: Error getting form status (outer catch):", error);
+            sendResponse({ success: false, error: error.message, action: request.action });
           }
-
-          console.log("Content script: getFormStatus response:", { formDetected, fieldCount: detectedFieldCount });
-          // Send the status back to the popup
-          sendResponse({ formDetected: formDetected, fieldCount: detectedFieldCount });
-          responseSent = true;
           break;
 
         default:
           console.warn("Content script: Unknown message action:", request.action);
-          // Don't send a response for unknown actions unless explicitly required by the sender
-          // return false is often sufficient if no response is ever needed for this case.
+          // For unknown actions, we don't expect a response, so no need to call sendResponse.
+          asyncResponse = false; // Indicate no response is planned for unhandled actions
           break;
       }
 
-      // Return true to indicate that sendResponse will be called asynchronously
-      // (only if responseSent was set to true in one of the cases)
-      return responseSent;
+      // Return true to indicate that sendResponse will be called asynchronously for handled cases.
+      // Return false for unhandled cases (where asyncResponse is false).
+      return asyncResponse;
     });
   }
+  // --- End Message Listener ---
 
-  // Set up mutation observer to detect new forms
-  // Set up mutation observer to detect new forms
+
+  // --- Mutation Observer ---
+  // Set up mutation observer to detect new forms or form fields added dynamically to the DOM
   function initMutationObserver() {
-    // Corrected: The logic and the variable used within it are now inside the callback
     const observerCallback = (mutations) => {
-      let relevantChangeDetected = false; // Variable scoped correctly to this callback
+      console.log("Content script: Mutation observer triggered.");
+      let relevantChangeDetected = false;
       for (const mutation of mutations) {
-        if (mutation.type === 'childList') {
-          if (mutation.addedNodes.length > 0) {
-            for (const node of mutation.addedNodes) {
-              if (node.nodeType === Node.ELEMENT_NODE) {
-                // Check if added node is a form or contains form-like elements
-                if (node.tagName === 'FORM' || node.querySelector('form, input, select, textarea')) {
-                  relevantChangeDetected = true; // Set variable inside callback
-                  break;
-                }
+        // Look for added nodes that are forms, inputs, selects, or textareas, or contain them
+        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+          for (const node of mutation.addedNodes) {
+            // Check if added node is an element and is or contains a form/input
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              // Use .matches() for efficiency and to check the node itself
+              if (node.matches('form, input, select, textarea') || node.querySelector('form, input, select, textarea')) {
+                relevantChangeDetected = true;
+                console.log("Content script: Relevant DOM change detected:", node);
+                break; // Found a relevant change, no need to check other added nodes in this mutation
               }
             }
           }
-          if (relevantChangeDetected) break;
         }
-        // Add other mutation types if necessary (e.g., attributes if form properties change)
+        // If a relevant change was detected in this mutation record, stop checking other records
+        if (relevantChangeDetected) break;
       };
 
-      // Check the variable declared and set within *this* callback's scope
+      // If a relevant DOM change was detected AND autofill highlighting is currently active AND we have a profile
       if (relevantChangeDetected && autofillActive && currentProfile) {
         // Wait a bit for the form/inputs to be fully rendered/interactive
         setTimeout(() => {
           console.log("Content script: Mutation observer detected potential form change, re-highlighting.");
-          detectAndHighlightForms();
-        }, 500); // Small delay
+          detectAndHighlightForms(); // Re-run highlighting
+        }, 500); // Small delay to allow rendering
       }
-    }; // <-- End of the corrected callback function definition
+    }; // <-- End of the observerCallback function definition
 
-    // Create the observer instance with the correct callback
+    // Create the observer instance with the callback
     const observer = new MutationObserver(observerCallback);
 
-    // Start observing the document body (or document.documentElement) for childList and subtree changes
-    // observer.observe(document.body, { // Observing body is usually sufficient
-    //   childList: true,
-    //   subtree: true
-    // });
-    console.log("Content script: Mutation observer initialized.");
-
-
-    // Start observing the document body (or document.documentElement) for childList and subtree changes
-    observer.observe(document.body, { // Observing body is usually sufficient
+    // Start observing the document body for childList and subtree changes
+    // We observe childList to catch elements being added/removed directly to the body
+    // We observe subtree to catch changes within descendants of the body
+    observer.observe(document.body, {
       childList: true,
       subtree: true
     });
+
     console.log("Content script: Mutation observer initialized.");
   }
+  // --- End Mutation Observer ---
 
 
+  // --- Highlighting Logic ---
+  /**
+   * Handles toggling autofill highlighting on or off.
+   * Called when the 'toggleAutofillHighlighting' message is received or on initial load.
+   */
   function handleAutofillToggle() {
     console.log("Content script: Handling autofill toggle. Active:", autofillActive);
     if (autofillActive) {
-      // Perform highlighting if already on a relevant page
-      // Add a delay to ensure content script has settings/profile
+      // If turning highlighting ON and we have a profile, perform initial highlighting
+      // Add a delay to ensure content script has settings/profile data loaded
       if (currentProfile) {
         setTimeout(detectAndHighlightForms, 100); // Small delay
       }
     } else {
+      // If turning highlighting OFF, remove all existing highlights
       removeHighlights();
     }
   }
 
   /**
-   * Detects potential form fields and highlights them if a profile is loaded.
+   * Detects form fields on the page and highlights them if a profile is loaded
+   * and autofill highlighting is active.
    */
   function detectAndHighlightForms() {
     console.log("Content script: Detecting and highlighting forms.");
     // Only highlight if autofill is active AND we have profile data
     if (!autofillActive || !currentProfile) {
-      console.log("Content script: Highlighting is off or no profile loaded.");
-      removeHighlights(); // Ensure no lingering highlights
+      console.log("Content script: Highlighting is off or no profile loaded. Removing any existing highlights.");
+      removeHighlights(); // Ensure no lingering highlights if conditions aren't met
       return;
     }
 
     const inputs = document.querySelectorAll('input, select, textarea');
     let fieldsHighlighted = 0;
 
-    // Clear existing highlights before adding new ones
+    // It's often good practice to clear existing highlights before re-applying,
+    // especially after DOM changes detected by the Mutation Observer.
     removeHighlights();
 
     inputs.forEach(input => {
-      const fieldType = identifyField(input);
-      // Highlight if a field type was identified AND we have a value for that field in the profile
-      if (fieldType && currentProfile[fieldType]) {
-        highlightField(input, fieldType);
-        fieldsHighlighted++;
+      // --- Add try...catch around processing each input to catch specific errors ---
+      try {
+        // Ensure input is visible and interactive before attempting to highlight
+        if (input.offsetParent === null || input.disabled || input.readOnly) {
+          return; // Skip hidden, disabled, or read-only fields
+        }
+
+        const fieldType = identifyField(input); // Identify the field type
+
+        // Highlight if a field type was identified AND we have a value for that field in the profile
+        // (We highlight based on having data, even if the field isn't currently filled)
+        if (fieldType && currentProfile[fieldType] !== undefined && currentProfile[fieldType] !== null && currentProfile[fieldType] !== '') {
+          highlightField(input, fieldType); // Apply highlight style and tooltip
+          fieldsHighlighted++;
+        }
+      } catch (inputError) {
+        // Log error for a specific input, but continue processing other inputs
+        console.error(`Content script: Error processing input ${input.id || input.name || input.tagName} during highlighting:`, inputError);
       }
+      // --- End try...catch around processing each input ---
     });
 
     console.log(`Content script: Highlighted ${fieldsHighlighted} fields.`);
@@ -243,21 +357,348 @@
 
 
   /**
-   * Removes all field highlights from the page.
+   * Removes all field highlights added by the extension from the page.
    */
   function removeHighlights() {
     console.log("Content script: Removing highlights.");
+    // Select elements based on the specific highlight class added by your extension
     document.querySelectorAll('.loyalty-form-highlight').forEach(el => {
       el.classList.remove('loyalty-form-highlight', 'loyalty-filled-field');
-      el.removeAttribute('title'); // Remove tooltip as well
+      // Optionally remove the title attribute if you added it for the tooltip
+      if (el.hasAttribute('title') && el.getAttribute('title').startsWith('Identified as: ')) {
+        el.removeAttribute('title');
+      }
+    });
+  }
+
+  /**
+   * Applies highlight class and potentially a tooltip to an identified input field.
+   * @param {Element} input - The input element to highlight.
+   * @param {string} fieldType - The identified type of the field.
+   * @param {boolean} isFilled - Whether the field has been filled by the extension.
+   */
+  function highlightField(input, fieldType, isFilled = false) {
+    // Avoid adding the class multiple times
+    if (!input.classList.contains('loyalty-form-highlight')) {
+      input.classList.add('loyalty-form-highlight');
+      // Add a title attribute for a simple tooltip (can be enhanced with a custom tooltip later)
+      input.title = `Identified as: ${fieldType}`;
+    }
+    if (isFilled) {
+      input.classList.add('loyalty-filled-field');
+      input.title = `Filled as: ${fieldType}`; // Update tooltip for filled state
+    } else {
+      input.classList.remove('loyalty-filled-field'); // Ensure filled class is removed if not filled
+    }
+  }
+
+
+  // --- Form Filling Logic ---
+  /**
+   * Detects potential form fields and fills them with the current profile data.
+   * Does NOT automatically submit the form.
+   * @returns {Object|null} An object containing the fieldType and value for fields that were filled (excluding sensitive data), or null if no fields were detected/filled.
+   */
+  function initMessageListeners() {
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+      console.log("Content script: Received message:", request.action);
+
+      // We are planning to send a response for most handled actions to prevent "message port closed" errors.
+      // The try...catch ensures sendResponse is called even if an error occurs within a case.
+      let asyncResponse = true; // Assume we will send a response for handled cases
+
+
+      switch (request.action) {
+        case 'setInitialSettings':
+          try {
+            // Receive initial settings and profile from popup on page load
+            autofillActive = request.settings.autofillHighlightEnabled; // Assuming this setting exists
+            currentProfile = request.activeProfile;
+            console.log("Content script: Initial settings and profile received.", { autofillActive, currentProfile });
+            // Perform initial highlighting if needed
+            if (autofillActive) {
+              // Use a slight delay to wait for the page content to render
+              setTimeout(detectAndHighlightForms, 500);
+            }
+            sendResponse({ success: true, message: 'Initial settings applied' });
+          } catch (error) {
+            console.error("Content script: Error applying initial settings:", error);
+            // Send back an error response
+            sendResponse({ success: false, error: error.message, action: request.action });
+          }
+          break;
+
+        case 'toggleAutofillHighlighting':
+          try {
+            autofillActive = request.isActive;
+            handleAutofillToggle(); // Assuming handleAutofillToggle exists and applies/removes highlighting
+            sendResponse({ success: true, message: 'Autofill highlighting toggled' });
+          } catch (error) {
+            console.error("Content script: Error toggling highlighting:", error);
+            sendResponse({ success: false, error: error.message, action: request.action });
+          }
+          break;
+
+        case 'fillForm':
+          try {
+            console.log("Content script: Received fillForm request.");
+            currentProfile = request.profile; // Ensure profile is up-to-date
+
+            // Call the function to detect and fill forms.
+            // This function now returns an object { filledFormData, fieldsFilledCount } or null on error.
+            const fillResult = detectAndFillForms(); // Call the function
+
+            if (fillResult !== null) {
+              // Send back the data that was actually filled (used by popup for preview)
+              sendResponse({
+                success: true,
+                fieldsFilledCount: fillResult.fieldsFilledCount,
+                formData: fillResult.filledFormData
+              });
+            } else {
+              // If detectAndFillForms returned null due to an internal error (already logged)
+              sendResponse({ success: false, error: 'Error during form filling.', action: request.action });
+            }
+
+          } catch (error) {
+            // This outer catch block captures errors directly within the fillForm case handler
+            console.error("Content script: Error during fillForm (outer catch):", error);
+            sendResponse({ success: false, error: error.message, action: request.action });
+          }
+          break;
+
+        case 'submitForm':
+          try {
+            console.log("Content script: Received submitForm request.");
+            const submitSuccess = submitForm(); // Call your local submit function
+
+            // Determine if a birthday field was present (if submitForm needs this info or it's checked here)
+            const hasBirthday = hasBirthdayField(); // Assuming this function checks for a birthday input
+
+            sendResponse({
+              success: submitSuccess, // Was a form submission *attempted* or successful?
+              hasBirthdayField: hasBirthday,
+              captchaDetected: false // Placeholder - implement actual detection if needed
+            });
+          } catch (error) {
+            console.error("Content script: Error during submitForm:", error);
+            sendResponse({ success: false, error: error.message, action: request.action });
+          }
+          break;
+
+        case 'getFormStatus':
+          try {
+            console.log("Content script: Received getFormStatus request.");
+            const inputs = document.querySelectorAll('input, select, textarea');
+            let detectedFieldCount = 0;
+            let formDetected = false;
+
+            inputs.forEach(input => {
+              // --- Add try...catch around processing each input to catch specific errors ---
+              try {
+                const fieldType = identifyField(input); // Identify the field type
+
+                if (fieldType) {
+                  detectedFieldCount++;
+                  if (!formDetected && input.closest('form')) {
+                    formDetected = true;
+                  }
+                }
+              } catch (inputError) {
+                // Log error for a specific input, but continue processing other inputs
+                console.error(`Content script: Error processing input ${input.id || input.name || input.tagName} in getFormStatus:`, inputError);
+              }
+              // --- End try...catch around processing each input ---
+            }); // End of inputs.forEach
+
+            // If no fields matched, check if there's at least one <form> element as a fallback for detection
+            if (!formDetected) {
+              formDetected = document.querySelectorAll('form').length > 0;
+            }
+
+            console.log("Content script: getFormStatus response:", { formDetected: formDetected, fieldCount: detectedFieldCount });
+            sendResponse({ formDetected: formDetected, fieldCount: detectedFieldCount });
+
+          } catch (error) {
+            // This outer catch block captures errors that happen outside the forEach loop
+            console.error("Content script: Error getting form status (outer catch):", error);
+            sendResponse({ success: false, error: error.message, action: request.action });
+          }
+          break;
+
+        default:
+          console.warn("Content script: Unknown message action:", request.action);
+          // For unknown actions, we don't expect a response, so no need to call sendResponse.
+          asyncResponse = false; // Indicate no response is planned for unhandled actions
+          break;
+      }
+
+      // Return true to indicate that sendResponse will be called asynchronously for handled cases.
+      // Return false for unhandled cases (where asyncResponse is false).
+      return asyncResponse;
     });
   }
 
 
+  // --- Mutation Observer ---
+  // Set up mutation observer to detect new forms or form fields added dynamically to the DOM
+  function initMutationObserver() {
+    const observerCallback = (mutations) => {
+      console.log("Content script: Mutation observer triggered.");
+      let relevantChangeDetected = false;
+      for (const mutation of mutations) {
+        // Look for added nodes that are forms, inputs, selects, or textareas, or contain them
+        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+          for (const node of mutation.addedNodes) {
+            // Check if added node is an element and is or contains a form/input
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              // Use .matches() for efficiency and to check the node itself
+              if (node.matches('form, input, select, textarea') || node.querySelector('form, input, select, textarea')) {
+                relevantChangeDetected = true;
+                console.log("Content script: Relevant DOM change detected:", node);
+                break; // Found a relevant change, no need to check other added nodes in this mutation
+              }
+            }
+          }
+        }
+        // If a relevant change was detected in this mutation record, stop checking other records
+        if (relevantChangeDetected) break;
+      };
+
+      // If a relevant DOM change was detected AND autofill highlighting is currently active AND we have a profile
+      if (relevantChangeDetected && autofillActive && currentProfile) {
+        // Wait a bit for the form/inputs to be fully rendered/interactive
+        setTimeout(() => {
+          console.log("Content script: Mutation observer detected potential form change, re-highlighting.");
+          detectAndHighlightForms(); // Re-run highlighting
+        }, 500); // Small delay to allow rendering
+      }
+    }; // <-- End of the observerCallback function definition
+
+    // Create the observer instance with the callback
+    const observer = new MutationObserver(observerCallback);
+
+    // Start observing the document body for childList and subtree changes
+    // We observe childList to catch elements being added/removed directly to the body
+    // We observe subtree to catch changes within descendants of the body
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    console.log("Content script: Mutation observer initialized.");
+  }
+  // --- End Mutation Observer ---
+
+
+  // --- Highlighting Logic ---
+  /**
+   * Handles toggling autofill highlighting on or off.
+   * Called when the 'toggleAutofillHighlighting' message is received or on initial load.
+   */
+  function handleAutofillToggle() {
+    console.log("Content script: Handling autofill toggle. Active:", autofillActive);
+    if (autofillActive) {
+      // If turning highlighting ON and we have a profile, perform initial highlighting
+      // Add a delay to ensure content script has settings/profile data loaded
+      if (currentProfile) {
+        setTimeout(detectAndHighlightForms, 100); // Small delay
+      }
+    } else {
+      // If turning highlighting OFF, remove all existing highlights
+      removeHighlights();
+    }
+  }
+
+  /**
+   * Detects form fields on the page and highlights them if a profile is loaded
+   * and autofill highlighting is active.
+   */
+  function detectAndHighlightForms() {
+    console.log("Content script: Detecting and highlighting forms.");
+    // Only highlight if autofill is active AND we have profile data
+    if (!autofillActive || !currentProfile) {
+      console.log("Content script: Highlighting is off or no profile loaded. Removing any existing highlights.");
+      removeHighlights(); // Ensure no lingering highlights if conditions aren't met
+      return;
+    }
+
+    const inputs = document.querySelectorAll('input, select, textarea');
+    let fieldsHighlighted = 0;
+
+    // It's often good practice to clear existing highlights before re-applying,
+    // especially after DOM changes detected by the Mutation Observer.
+    removeHighlights();
+
+    inputs.forEach(input => {
+      // --- Add try...catch around processing each input to catch specific errors ---
+      try {
+        // Ensure input is visible and interactive before attempting to highlight
+        if (input.offsetParent === null || input.disabled || input.readOnly) {
+          return; // Skip hidden, disabled, or read-only fields
+        }
+
+        const fieldType = identifyField(input); // Identify the field type
+
+        // Highlight if a field type was identified AND we have a value for that field in the profile
+        // (We highlight based on having data, even if the field isn't currently filled)
+        if (fieldType && currentProfile[fieldType] !== undefined && currentProfile[fieldType] !== null && currentProfile[fieldType] !== '') {
+          highlightField(input, fieldType); // Apply highlight style and tooltip
+          fieldsHighlighted++;
+        }
+      } catch (inputError) {
+        // Log error for a specific input, but continue processing other inputs
+        console.error(`Content script: Error processing input ${input.id || input.name || input.tagName} during highlighting:`, inputError);
+      }
+      // --- End try...catch around processing each input ---
+    });
+
+    console.log(`Content script: Highlighted ${fieldsHighlighted} fields.`);
+  }
+
+
+  /**
+   * Removes all field highlights added by the extension from the page.
+   */
+  function removeHighlights() {
+    console.log("Content script: Removing highlights.");
+    // Select elements based on the specific highlight class added by your extension
+    document.querySelectorAll('.loyalty-form-highlight').forEach(el => {
+      el.classList.remove('loyalty-form-highlight', 'loyalty-filled-field');
+      // Optionally remove the title attribute if you added it for the tooltip
+      if (el.hasAttribute('title') && el.getAttribute('title').startsWith('Identified as: ')) {
+        el.removeAttribute('title');
+      }
+    });
+  }
+
+  /**
+   * Applies highlight class and potentially a tooltip to an identified input field.
+   * @param {Element} input - The input element to highlight.
+   * @param {string} fieldType - The identified type of the field.
+   * @param {boolean} isFilled - Whether the field has been filled by the extension.
+   */
+  function highlightField(input, fieldType, isFilled = false) {
+    // Avoid adding the class multiple times
+    if (!input.classList.contains('loyalty-form-highlight')) {
+      input.classList.add('loyalty-form-highlight');
+      // Add a title attribute for a simple tooltip (can be enhanced with a custom tooltip later)
+      input.title = `Identified as: ${fieldType}`;
+    }
+    if (isFilled) {
+      input.classList.add('loyalty-filled-field');
+      input.title = `Filled as: ${fieldType}`; // Update tooltip for filled state
+    } else {
+      input.classList.remove('loyalty-filled-field'); // Ensure filled class is removed if not filled
+    }
+  }
+
+
+  // --- Form Filling Logic ---
   /**
    * Detects potential form fields and fills them with the current profile data.
-   * Does NOT submit the form.
-   * @returns {Object|null} An object containing the fieldType and value for fields that were filled, or null if no fields were detected/filled.
+   * Does NOT automatically submit the form.
+   * @returns {Object|null} An object containing the fieldType and value for fields that were filled (excluding sensitive data), or null if no fields were detected/filled.
    */
   function detectAndFillForms() {
     console.log("Content script: Detecting and filling forms.");
@@ -267,38 +708,62 @@
       return null; // Cannot fill if no profile
     }
 
-    const formData = {}; // Data that was actually filled
+    const filledFormData = {}; // Data that was actually filled (for preview/logging, exclude sensitive)
     let fieldsFilledCount = 0;
 
-    // Get all input fields
+    // Get all input, select, and textarea elements on the page
     const inputs = document.querySelectorAll('input, select, textarea');
 
     inputs.forEach(input => {
-      const fieldType = identifyField(input);
-      // If a field type was identified AND we have a value for it in the current profile
-      if (fieldType && currentProfile[fieldType]) {
-        const valueToFill = currentProfile[fieldType];
-        // Only fill if the value is not empty
-        if (valueToFill !== '') {
-          // Track field data for confirmation
-          formData[fieldType] = valueToFill;
-          fieldsFilledCount++;
-
-          // Fill the field (but don't submit yet)
-          fillField(input, valueToFill);
-          highlightField(input, fieldType, true); // Highlight as filled
+      // --- Add try...catch around processing each input to catch specific errors ---
+      try {
+        // Ensure input is visible and interactive before attempting to fill
+        if (input.offsetParent === null || input.disabled || input.readOnly) {
+          return; // Skip hidden, disabled, or read-only fields
         }
+
+        const fieldType = identifyField(input); // Identify the field type
+
+        // If a field type was identified AND we have a corresponding non-empty value in the current profile
+        if (fieldType && currentProfile && currentProfile[fieldType] !== undefined && currentProfile[fieldType] !== null && currentProfile[fieldType] !== '') {
+          const valueToFill = currentProfile[fieldType];
+
+          // --- Attempt to fill the field ---
+          // Pass the fieldType to fillField so it can handle specific types (like select)
+          const fillSuccess = fillField(input, valueToFill, fieldType); // Call the fillField function
+
+          if (fillSuccess) {
+            highlightField(input, fieldType, true); // Highlight as filled
+            fieldsFilledCount++;
+            // Add filled data to the response object (exclude sensitive passwords)
+            filledFormData[fieldType] = (fieldType === 'password' || fieldType === 'confirmPassword') ? '[*****]' : valueToFill;
+          } else {
+            console.warn(`Content script: Failed to fill field for type ${fieldType} with value "${valueToFill}"`, input);
+          }
+          // --- End Attempt to fill the field ---
+        }
+        // Fields where identifyField returned null are skipped.
+        // Fields where we don't have profile data are skipped.
+        // Fields where the profile data is empty string, null, or undefined are skipped for filling.
+
+      } catch (inputError) {
+        // Log error for a specific input, but continue processing other inputs
+        console.error(`Content script: Error processing input ${input.id || input.name || input.tagName} during fillForm:`, inputError);
       }
-    });
+      // --- End try...catch around processing each input ---
+    }); // End of inputs.forEach
 
     console.log(`Content script: Attempted to fill ${fieldsFilledCount} fields.`);
 
-    // Return the data for the fields that were actually filled
-    return fieldsFilledCount > 0 ? formData : null;
+    // Return the data for the fields that were actually filled (used by popup for preview)
+    // Return an object even if 0 fields were filled, so the popup can check fieldsFilledCount
+    return { filledFormData, fieldsFilledCount }; // Return object instead of null
   }
 
+  // The identifyField function (using the one from our previous successful step)
   /**
    * Identifies the likely type of a form input element based on various attributes and associated labels.
+   * Uses the fieldMapping and labelPatterns defined in the content script.
    * @param {Element} input - The input, select, or textarea element.
    * @returns {string|null} The identified field type (e.g., 'firstName', 'email', 'birthdate') or null if not identified.
    */
@@ -309,246 +774,247 @@
       return null;
     }
 
-    // Standard HTML5 autofill attribute (autocomplete)
-    if (input.autocomplete) {
-      // Map common autocomplete values to our field types
-      const autocomplete = input.autocomplete.toLowerCase();
-      if (autocomplete.includes('given-name')) return 'firstName';
-      if (autocomplete.includes('family-name')) return 'lastName';
-      if (autocomplete.includes('email')) return 'email';
-      if (autocomplete.includes('password')) return 'password';
-      if (autocomplete.includes('country-code')) return 'country-code'; // Or 'tel-national', etc.
-      if (autocomplete.includes('tel')) return 'phone'; // Or 'tel-national', etc.
-      if (autocomplete.includes('bday')) return 'birthdate';
-      if (autocomplete.includes('street-address')) return 'address';
-      if (autocomplete.includes('address-level2')) return 'city'; // address-level2 is often city
-      if (autocomplete.includes('address-level1')) return 'state'; // address-level1 is often state
-      if (autocomplete.includes('postal-code')) return 'zip';
-      // Add other autocomplete mappings as needed
-    }
-
-
-    // Check name and id attributes using regex patterns
+    // Normalize attribute values for easier matching
     const nameAttr = input.name ? input.name.toLowerCase() : '';
     const idAttr = input.id ? input.id.toLowerCase() : '';
+    const placeholderAttr = input.placeholder ? input.placeholder.toLowerCase() : '';
+    const typeAttr = input.type ? input.type.toLowerCase() : '';
+    const autocompleteAttr = input.autocomplete ? input.autocomplete.toLowerCase() : '';
+    const ariaLabelAttr = input.getAttribute('aria-label') ? input.getAttribute('aria-label').toLowerCase() : '';
 
+
+    // 1. Check standard HTML5 autofill attribute (autocomplete)
+    // These are often the most reliable
+    if (autocompleteAttr) {
+      // Map common autocomplete values to our field types
+      if (autocompleteAttr.includes('given-name')) return 'firstName';
+      if (autocompleteAttr.includes('family-name')) return 'lastName';
+      if (autocompleteAttr.includes('email')) return 'email';
+      if (autocompleteAttr.includes('password')) return 'password'; // Matches 'current-password', 'new-password' etc.
+      if (autocompleteAttr.includes('tel-country-code')) return 'phoneCountryCode';
+      if (autocompleteAttr.includes('tel-area-code')) return 'phoneAreaCode';
+      if (autocompleteAttr.includes('tel')) return 'phone'; // General phone number
+      if (autocompleteAttr.includes('bday')) return 'birthdate';
+      if (autocompleteAttr.includes('street-address')) return 'address';
+      if (autocompleteAttr.includes('address-level2')) return 'city'; // city
+      if (autocompleteAttr.includes('address-level1')) return 'state'; // state/province
+      if (autocompleteAttr.includes('postal-code')) return 'zip';
+      // Add other relevant autocomplete mappings from https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/autocomplete
+    }
+
+    // 2. Check type attribute for known types before checking name/id patterns
+    if (typeAttr === 'email') return 'email';
+    if (typeAttr === 'tel') return 'phone'; // tel input type
+    if (typeAttr === 'date') return 'birthdate'; // date input type
+    // For password type, we still want to check names/ids for new/confirm differentiation if needed, so skip here
+
+    // 3. Check name and id attributes using regex patterns from fieldMapping
     for (const [fieldType, patterns] of Object.entries(fieldMapping)) {
       for (const pattern of patterns) {
-        // Use word boundaries (\b) to avoid matching "email" within "myemailfield" unintentionally
-        // Also consider patterns that might not have boundaries like simple 'email'
-        const regex = new RegExp(`\\b${pattern}\\b|${pattern}`, 'i'); // Try with boundary, then without
+        const regex = new RegExp(pattern, 'i'); // Case-insensitive regex test
         if (regex.test(nameAttr) || regex.test(idAttr)) {
           return fieldType;
         }
       }
     }
 
-    // Check for associated labels
-    const labelText = getLabelTextForInput(input).toLowerCase();
-    if (labelText) {
-      for (const [fieldType, patterns] of Object.entries(labelPatterns)) {
-        for (const pattern of patterns) {
-          // Check if the label text includes the pattern (simple substring check)
-          if (labelText.includes(pattern.toLowerCase())) {
-            return fieldType;
-          }
+    // 4. Check associated labels, placeholder text, and aria-label using simple string inclusion from labelPatterns
+    const labelText = getLabelTextForInput(input).toLowerCase(); // Assuming getLabelTextForInput is defined
+
+    for (const [fieldType, patterns] of Object.entries(labelPatterns)) {
+      for (const pattern of patterns) {
+        const lowerPattern = pattern.toLowerCase();
+        if (labelText.includes(lowerPattern) ||
+          placeholderAttr.includes(lowerPattern) ||
+          ariaLabelAttr.includes(lowerPattern)) {
+          return fieldType;
         }
       }
     }
 
-    // Check for placeholder text
-    const placeholder = input.placeholder ? input.placeholder.toLowerCase() : '';
-    if (placeholder) {
-      // Use label patterns for placeholder matching
-      for (const [fieldType, patterns] of Object.entries(labelPatterns)) {
-        for (const pattern of patterns) {
-          // Check if the placeholder text includes the pattern
-          if (placeholder.includes(pattern.toLowerCase())) {
-            return fieldType;
-          }
-        }
-      }
-    }
-
-    // No match found
+    // If no match found after all checks
     return null;
   }
 
+
   /**
-   * Attempts to find the text content of a label associated with the given input element.
+   * Helper function to find the text content of a label associated with an input element.
+   * Checks for both explicit <label for="..."> and wrapping <label> elements.
+   * Adapted from user's previous code.
    * @param {Element} input - The input element.
-   * @returns {string} The label text, or an empty string if no label is found.
+   * @returns {string} The label text, or an empty string if no label found.
    */
   function getLabelTextForInput(input) {
+    let labelText = '';
+
     // Check for explicit label using 'for' attribute
-    if (input.id) {
-      const label = document.querySelector(`label[for="${input.id}"]`);
-      if (label) {
-        return label.textContent.trim();
+    if (input.id) { // Only check if input has an ID
+      const labels = document.querySelectorAll(`label[for="${input.id}"]`);
+      if (labels.length > 0) {
+        labelText = labels[0].textContent.trim();
       }
     }
 
-    // Check for wrapping label element
-    let parent = input.parentElement;
-    while (parent && parent !== document.body) {
-      if (parent.tagName === 'LABEL') {
-        // Remove any hidden text or nested form elements from the label text
-        const clone = parent.cloneNode(true);
-        Array.from(clone.querySelectorAll('input, select, textarea, button, style, script'))
-          .forEach(el => el.remove());
-        return clone.textContent.trim();
-      }
-      parent = parent.parentElement;
-    }
-
-    // Fallback: Check for nearby text nodes or previous siblings that might act as labels
-    // This is less reliable but can help with poorly structured forms.
-    // Check the previous sibling element if it's not another input
-    const prevSibling = input.previousElementSibling;
-    if (prevSibling && !prevSibling.querySelector('input, select, textarea')) {
-      return prevSibling.textContent.trim();
-    }
-
-    // Check for table-based forms where the label might be in the previous cell (TD)
-    if (input.parentElement && input.parentElement.tagName === 'TD') {
-      const row = input.parentElement.parentElement; // Get the parent TR
-      if (row && row.tagName === 'TR') {
-        const cells = Array.from(row.cells);
-        const cellIndex = cells.indexOf(input.parentElement);
-        if (cellIndex > 0) {
-          return cells[cellIndex - 1].textContent.trim(); // Text from the cell before the input's cell
-        }
+    // If no explicit label found, check for a parent label element
+    if (!labelText) {
+      const parentLabel = input.closest('label');
+      if (parentLabel) {
+        // Get text content, excluding text within any nested input values
+        const clone = parentLabel.cloneNode(true);
+        const inputs = clone.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => input.remove()); // Remove nested inputs before getting text
+        labelText = clone.textContent.trim();
       }
     }
 
+    // If still no label text, check for aria-label as a last resort for "label-like" text
+    // This was also handled in identifyField, but including here provides the source for identifyField
+    if (!labelText && input.getAttribute('aria-label')) {
+      labelText = input.getAttribute('aria-label').trim();
+    }
 
-    // No identifiable label found
-    return '';
+    // Note: This version does not include the "check nearby text" logic from your previous identifyFieldType.
+    // That can be added if needed, but is less reliable.
+
+    return labelText;
   }
 
 
   /**
-   * Fills a specific form input element with the given value, handling different input types.
-   * Dispatches input and change events after filling.
+   * Fills a form field with the given value and attempts to trigger common events.
+   * Returns true if the value was set, false otherwise (e.g., readOnly).
    * @param {Element} input - The input, select, or textarea element.
-   * @param {string|boolean} value - The value to fill.
+   * @param {string} value - The value to fill.
+   * @param {string} [fieldType] - Optional field type hint (e.g., 'birthdate' for date inputs).
+   * @returns {boolean} True if the value was set, false if read-only or unsupported type.
    */
-  function fillField(input, value) {
-    console.log(`Content script: Attempting to fill field ${input.id || input.name || input.type} with value: "${value}"`);
-    // Handle different input types
-    switch (input.type) {
-      case 'checkbox':
-        input.checked = !!value; // Set checked based on truthiness of value
-        break;
+  function fillField(input, value, fieldType) {
+    if (input.readOnly || input.disabled) {
+      console.warn("Content script: Skipping fill for read-only or disabled input:", input);
+      return false;
+    }
 
-      case 'radio':
-        // For radio buttons, only check if the input's specific value matches the value to fill
-        if (input.value && input.value.toLowerCase() === String(value).toLowerCase()) {
-          input.checked = true;
-        }
-        break;
+    const inputType = input.type.toLowerCase();
 
-      case 'select-one':
-        // For select dropdowns, find the option with matching text or value
-        if (input.tagName === 'SELECT') {
+    try {
+      switch (input.tagName.toLowerCase()) {
+        case 'input':
+          switch (inputType) {
+            case 'text':
+            case 'email':
+            case 'password':
+            case 'tel':
+            case 'url':
+            case 'search':
+            case 'number':
+              input.value = value;
+              break;
+
+            case 'date':
+              // Ensure value is in 'YYYY-MM-DD' format for date inputs
+              if (fieldType === 'birthdate' && typeof value === 'string') {
+                // Simple attempt to convert common formats (MM/DD/YYYY, DD/MM/YYYY) to YYYY-MM-DD
+                const parts = value.split(/[-\/\.]/); // Split by -, /, or .
+                if (parts.length === 3) {
+                  // Assume MM/DD/YYYY or DD/MM/YYYY and try to rearrange for YYYY-MM-DD
+                  // This is a very basic conversion; more robust parsing might be needed.
+                  const year = parts[2];
+                  const month = parts[0].padStart(2, '0'); // Assume MM is first or second
+                  const day = parts[1].padStart(2, '0'); // Assume DD is first or second
+                  input.value = `${year}-${month}-${day}`; // YYYY-MM-DD format
+                } else {
+                  // If not in a recognized format, try setting directly
+                  input.value = value;
+                }
+                break;
+              } else {
+                input.value = value; // For other date-like types, set directly
+                break;
+              }
+
+            case 'checkbox':
+              // Check the checkbox if the value is truthy (e.g., "true", "yes", 1)
+              input.checked = Boolean(value && value !== 'false' && value !== '0');
+              break;
+
+            case 'radio':
+              // Check the radio button if its value matches the profile value
+              input.checked = (input.value === value);
+              break;
+
+            // Add other input types like 'color', 'range', 'time', etc. if needed
+            default:
+              // For unsupported input types, just try setting the value directly
+              input.value = value;
+              console.warn(`Content script: Attempting to fill unsupported input type "${inputType}"`, input);
+              break;
+          }
+          break; // End of case 'input'
+
+        case 'select':
+          // For select elements, find the option with a matching value or text
+          const selectElement = input; // Rename for clarity
           let optionFound = false;
-          for (let i = 0; i < input.options.length; i++) {
-            const option = input.options[i];
-            // Compare against option value or text
-            if (option.value.toLowerCase() === String(value).toLowerCase() ||
-              option.text.toLowerCase() === String(value).toLowerCase()) {
-              input.selectedIndex = i;
+          for (let i = 0; i < selectElement.options.length; i++) {
+            const option = selectElement.options[i];
+            // Match by value or text content (case-insensitive, trimmed)
+            if (option.value.toLowerCase() === value.toLowerCase() || option.text.toLowerCase() === value.toLowerCase()) {
+              selectElement.value = option.value; // Set the select value to the matched option's value
               optionFound = true;
               break;
             }
           }
           if (!optionFound) {
-            console.warn(`Content script: Value "${value}" not found in select options for field ${input.id || input.name}.`);
+            console.warn(`Content script: No matching option found for select field with value "${value}"`, selectElement);
+            return false; // Indicate filling failed if no option matched
           }
+          break; // End of case 'select'
+
+        case 'textarea':
+          input.value = value;
+          break; // End of case 'textarea'
+
+        default:
+          console.warn(`Content script: Unsupported element tag for filling "${input.tagName}"`, input);
+          return false; // Indicate filling failed for unsupported tag
+      }
+
+      // --- Attempt to trigger events after setting the value ---
+      // Websites often use JavaScript to react to input changes.
+      // Manually dispatching events can help trigger these reactions.
+      // Common events are 'input', 'change', 'blur'.
+      const eventsToDispatch = ['input', 'change', 'blur'];
+      eventsToDispatch.forEach(eventType => {
+        try {
+          const event = new Event(eventType, { bubbles: true });
+          input.dispatchEvent(event);
+          // console.log(`Content script: Dispatched "${eventType}" event for`, input);
+        } catch (e) {
+          console.error(`Content script: Failed to dispatch "${eventType}" event for`, input, e);
         }
-        break;
+      });
+      // --- End Event Triggering ---
 
-      case 'date':
-        // Ensure date is in YYYY-MM-DD format expected by date inputs
-        if (value && typeof value === 'string') {
-          // Basic attempt to handle common formats like MM/DD/YYYY or DD/MM/YYYY
-          let formattedDate = value;
-
-          if (value.includes('/')) {
-            const parts = value.split('/');
-            if (parts.length === 3) {
-              // Assume MM/DD/YYYY format for simplicity, but this can be ambiguous
-              const year = parts[2].length === 2 ? `20${parts[2]}` : parts[2]; // Simple 2-digit year handling
-              const month = parts[0].padStart(2, '0');
-              const day = parts[1].padStart(2, '0');
-              formattedDate = `${year}-${month}-${day}`;
-              if (isNaN(new Date(formattedDate).getTime())) { // Check if valid date after formatting
-                console.warn(`Content script: Invalid date format after conversion for "${value}". Attempting to fill as is.`);
-                formattedDate = value; // Fallback
-              }
-            } else {
-              console.warn(`Content script: Unexpected date format "${value}". Attempting to fill as is.`);
-            }
-          }
-          // If value is already in YYYY-MM-DD or another valid format, setting input.value works directly.
-          input.value = formattedDate;
-
-        } else {
-          console.warn(`Content script: Cannot fill date input with non-string value: "${value}"`);
-          input.value = ''; // Clear value if input is invalid
-        }
-        break;
-
-      default:
-        // Text inputs, textarea, etc.
-        // Ensure value is treated as a string for non-string input types
-        input.value = String(value);
-    }
-
-    // Dispatch input and change events to trigger form validation and reactions on the page
-    // Use try...catch because dispatchEvent can sometimes fail on specific input types or page handlers
-    try {
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-      // Add other common events like 'blur' if needed for page validation
-      // input.dispatchEvent(new Event('blur', { bubbles: true }));
+      return true; // Indicate successful filling attempt
     } catch (e) {
-      console.warn(`Content script: Failed to dispatch events for input ${input.id || input.name}:`, e);
+      console.error(`Content script: Exception during fillField for input ${input.id || input.name || input.tagName}:`, e);
+      return false; // Indicate filling failed due to error
     }
-
-    console.log(`Content script: Filled field ${input.id || input.name || input.type}.`);
   }
 
 
-  /**
-   * Adds CSS classes to an input element to highlight it.
-   * @param {Element} input - The input element to highlight.
-   * @param {string} fieldType - The identified type of the field (for tooltip).
-   * @param {boolean} [filled=false] - Whether the field has been filled with profile data.
-   */
-  function highlightField(input, fieldType, filled = false) {
-    // Add the base highlight class
-    input.classList.add('loyalty-form-highlight');
-    // Add the filled class if applicable
-    if (filled) {
-      input.classList.add('loyalty-filled-field');
-    }
-
-    // Add or update the tooltip showing the identified field type
-    // Use setAttribute for title to avoid overwriting other attributes
-    input.setAttribute('title', `Identified as: ${fieldType}`);
-  }
-
-
+  // --- Submit Form Logic ---
   /**
    * Attempts to submit the form that contains the fields previously filled,
-   * or clicks a likely submit button.
-   * @returns {boolean} True if a submission action was attempted, false otherwise.
+   * or clicks a likely submit button. This is a basic implementation and may not work on all websites.
+   * Returns true if a submission action was attempted, false otherwise.
+   * (Ensure this function is defined if the 'submitForm' message action is used)
    */
   function submitForm() {
     console.log("Content script: Attempting to submit form.");
 
     // Find the form that contains the fields we previously filled
+    // Select elements based on the 'loyalty-filled-field' class added by fillField
     const filledInputs = document.querySelectorAll('.loyalty-filled-field');
     if (filledInputs.length === 0) {
       console.warn("Content script: No filled fields found to determine which form to submit.");
@@ -556,29 +1022,29 @@
     }
 
     // Try to find a common parent form among the filled inputs
-    let form = null;
+    let targetForm = null;
     if (filledInputs.length > 0) {
       // Get the form of the first filled input as a starting point
-      form = filledInputs[0].closest('form');
+      targetForm = filledInputs[0].closest('form');
 
       // Verify if all other filled inputs are also within this form
-      if (form) {
+      if (targetForm) {
         for (let i = 1; i < filledInputs.length; i++) {
-          if (!form.contains(filledInputs[i])) {
+          if (!targetForm.contains(filledInputs[i])) {
             console.warn("Content script: Filled fields belong to different forms. Cannot confidently submit a single form.");
-            form = null; // Clear form if inputs are scattered
-            break;
+            targetForm = null; // Clear targetForm if inputs are scattered
+            break; // Stop checking
           }
         }
       }
     }
 
 
-    if (form) {
-      console.log("Content script: Found a common form to submit:", form);
+    if (targetForm) {
+      console.log("Content script: Found a common form to submit:", targetForm);
       // Trigger the form's native submit method
       try {
-        form.submit();
+        targetForm.submit();
         console.log("Content script: Form submitted successfully via form.submit().");
         return true; // Indicate submission was attempted
       } catch (e) {
@@ -590,19 +1056,19 @@
     }
 
 
-    // Fallback: If no form was found or submitted successfully, look for a likely submit button
+    // Fallback: If no single form was confidently identified or submitted, look for a likely submit button
     // This is less reliable and might submit the wrong form or do nothing.
-    const submitButtons = [...document.querySelectorAll('button, input[type="submit"], input[type="button"], a')] // Include links that look like buttons
+    const submitButtons = [...document.querySelectorAll('button, input[type="submit"], input[type="button"], a')] // Include links that might act as buttons
       .filter(el => {
-        // Check for common text patterns in buttons or links
-        const text = (el.textContent || el.value || '').toLowerCase(); // Check textContent, value, or aria-label if needed
+        // Check if the element is visible and has text matching common submit terms
+        const text = (el.textContent || el.value || el.getAttribute('aria-label') || '').toLowerCase(); // Check textContent, value, or aria-label
         return el.offsetParent !== null && // Ensure the element is visible
           (text.includes('submit') || text.includes('join') || text.includes('sign up') ||
             text.includes('register') || text.includes('continue') || text.includes('next') ||
-            text.includes('create account') || text.includes('save') || text.includes('proceed')); // More keywords
+            text.includes('create account') || text.includes('save') || text.includes('proceed') || text.includes('done')); // Added more keywords
       });
 
-    // Prioritize buttons that are actually within a form, even if not the primary one
+    // Prioritize buttons that are actually within a form
     let buttonToClick = submitButtons.find(button => button.closest('form'));
 
     // If no button within a form, just take the first visible button found
@@ -630,348 +1096,329 @@
 
 
   /**
-   * Checks if the currently detected form fields included a birthdate field.
+   * Checks if a birthday field is present on the page by re-scanning inputs.
    * This is used to inform the tracker if a birthday was relevant on this page.
    * @returns {boolean} True if a birthdate field was identified, false otherwise.
    */
   function hasBirthdayField() {
-    // Re-scan or check the previously identified fields if stored
-    const inputs = document.querySelectorAll('input, select'); // Rescan for simplicity
+    console.log("Content script: Checking for birthday field.");
+    // Re-scan for input/select elements
+    const inputs = document.querySelectorAll('input, select');
 
     for (const input of inputs) {
-      const fieldType = identifyField(input);
-      if (fieldType === 'birthdate') {
-        console.log("Content script: Birthdate field detected on page.");
-        return true;
+      // Use identifyField to check if it's a birthdate field
+      try { // Add try/catch here too just in case identifyField fails
+        const fieldType = identifyField(input);
+        if (fieldType === 'birthdate') {
+          console.log("Content script: Birthdate field detected.");
+          return true;
+        }
+      } catch (e) {
+        console.error(`Content script: Error checking birthday field for input ${input.id || input.name || input.tagName}:`, e);
+        // Continue checking other inputs even if one causes an error
       }
     }
 
-    console.log("Content script: No birthdate field detected on page.");
+    console.log("Content script: No birthdate field detected.");
     return false;
   }
 
 
+  // --- Preview Overlay Logic (Basic Placeholder) ---
+  // These functions are assumed to exist based on your popup's interaction,
+  // but require implementation to create and manage the actual overlay HTML.
+
+  /**
+   * Displays a preview overlay on the page with the data that was filled.
+   * Requires implementation to create and style the overlay element dynamically.
+   * @param {object} formData - The data that was filled { fieldType: value }.
+   */
+  function displayFieldPreview(formData) {
+    console.log("Content script: Placeholder - Displaying field preview with data:", formData);
+    // TODO: Implement logic to create/update and show an overlay element on the page
+    // This would typically involve creating a div, adding content based on formData,
+    // applying styles to position and display it, and potentially adding a close button.
+    const overlay = document.getElementById('loyalty-form-preview-overlay');
+    if (overlay) {
+      // Update content and show
+      const fieldList = overlay.querySelector('.field-list');
+      if (fieldList) {
+        fieldList.innerHTML = ''; // Clear previous content
+        for (const fieldType in formData) {
+          const fieldItem = document.createElement('li');
+          fieldItem.classList.add('field-item');
+          fieldItem.innerHTML = `<span class="field-name">${fieldType}:</span> <span class="field-value">${formData[fieldType]}</span>`;
+          fieldList.appendChild(fieldItem);
+        }
+      }
+      overlay.classList.add('active'); // Use CSS class to show
+      console.log("Content script: Placeholder - Overlay content updated and shown.");
+    } else {
+      console.warn("Content script: Placeholder - Preview overlay element not found.");
+      // You might want to create the overlay here if it doesn't exist
+      createPreviewOverlay(); // Call a function to create it
+      // Then call displayFieldPreview again or update/show it here
+      displayFieldPreview(formData); // Recursive call after creating
+    }
+  }
+
+  /**
+   * Hides the preview overlay.
+   * Requires implementation to hide the overlay element.
+   */
+  function hideFieldPreview() {
+    console.log("Content script: Placeholder - Hiding field preview.");
+    // TODO: Implement logic to hide the overlay element dynamically.
+    const overlay = document.getElementById('loyalty-form-preview-overlay');
+    if (overlay) {
+      overlay.classList.remove('active'); // Use CSS class to hide
+      // Consider clearing content or removing from DOM if needed
+    }
+  }
+
+  /**
+   * Helper function to create the preview overlay element and add it to the body.
+   * Should be called once during initialization or when displayFieldPreview is first called and finds no overlay.
+   */
+  function createPreviewOverlay() {
+    if (document.getElementById('loyalty-form-preview-overlay')) {
+      return; // Already exists
+    }
+
+    const overlay = document.createElement('div');
+    overlay.id = 'loyalty-form-preview-overlay';
+    overlay.classList.add('loyalty-form-overlay'); // Apply base styles
+    overlay.innerHTML = `
+      <h3>Autofill Preview</h3>
+      <ul class="field-list"></ul>
+      <button class="close-button">×</button>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Add event listener to close button
+    const closeButton = overlay.querySelector('.close-button');
+    if (closeButton) {
+      closeButton.addEventListener('click', hideFieldPreview);
+    }
+
+    console.log("Content script: Preview overlay element created.");
+  }
+
+
+  // --- Basic Style Injection ---
+  // This function injects CSS into the page's head.
   /**
    * Injects necessary CSS styles into the page's head for highlighting and overlays.
    */
   function addStyles() {
     // Check if styles are already added to avoid duplication
     if (document.getElementById('loyalty-autofill-styles')) {
+      console.log("Content script: Styles already added.");
       return;
     }
 
     const style = document.createElement('style');
     style.id = 'loyalty-autofill-styles'; // Add an ID to check if already added
+    // Use !important carefully to override website's styles for highlighting/overlay
     style.textContent = `
-        /* Styles for highlighting form fields identified by the extension */
-        .loyalty-form-highlight {
-          border: 2px solid #4285f4 !important; /* Google Blue border */
-          box-shadow: 0 0 5px rgba(66, 133, 244, 0.5) !important; /* Subtle blue glow */
-          transition: all 0.3s ease-in-out !important; /* Smooth transition for visual feedback */
-          /* Ensure highlight is visible on top of page elements */
-          z-index: 9990 !important;
-          position: relative !important; /* Needed for z-index to work reliably */
-        }
+        /* Styles for highlighting form fields identified by the extension */
+        .loyalty-form-highlight {
+          border: 2px solid #4285f4 !important; /* Google Blue border */
+          box-shadow: 0 0 5px rgba(66, 133, 244, 0.5) !important; /* Subtle blue glow */
+          transition: all 0.3s ease-in-out !important; /* Smooth transition for visual feedback */
+          /* Ensure highlight is visible on top of page elements */
+          z-index: 9990 !important;
+          position: relative !important; /* Needed for z-index to work reliably */
+        }
 
-        /* Style for fields that have been filled by the extension */
-        .loyalty-filled-field {
-          background-color: rgba(52, 168, 83, 0.15) !important; /* Light green background */
-          border-color: #34a853 !important; /* Google Green border */
-          /* Add subtle text color change if needed, but !important might override page styles */
-          /* color: #1b5e20 !important; */
-        }
+        /* Style for fields that have been filled by the extension */
+        .loyalty-filled-field {
+          background-color: rgba(52, 168, 83, 0.15) !important; /* Light green background */
+          border-color: #34a853 !important; /* Google Green border */
+          /* Add subtle text color change if needed, but !important might override page styles */
+          /* color: #1b5e20 !important; */
+        }
 
-        /* Styles for the preview overlay (moved from popup CSS as content script manages it) */
-        .loyalty-form-overlay {
-          position: fixed !important; /* Stay fixed in the viewport */
-          top: 0 !important;
-          right: 0 !important;
-          width: 300px !important;
-          height: 100vh !important; /* Full viewport height */
-          background-color: rgba(255, 255, 255, 0.98) !important; /* White with slight transparency */
-          border-left: 1px solid #dadce0 !important; /* Light gray border */
-          box-shadow: -4px 0 10px rgba(0, 0, 0, 0.1) !important; /* Shadow on the left */
-          z-index: 9999 !important; /* High z-index to be on top of page content */
-          overflow-y: auto !important; /* Allow content inside overlay to scroll */
-          padding: 16px !important;
+        /* Remove outline on highlight to avoid double outlines */
+        .loyalty-form-highlight:focus {
+            outline: none !important;
+        }
 
-          /* Ensure consistent typography within the overlay */
-          font-family: 'Roboto', Arial, sans-serif !important;
-          color: #202124 !important;
-          font-size: 14px !important;
-          line-height: 1.5 !important;
 
-          /* Transition for the slide effect */
-          transform: translateX(100%) !important; /* Start off-screen to the right */
-          transition: transform 0.3s ease !important;
+        /* Styles for the preview overlay */
+        .loyalty-form-overlay {
+          position: fixed !important; /* Stay fixed in the viewport */
+          top: 0 !important;
+          right: 0 !important;
+          width: 300px !important; /* Fixed width for the overlay */
+          height: 100vh !important; /* Full viewport height */
+          background-color: rgba(255, 255, 255, 0.98) !important; /* White with slight transparency */
+          border-left: 1px solid #dadce0 !important; /* Light gray border */
+          box-shadow: -4px 0 10px rgba(0, 0, 0, 0.1) !important; /* Shadow on the left */
+          z-index: 9999 !important; /* High z-index to be on top of page content */
+          overflow-y: auto !important; /* Allow content inside overlay to scroll */
+          padding: 16px !important; /* Padding inside the overlay */
 
-          /* Hide from layout when not active */
-          display: none !important;
-        }
+          /* Ensure consistent typography within the overlay */
+          font-family: 'Roboto', Arial, sans-serif !important;
+          color: #202124 !important;
+          font-size: 14px !important;
+          line-height: 1.5 !important;
 
-        .loyalty-form-overlay.active {
-          transform: translateX(0) !important; /* Slide in */
-          display: block !important; /* Make it visible (and part of render tree) when active */
-        }
+          /* Transition for the slide effect */
+          transform: translateX(100%) !important; /* Start off-screen to the right */
+          transition: transform 0.3s ease !important;
 
-        /* Styles for elements inside the preview overlay */
-        .loyalty-form-overlay h3 {
-          font-size: 16px !important;
-          margin: 0 0 10px 0 !important;
-          color: #202124 !important;
-          font-weight: 500 !important;
-        }
+          /* Hide from layout when not active */
+          display: none !important; /* Use display none when not active to remove from layout */
+        }
 
-        .loyalty-form-overlay .field-list {
-          margin-bottom: 15px !important;
-        }
+        .loyalty-form-overlay.active {
+          transform: translateX(0) !important; /* Slide in */
+          display: block !important; /* Make it visible (and part of render tree) when active */
+        }
 
-        .loyalty-form-overlay .field-item {
-          margin-bottom: 8px !important;
-          padding-bottom: 8px !important;
-          border-bottom: 1px solid #eee !important;
-          line-height: 1.4 !important;
-        }
+        /* Styles for elements inside the preview overlay (adjust selectors as needed) */
+        .loyalty-form-overlay h3 {
+          font-size: 16px !important;
+          margin: 0 0 10px 0 !important;
+          color: #202124 !important;
+          font-weight: 500 !important;
+        }
 
-        .loyalty-form-overlay .field-item:last-child {
-          border-bottom: none !important;
-          padding-bottom: 0 !important;
-          margin-bottom: 0 !important;
-        }
+        .loyalty-form-overlay .field-list {
+          list-style: none !important;
+          padding: 0 !important;
+          margin-bottom: 15px !important;
+        }
 
-        .loyalty-form-overlay .field-name {
-          font-weight: 500 !important;
-          font-size: 0.9em !important; /* Slightly smaller than base */
-          display: inline-block !important;
-          margin-right: 5px !important;
-          color: #4285f4 !important; /* Blue */
-        }
+        .loyalty-form-overlay .field-item {
+          margin-bottom: 8px !important;
+          padding-bottom: 8px !important;
+          border-bottom: 1px solid #eee !important;
+          display: flex !important; /* Use flex for name/value layout */
+          justify-content: space-between !important;
+        }
 
-        .loyalty-form-overlay .field-value {
-          font-size: 0.9em !important;
-          color: #5f6368 !important; /* Dark gray */
-          word-break: break-word !important; /* Prevent long values from overflowing */
-          display: inline !important;
-        }
+        .loyalty-form-overlay .field-name {
+          font-weight: 500 !important;
+          margin-right: 5px !important;
+          color: #5f6368 !important;
+          flex-shrink: 0 !important; /* Prevent name from shrinking */
+        }
+        .loyalty-form-overlay .field-value {
+            color: #202124 !important;
+            word-break: break-all !important; /* Prevent long values from overflowing */
+            text-align: right !important; /* Align value to the right */
+        }
 
-        .loyalty-form-overlay .field-preview-actions {
-          display: flex !important;
-          gap: 10px !important;
-          justify-content: flex-end !important;
-          margin-top: 15px !important;
-        }
+        /* Add styles for buttons within the overlay if you have them */
+        /* .loyalty-form-overlay .button-container { ... } */
+        /* .loyalty-form-overlay .submit-button { ... } */
+        /* .loyalty-form-overlay .cancel-button { ... } */
 
-        .loyalty-form-overlay button {
-          /* Basic button reset/style */
-          padding: 8px 16px !important;
-          border-radius: 4px !important;
-          cursor: pointer !important;
-          font-size: 14px !important;
-          font-weight: 500 !important;
-          transition: all 0.2s ease !important;
-        }
+        /* Add styles for your close button within the overlay if you have one */
+        .loyalty-form-overlay .close-button { /* Match the class used in your content.js addStyles */
+          position: absolute !important;
+          top: 10px !important;
+          right: 10px !important;
+          background: none !important;
+          border: none !important;
+          font-size: 18px !important;
+          cursor: pointer !important;
+          color: #5f6368 !important;
+          padding: 4px !important;
+          border-radius: 4px !important;
+        }
 
-        .loyalty-form-overlay .btn-primary {
-          background-color: #4285f4 !important; /* Google Blue */
-          color: white !important;
-          border: none !important;
-        }
-        .loyalty-form-overlay .btn-primary:hover {
-          background-color: #3367d6 !important; /* Darker blue */
-        }
+        .loyalty-form-overlay .close-button:hover {
+          background-color: #f8f9fa !important; /* Use a background color on hover */
+        }
 
-        .loyalty-form-overlay .btn-secondary {
-          background-color: #f8f9fa !important; /* Very light gray */
-          color: #5f6368 !important; /* Dark gray */
-          border: 1px solid #dadce0 !important; /* Light gray border */
-        }
-        .loyalty-form-overlay .btn-secondary:hover {
-          background-color: #eef1f5 !important; /* Light blue-gray */
-          border-color: #bdc1c6 !important; /* Slightly darker gray */
-        }
 
-        .loyalty-form-overlay .close-preview {
-          background: none !important;
-          border: none !important;
-          font-size: 18px !important;
-          cursor: pointer !important;
-          color: #5f6368 !important;
-          padding: 5px !important;
-          border-radius: 50% !important;
-          width: 30px !important;
-          height: 30px !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-        }
-        .loyalty-form-overlay .close-preview:hover {
-          background-color: rgba(0, 0, 0, 0.05) !important;
-        }
+        /* Birthday field detection indication */
+        /* These match the classes used in your content.js */
+        .loyalty-birthday-icon {
+          display: inline-block !important;
+          width: 16px !important;
+          height: 16px !important;
+          background-color: #fbbc05 !important;
+          border-radius: 50% !important;
+          margin-left: 8px !important;
+          position: relative !important;
+        }
 
-      `;
+        .loyalty-birthday-icon::before {
+          content: "🎂" !important;
+          font-size: 10px !important;
+          position: absolute !important;
+          top: 50% !important;
+          left: 50% !important;
+          transform: translate(-50%, -50%) !important;
+        }
+
+
+        /* Accessibility (High Contrast) for injected elements */
+        /* Ensure these styles provide sufficient contrast and visual cues */
+        /* Apply these rules to the specific classes of your injected elements */
+
+        body.high-contrast .loyalty-form-highlight {
+            border-color: yellow !important;
+            box-shadow: 0 0 5px yellow !important;
+        }
+
+        body.high-contrast .loyalty-filled-field {
+            background-color: rgba(0, 255, 0, 0.2) !important; /* Green with transparency */
+            border-color: lime !important;
+        }
+
+        body.high-contrast .loyalty-form-overlay {
+            background-color: black !important;
+            color: white !important;
+            border-color: white !important;
+            box-shadow: -4px 0 10px rgba(255, 255, 255, 0.2) !important;
+        }
+
+        body.high-contrast .loyalty-form-overlay h3 {
+            color: white !important;
+        }
+
+        body.high-contrast .loyalty-form-overlay .field-item {
+            border-color: #555 !important; /* Lighter border in HC */
+        }
+
+        body.high-contrast .loyalty-form-overlay .field-name {
+            color: yellow !important;
+        }
+
+        body.high-contrast .loyalty-form-overlay .field-value {
+            color: white !important;
+        }
+
+        body.high-contrast .loyalty-form-overlay .close-button {
+            color: white !important;
+        }
+
+        body.high-contrast .loyalty-form-overlay .close-button:hover {
+            background-color: #333 !important;
+        }
+
+        body.high-contrast .loyalty-birthday-icon {
+            background-color: yellow !important;
+        }
+
+        body.high-contrast .loyalty-birthday-icon::before {
+            /* Emoji color might not change with CSS, but background is HC */
+        }
+
+    `; // <-- End of style.textContent
+
+    // Append the style element to the document head
     document.head.appendChild(style);
+    console.log("Content script: Styles added to head.");
   }
-
-
-  /**
-   * Creates and displays the field preview overlay.
-   * NOTE: This function relies on receiving the template HTML or structure
-   * from the popup, as content scripts cannot access popup DOM directly.
-   * The current implementation assumes the template structure can be queried
-   * which is incorrect if the template is in popup.html.
-   * A better approach is for the popup to send the fully rendered HTML or
-   * the template's innerHTML to content.js.
-   * @param {Object} formData - Object containing the field types and values that were filled.
-   * @param {string} [previewTemplateHtml] - Optional: The HTML string of the field preview template.
-   */
-  function displayFieldPreview(formData, previewTemplateHtml = null) {
-    // This content script cannot directly access fieldPreviewTemplate from popup.html.
-    // It should receive the template HTML or pre-built structure from the popup.
-    // For demonstration, let's assume the popup sends the template HTML string.
-    // If not provided, this part of the functionality won't work correctly.
-    if (!previewTemplateHtml) {
-      console.error("Content script: Field preview template HTML not provided!");
-      // Potentially send an error message back to the popup
-      return;
-    }
-    console.log("Content script: Displaying field preview.");
-
-    // Remove any existing preview overlay to avoid duplicates
-    const existingPreview = document.querySelector('.loyalty-form-overlay');
-    if (existingPreview) {
-      existingPreview.remove(); // Remove from DOM completely
-    }
-
-    // Create a temporary element to parse the template HTML string
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = previewTemplateHtml;
-    const previewOverlay = tempDiv.firstElementChild; // Get the root element from the template
-
-    if (!previewOverlay || !previewOverlay.classList.contains('loyalty-form-overlay')) {
-      console.error("Content script: Invalid field preview template HTML provided!");
-      return;
-    }
-
-
-    // Get references to elements within the cloned template for adding listeners
-    const fieldList = previewOverlay.querySelector('.field-list');
-    const closeBtn = previewOverlay.querySelector('.close-preview');
-    const cancelBtn = previewOverlay.querySelector('.cancel-fill');
-    const confirmBtn = previewOverlay.querySelector('.confirm-fill');
-
-
-    // Clear any default content in the field list
-    if (fieldList) fieldList.innerHTML = '';
-
-    // Populate the field list with the data that was filled
-    if (fieldList && formData && Object.keys(formData).length > 0) {
-      for (const fieldType in formData) {
-        if (formData.hasOwnProperty(fieldType)) {
-          const fieldItem = document.createElement('div');
-          fieldItem.className = 'field-item';
-
-          const fieldName = document.createElement('div');
-          fieldName.className = 'field-name';
-          // Format the field type name nicely (e.g., "firstName" -> "First Name")
-          fieldName.textContent = fieldType.replace(/([A-Z])/g, ' $1').trim().replace(/^./, str => str.toUpperCase());
-
-          const fieldValue = document.createElement('div');
-          fieldValue.className = 'field-value';
-          const value = formData[fieldType];
-          fieldValue.textContent = (value === '' || value === null || value === undefined) ? '[Empty]' : value;
-
-          fieldItem.appendChild(fieldName);
-          fieldItem.appendChild(fieldValue);
-          fieldList.appendChild(fieldItem);
-        }
-      }
-    } else if (fieldList) {
-      // Handle case where no fields were filled
-      const noFieldsMessage = document.createElement('div');
-      noFieldsMessage.textContent = 'No recognizable fields were filled.';
-      noFieldsMessage.style.fontStyle = 'italic';
-      noFieldsMessage.style.color = '#666';
-      fieldList.appendChild(noFieldsMessage);
-      // Disable confirm button if nothing was filled
-      if (confirmBtn) {
-        confirmBtn.disabled = true;
-        confirmBtn.textContent = 'No fields to confirm';
-        // Assuming btn-secondary style exists
-        if (confirmBtn.classList.contains('btn-primary')) confirmBtn.classList.remove('btn-primary');
-        confirmBtn.classList.add('btn-secondary');
-      }
-    }
-
-
-    // --- Add Event Listeners to Preview Overlay Buttons ---
-    if (closeBtn) closeBtn.addEventListener('click', () => { hideFieldPreview(); });
-    if (cancelBtn) cancelBtn.addEventListener('click', () => {
-      console.log("Content script: Field preview cancelled.");
-      hideFieldPreview(); // Hide the overlay
-      // Optionally message popup to show a status message
-      chrome.runtime.sendMessage({ action: 'autofillCancelled' }).catch(e => console.warn("Content script: Failed to message popup:", e));
-    });
-    if (confirmBtn) confirmBtn.addEventListener('click', (event) => {
-      console.log("Content script: Confirm & Submit button clicked.");
-      if (event) event.preventDefault(); // Prevent default button behavior
-      hideFieldPreview(); // Hide the overlay
-      // Message popup to initiate submission (popup handles consent dialog if needed)
-      // The popup needs to handle the 'submitForm' action and then send the *actual* submit trigger back to content.js
-      // This flow seems a bit circular. A simpler flow might be:
-      // Popup -> 'fillForm' -> Content.js fills & sends formData back -> Popup displays preview -> User confirms -> Popup sends 'submitForm' -> Content.js submits.
-      // Let's stick to the implied flow where the popup just needs confirmation before content.js submits.
-      chrome.runtime.sendMessage({ action: 'submitFormTriggered' }).catch(e => console.warn("Content script: Failed to message popup:", e));
-    });
-    // --- End Event Listeners Setup ---
-
-
-    // Add the populated overlay to the body of the web page
-    document.body.appendChild(previewOverlay);
-
-    // Add 'active' class to trigger CSS transition (slide-in effect from translateX(100%))
-    // Use a slight timeout to ensure the element is in the DOM and rendered before transition starts
-    setTimeout(() => {
-      if (previewOverlay) { // Check if the element still exists
-        previewOverlay.classList.add('active');
-        console.log("Content script: Field preview overlay should now be sliding in.");
-      }
-    }, 10); // Small delay
-  }
-
-
-  /**
-   * Hides the field preview overlay.
-   */
-  function hideFieldPreview() {
-    console.log("Content script: Hiding field preview.");
-    const previewOverlay = document.querySelector('.loyalty-form-overlay');
-    if (previewOverlay) {
-      // Trigger the CSS transition (slide-out effect) by removing the 'active' class
-      previewOverlay.classList.remove('active');
-
-      // Listen for the end of the transition
-      // Use a named function to ensure the listener can be removed properly
-      previewOverlay.addEventListener('transitionend', function handler(event) {
-        // Check if the event is for the 'transform' property (in case other properties transition)
-        // and if the 'active' class was indeed removed (ensures this is the closing transition)
-        if (event.propertyName === 'transform' && !previewOverlay.classList.contains('active')) {
-          previewOverlay.style.display = 'none'; // Hide from layout after transition
-          previewOverlay.remove(); // Remove the element from the DOM
-          console.log("Content script: Field preview element hidden and removed after transition.");
-        }
-        // Remove the event listener itself after it fires once
-        previewOverlay.removeEventListener('transitionend', handler);
-      });
-
-      // Fallback timeout to remove the element if transitionend doesn't fire
-      setTimeout(() => {
-        if (document.body.contains(previewOverlay)) {
-          console.warn("Content script: Fallback removing field preview after timeout.");
-          previewOverlay.remove();
-        }
-      }, 400); // Slightly longer than the transition duration
-    }
-  }
+  // --- End Add Styles ---
 
 
 })(); // End of IIFE
