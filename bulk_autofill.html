@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Bulk Autofill Dashboard</title>
+    <link rel="stylesheet" href="bulk_autofill.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Autofill Dashboard</h1>
+
+        <section id="profileManagement">
+            <h2>Profile Management</h2>
+
+            <div class="profile-selector-container">
+                <label for="profileSelect">Select Profile:</label>
+                <select id="profileSelect"></select>
+                <button id="newProfileBtn" class="button-secondary">New Profile</button>
+            </div>
+
+            <div id="profileFormSection" class="hidden">
+                <h3 id="profileFormTitle">Create New Profile</h3>
+                <form id="activeProfileForm">
+                    <input type="hidden" id="profileId">
+
+                    <label for="profileName">Profile Name:</label>
+                    <input type="text" id="profileName" required>
+
+                    <label for="firstName">First Name:</label>
+                    <input type="text" id="firstName">
+
+                    <label for="lastName">Last Name:</label>
+                    <input type="text" id="lastName">
+
+                    <label for="email">Email:</label>
+                    <input type="email" id="email">
+
+                    <label for="password">Password:</label>
+                    <input type="password" id="password">
+
+                    <label for="birthday">Birthday:</label>
+                    <input type="date" id="birthday">
+
+                    <label for="phoneCountryCode">Phone Country Code:</label>
+                    <input type="text" id="phoneCountryCode">
+
+                    <label for="phoneNumber">Phone Number:</label>
+                    <input type="text" id="phoneNumber">
+
+                    <label for="address">Address 1:</label>
+                    <input type="text" id="address">
+
+                    <label for="address2">Address 2 (Optional):</label>
+                    <input type="text" id="address2">
+
+                    <label for="city">City:</label>
+                    <input type="text" id="city">
+
+                    <label for="state">State:</label>
+                    <input type="text" id="state">
+
+                    <label for="zip">Zip/Postal Code:</label>
+                    <input type="text" id="zip">
+
+                    <label for="country">Country:</label>
+                    <input type="text" id="country">
+
+                    <label for="genderSelect">Gender:</label>
+                    <select id="genderSelect">
+                        <option value="prefer-not-to-say">Prefer not to say</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                    </select>
+
+                    <div class="button-group">
+                        <button type="submit" id="saveProfileBtn" class="button-primary">Save Profile</button>
+                        <button type="button" id="deleteProfileBtn" class="button-danger hidden">Delete Profile</button>
+                        <button type="button" id="cancelProfileBtn" class="button-secondary">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <hr>
+
+        <section id="bulkAutofill">
+            <h2>Bulk Autofill Setup</h2>
+
+            <div class="custom-retailer-section">
+                <h3>Add Custom Retailer</h3>
+                <input type="text" id="customRetailerName" placeholder="Retailer Name (e.g., My Local Shop)">
+                <input type="url" id="customRetailerUrl" placeholder="Signup URL (e.g., https://example.com/signup)">
+                <button id="addRetailerBtn" class="button-primary">Add Retailer</button>
+                <p id="customRetailerMessage"></p>
+            </div>
+            <div class="dashboard-controls">
+                <button id="selectAllVisibleButton" class="btn-secondary">Select All Visible</button>
+                <button id="deselectAllVisibleButton" class="btn-secondary">Deselect All Visible</button>
+                <button id="startBulkAutofillButton" class="btn-primary">Start Bulk Autofill</button>
+                <button id="stopAutofillButton">Stop All Autofill</button>
+            </div>
+            <h3>Select Retailers to Autofill:</h3>
+
+
+            <div id="retailerListContainer">
+                <ul id="retailerList">
+                </ul>
+            </div>
+            <form id="bulkAutofillForm">
+
+            </form>
+        </section>
+
+        <hr>
+
+        <section id="overallStatus">
+            <h2>Autofill Status</h2>
+            <p id="statusMessage">Ready to start.</p>
+
+            <div class="status-counters">
+                <h3>Progress Summary</h3>
+                <p>Processing: <span id="processingCount">0</span></p>
+                <p>Successful: <span id="successCount">0</span></p>
+                <p>Needs Attention: <span id="attentionCount">0</span></p>
+            </div>
+
+            <div class="status-lists">
+                <h4>Currently Processing</h4>
+                <ul id="processingList"></ul>
+
+                <h4>Completed Successfully</h4>
+                <ul id="successList"></ul>
+
+                <h4>Requires Attention</h4>
+                <ul id="attentionList"></ul>
+            </div>
+
+            <div class="autofill-log">
+                <h4>Autofill Log</h4>
+                <ul id="autofillStatusList"></ul>
+            </div>
+        </section>
+    </div>
+
+    <script src="bulk_autofill.js"></script>
+</body>
+
+</html>

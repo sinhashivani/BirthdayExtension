@@ -4,126 +4,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Birthday Subscriber Popup</title>
+    <title>Auto Birthday Rewards</title>
     <link rel="stylesheet" href="popup.css">
-</head>
 </head>
 
 <body>
     <div class="container">
-        <header>
-            <h1>Autofill Profile</h1>
-        </header>
-
-        <div class="view-switcher">
-            <button id="profileViewBtn" class="tab-button active">Profile</button>
-            <button id="autofillViewBtn" class="tab-button">Autofill</button>
+        <div class="header">
+            <img src="icons/icon48.png" alt="Extension Icon" class="header-icon">
+            <h1>Birthday Rewards Hub</h1>
         </div>
 
-        <main>
-            <div id="profile-view" class="view active">
-                <h2>Your Information</h2>
-                <p>Enter your personal details for autofilling forms.</p>
-                <form id="profile-form">
-                    <div class="form-group">
-                        <label for="profile-firstName">First Name:</label>
-                        <input type="text" id="profile-firstName" name="firstName" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="profile-lastName">Last Name:</label>
-                        <input type="text" id="profile-lastName" name="lastName" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="profile-email">Email:</label>
-                        <input type="email" id="profile-email" name="email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="profile-password">Password:</label>
-                        <div class="password-input-group">
-                            <input type="password" id="profile-password" class="form-control">
-                            <button type="button" id="togglePasswordVisibility" class="btn btn-secondary btn-icon">
-                                Show
-                            </button>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="profile-birthday">Birthday:</label>
-                        <input type="date" id="profile-birthday" name="birthday">
-                    </div>
-                    <div class="form-group">
-                        <label for="profile-country-code">Country Code:</label>
-                        <input type="text" id="profile-country-code" class="form-control" maxlength="10">
-                    </div>
-                    <div class="form-group">
-                        <label for="profile-phone">Phone:</label>
-                        <input type="tel" id="profile-phone" name="phone">
-                    </div>
-                    <div class="form-group">
-                        <label for="profile-address">Address Line 1:</label>
-                        <input type="text" id="profile-address" name="address">
-                    </div>
-                    <div class="form-group">
-                        <label for="profile-city">City:</label>
-                        <input type="text" id="profile-city" name="city">
-                    </div>
-                    <div class="form-group">
-                        <label for="profile-state">State/Province:</label>
-                        <input type="text" id="profile-state" name="state">
-                    </div>
-                    <div class="form-group">
-                        <label for="profile-zip">Zip/Postal Code:</label>
-                        <input type="text" id="profile-zip" name="zip">
-                    </div>
-                    <div class="button-group">
-                        <button type="submit" id="saveProfileBtn" class="btn-primary">Save Profile</button>
+        <div id="statusMessage" class="status-message"></div>
+
+        <div class="tabs">
+            <button id="profileTabBtn" class="tab-btn active">Profiles</button>
+            <button id="autofillTabBtn" class="tab-btn">Autofill</button>
+            <button id="autoSignupTabBtn" class="tab-btn">Auto-Signup</button>
+            <button id="settingsTabBtn" class="tab-btn">Settings</button>
+        </div>
+
+        <div id="profileView" class="view-container">
+            <h2>Profile Management</h2>
+            <p>Manage your birthday reward profiles here. The active profile will be used for autofill.</p>
+            <h2>Select Profile:</h2>
+            <select id="profileSelect"></select>
+            <p id="profileNameDisplay"></p>
+            <p id="profileEmailDisplay"></p> <button id="autofillCurrentPageBtn">Autofill Current Page</button>
+            <button id="editProfileBtn">Edit Selected Profile</button>
+            <hr>
+            <button id="openBulkAutofillBtn">Manage Profiles / Bulk Autofill</button>
+
+
+            <div class="current-profile-info">
+                <strong>Active Profile:</strong> <span id="currentSelectedProfile">None Selected</span>
+            </div>
+
+            <div id="profileListSection" class="list-section">
+                <h3>All Saved Profiles</h3>
+                <ul id="profileList">
+                </ul>
+                <div class="profile-actions-bottom">
+                    <button id="addNewProfileButton" class="btn-primary">Add New Profile</button>
+                    <button id="editProfileButton" class="btn-secondary" disabled>Edit Profile</button>
+                    <button id="deleteProfileButton" class="btn-danger" disabled>Delete Profile</button>
+                </div>
+            </div>
+
+            <div id="profileFormContainer" class="form-section" style="display: none;">
+                <h3>Profile Details</h3>
+                <form id="profileForm">
+                    <input type="hidden" id="profileIdHidden">
+
+                    <label for="profileNameInput">Profile Name:</label>
+                    <input type="text" id="profileNameInput" required>
+
+                    <label for="firstNameInput">First Name:</label>
+                    <input type="text" id="firstNameInput">
+
+                    <label for="lastNameInput">Last Name:</label>
+                    <input type="text" id="lastNameInput">
+
+                    <label for="emailInput">Email:</label>
+                    <input type="email" id="emailInput">
+
+                    <label for="phoneCountryCode">Country Code:</label>
+                    <!-- <select id="phoneCountryCodeSelect">
+                        <option value="+1">+1 (USA/Canada)</option>
+                        <option value="+44">+44 (UK)</option>
+                    </select> -->
+
+                    <label for="phoneInput">Phone:</label>
+                    <input type="tel" id="phoneInput">
+
+                    <label for="dobInput">Date of Birth:</label>
+                    <input type="date" id="dobInput">
+
+                    <label for="genderSelect">Gender:</label>
+                    <select id="genderSelect" name="gender">
+                        <option value="">Select Gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="prefer-not-to-say">Prefer not to say</option>
+                    </select>
+
+                    <label for="address1Input">Address Line 1:</label>
+                    <input type="text" id="address1Input">
+
+                    <label for="address2Input">Address Line 2 (Optional):</label>
+                    <input type="text" id="address2Input">
+
+                    <label for="cityInput">City:</label>
+                    <input type="text" id="cityInput">
+
+                    <label for="stateInput">State:</label>
+                    <input type="text" id="stateInput">
+
+                    <label for="zipInput">Zip Code:</label>
+                    <input type="text" id="zipInput">
+
+                    <label for="passwordInput">Password (Suggestion):</label>
+                    <input type="password" id="passwordInput">
+                    <div class="form-buttons">
+                        <button type="submit" id="saveProfileButton" class="btn-primary">Save Profile</button>
+                        <button type="button" id="cancelEditButton" class="btn-secondary">Cancel</button>
                     </div>
                 </form>
             </div>
+        </div>
 
-            <div id="autofill-view" class="view">
-                <h2>Autofill Page</h2>
-                <p>Click the button below to automatically fill forms on the current page with your saved profile data.
-                </p>
-
-                <div class="button-group">
-                    <button id="triggerAutofillBtn" class="btn-primary">Autofill Page</button>
-                </div>
-
-                <div class="control-group" style="margin-top: 20px;">
-                    <div class="toggle-container">
-                        <span class="toggle-label">Enable Auto-Highlighting</span>
-                        <label class="toggle">
-                            <input type="checkbox" id="autofillHighlightToggle" checked> <span class="slider"></span>
-                        </label>
-                    </div>
-                    <div class="toggle-container">
-                        <span class="toggle-label">High Contrast Mode</span>
-                        <label class="toggle">
-                            <input type="checkbox" id="highContrastToggle"> <span class="slider"></span>
-                        </label>
-                    </div>
-                </div>
+        <div id="autofillView" class="view-container" style="display: none;">
+            <h2>Autofill Current Page</h2>
+            <p>Use your active profile to fill forms on the current webpage.</p>
+            <div class="button-group">
+                <button id="fillFormButton" class="btn-primary">Autofill Fields on Page</button>
+                <button id="clearFormButton" class="btn-secondary">Clear Fields on Page</button>
+                <button id="submitFormButton" class="btn-secondary">Submit Form</button>
             </div>
-        </main>
+            <div id="formPreviewArea" style="display: none;"></div>
+        </div>
 
-        <div id="statusContainer" class="status-container" style="margin-top: 15px;">
-            <div class="status-message">
-                <span class="status-icon"></span>
-                <span id="statusTextElement" class="status-text"></span>
+        <div id="bulkAutofillDashboardView" class="view-container" style="display: none;">
+            <h3>Bulk Autofill Dashboard</h3>
+            <p>Manage and initiate autofill across multiple sites from a dedicated dashboard.</p>
+            <div class="button-group">
+                <button id="openBulkAutofillDashboardBtn" class="btn-primary">Go to Bulk Autofill Dashboard</button>
             </div>
         </div>
-        <footer>
-            <button id="helpBtn" class="btn-text">Help</button>
-            <a href="#" id="openOptionsLink">Options</a>
-            <span class="version">v1.0</span>
-        </footer>
+
+        <!-- <div id="autoSignupView" class="view-container" style="display: none;">
+            <h2>Auto-Signup for Rewards</h2>
+            <p>This feature will automatically attempt to sign you up for birthday rewards programs on supported sites.
+            </p>
+            <p class="coming-soon">Coming Soon!</p>
+            <div class="button-group">
+                <button class="btn-primary" disabled>Start Auto-Signup</button>
+            </div>
+        </div> -->
+
+        <div id="settingsView" class="view-container" style="display: none;">
+            <h2>Settings</h2>
+            <p>Customize your extension's behavior.</p>
+
+            <div class="form-group toggle-group">
+                <label for="autofillHighlightToggle">Highlight Autofilled Fields:</label>
+                <input type="checkbox" id="autofillHighlightToggle" class="toggle-switch">
+                <p class="setting-description">Visually highlights fields that have been autofilled by the extension.
+                </p>
+            </div>
+
+            <div class="form-group toggle-group">
+                <label for="autoclickSubmitCheckbox">Auto-click Submit:</label>
+                <input type="checkbox" id="autoclickSubmitCheckbox" class="toggle-switch">
+                <p class="setting-description">Automatically attempts to submit the form after autofilling.</p>
+            </div>
+
+            <div class="form-group toggle-group">
+                <label for="closeTabAfterAutofillToggle">Close Tab After Autofill:</label>
+                <input type="checkbox" id="closeTabAfterAutofillToggle" class="toggle-switch">
+                <p class="setting-description">Automatically closes the tab after a successful autofill process.</p>
+            </div>
+
+            <div class="form-group toggle-group">
+                <label for="showNotificationsCheckbox">Show Notifications:</label>
+                <input type="checkbox" id="showNotificationsCheckbox" class="toggle-switch">
+                <p class="setting-description">Display desktop notifications for important autofill events.</p>
+            </div>
+
+            <div class="form-buttons">
+                <button id="saveSettingsButton" class="btn-primary">Save Settings</button>
+            </div>
+        </div>
+
     </div>
 
-    <template id="fieldPreviewTemplate">...</template>
-    <template id="helpModalTemplate">...</template>
-
-
-    <script src="utils.js"></script>
     <script src="popup.js"></script>
 </body>
 

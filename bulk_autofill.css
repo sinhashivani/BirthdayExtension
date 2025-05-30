@@ -1,0 +1,103 @@
+/* bulk_autofill.css */
+
+/* Styles for the retailer list items and status */
+.retailer-list-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.retailer-list-item:last-child {
+    border-bottom: none;
+}
+
+.retailer-list-item label {
+    flex-grow: 1;
+    /* Allows label to take up available space */
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.retailer-list-item input[type="checkbox"] {
+    margin-right: 10px;
+}
+
+.retailer-list-item a {
+    text-decoration: none;
+    color: #007bff;
+    /* Standard link color */
+}
+
+.retailer-list-item a:hover {
+    text-decoration: underline;
+}
+
+/* Status indicators */
+.retailer-status {
+    font-weight: bold;
+    margin-left: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    /* Slightly smaller font for status */
+    white-space: nowrap;
+    /* Prevent status from wrapping */
+    min-width: 80px;
+    /* Give it some consistent width */
+    text-align: center;
+}
+
+.status-idle {
+    color: #6c757d;
+    /* Grey */
+    background-color: #f8f9fa;
+}
+
+.status-pending {
+    color: #ffc107;
+    /* Yellow */
+    background-color: rgba(255, 193, 7, 0.15);
+}
+
+.status-filling {
+    color: #007bff;
+    /* Blue */
+    background-color: rgba(0, 123, 255, 0.15);
+}
+
+.status-filled {
+    color: #28a745;
+    /* Green */
+    background-color: rgba(40, 167, 69, 0.15);
+}
+
+.status-success {
+    /* For confirmed account creation (more distinct green) */
+    color: #218838;
+    background-color: rgba(40, 167, 69, 0.25);
+}
+
+.status-attention {
+    color: #dc3545;
+    /* Red */
+    background-color: rgba(220, 53, 69, 0.15);
+}
+
+.status-stopped {
+    color: #6c757d;
+    /* Grey for stopped */
+    background-color: rgba(108, 117, 125, 0.1);
+}
+
+.status-message {
+    font-size: 0.7em;
+    /* Even smaller for detailed messages */
+    color: #6c757d;
+    margin-left: 10px;
+    flex-grow: 2;
+    /* Allow message to take more space */
+    white-space: normal;
+    /* Allow message to wrap */
+}

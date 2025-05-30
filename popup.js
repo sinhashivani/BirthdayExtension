@@ -1,921 +1,834 @@
 // popup.js
-// Controls the UI and logic of the extension's browser action popup.
 
-// Import necessary functions from utils.js (assuming they exist and are needed elsewhere)
-// If you don't have a utils.js or don't need these, you can remove this import.
-// Example imports if you have a tracker and export:
-// import {
-//      exportToCSV, // For exporting tracker data (if used elsewhere or later)
-//      exportToJSON, // For exporting tracker data (if used elsewhere or later)
-//      // If you had addTrackerEntry in utils.js:
-//      // addTrackerEntry // Assuming addTrackerEntry is in utils.js or background script
-// } from "./utils.js";
+// --- Constants (Keep these at the top) ---
+const UI_STATE_KEYS = [
+    'autofillHighlightToggle',
+    'autoclickSubmitCheckbox',
+    'showNotificationsCheckbox'
+];
 
-
-// --- DOM Elements ---
-// Get references to all interactive elements and views from popup.html
-const profileViewBtn = document.getElementById('profileViewBtn'); // New view switcher button
-const autofillViewBtn = document.getElementById('autofillViewBtn'); // New view switcher button
-
-// References to the two main view containers
-const profileView = document.getElementById('profile-view');
-const autofillView = document.getElementById('autofill-view');
-
-// Profile form and its fields
-const profileForm = document.getElementById('profile-form');
-const profileFirstNameInput = document.getElementById('profile-firstName');
-const profileLastNameInput = document.getElementById('profile-lastName');
-const profileEmailInput = document.getElementById('profile-email');
-const profilePasswordInput = document.getElementById('profile-password');
-console.log("Popup: Found profilePasswordInput:", profilePasswordInput); // <-- Add this line
-const profileBirthdayInput = document.getElementById('profile-birthday');
-const profileCountryCode = document.getElementById('profile-country-code');
-const profilePhoneInput = document.getElementById('profile-phone');
-const profileAddressInput = document.getElementById('profile-address');
-const profileCityInput = document.getElementById('profile-city');
-const profileStateInput = document.getElementById('profile-state');
-const profileZipInput = document.getElementById('profile-zip');
-const saveProfileBtn = document.getElementById('saveProfileBtn'); // Button to save profile
-
-const triggerAutofillBtn = document.getElementById('triggerAutofillBtn');
-const togglePasswordVisibilityButton = document.getElementById('togglePasswordVisibility'); // Get the button by its ID
-console.log("Popup: Found togglePasswordVisibilityButton:", togglePasswordVisibilityButton); // <-- Add this line
-
-// --- CORRECT References for the general status message area ---
-const statusContainer = document.getElementById('statusContainer'); // General status container
-const statusTextElement = document.getElementById('statusTextElement'); // General status text element
-const statusIconElement = statusContainer ? statusContainer.querySelector('.status-icon') : null; // Reference the icon span
-// --- END CORRECT ---
-
-
-// Simplified Settings toggles (moved to Autofill view)
-const autofillHighlightToggle = document.getElementById('autofillHighlightToggle'); // Corrected ID
-const highContrastToggle = document.getElementById('highContrastToggle');
-
-// Other elements from simplified HTML
-const helpBtn = document.getElementById('helpBtn'); // Button for Help modal
-const openOptionsLink = document.getElementById('openOptionsLink');
-
-// --- Templates ---
-const fieldPreviewTemplate = document.getElementById('fieldPreviewTemplate');
-const helpModalTemplate = document.getElementById('helpModalTemplate');
-
-
-// --- Default Data ---
-const DEFAULT_SETTINGS = {
-    autofillHighlightEnabled: true, // Setting for auto-highlighting
-    highContrast: false,
-    customKeywords: {}, // Example: { firstName: ['first', 'fname'], email: ['email'] }
-    dataValidation: true, // Setting to control validation
-};
-
-const DEFAULT_PROFILE = {
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    birthday: '', // UseYYYY-MM-DD format internally
-    countryCode: '',
-    phone: '',
-    address: '',
-    city: '',
-    state: '',
-    zip: '',
-};
-
-// --- State Variables ---
-let activeProfile = null; // Stores the single primary profile data
-let formPreviewData = null;
-
-
-// --- Initialization ---
-// Wait for the DOM to be fully loaded before initializing the popup
-document.addEventListener('DOMContentLoaded', () => {
-    console.log("Popup: DOM fully loaded, initializing.");
-    initPopup(); // Start the initialization process
-    setupEventListeners(); // Set up all button/element listeners
-});
-
-/**
- * Initialize popup with stored data and settings.
- * This runs when the popup is opened.
- */
-function initPopup() {
-    console.log("Popup: Initializing popup.");
-
-    // Load settings and the single profile data concurrently
-    chrome.storage.sync.get(['settings', 'profile'], (data) => {
-        console.log("Popup: Loaded data from storage:", data);
-
-        // Load and apply settings
-        const settings = data.settings || DEFAULT_SETTINGS;
-        applySettings(settings);
-
-        // Load the single profile data
-        activeProfile = data.profile || DEFAULT_PROFILE;
-        console.log("Popup: Active profile loaded:", activeProfile);
-        // Load profile data into the form fields in the Profile view
-        loadProfileDataIntoForm(activeProfile);
-
-        // After loading data and setting up UI, get status from the current tab
-        // This will update the status message and enable/disable the Autofill button
-        getCurrentTabStatus();
-    });
+// --- Helper Functions ---
+function getElement(id) {
+    const element = document.getElementById(id);
+    if (!element) {
+        console.error(`Error: Element with ID '${id}' not found in popup.html`);
+    }
+    return element;
 }
 
-/**
- * Set up event listeners for all interactive popup elements.
- */
-function setupEventListeners() {
-    console.log("Popup: Setting up event listeners.");
+function showStatusMessage(message, type = 'info') {
+    const statusMessageElement = getElement('statusMessage');
+    if (statusMessageElement) {
+        statusMessageElement.textContent = message;
+        statusMessageElement.className = `status-message ${type}`;
+        statusMessageElement.style.display = 'block'; // Ensure it's visible
+        setTimeout(() => {
+            statusMessageElement.style.display = 'none';
+        }, 3000); // Hide after 3 seconds
+    }
+}
 
-    // --- View Switching ---
-    if (profileViewBtn) profileViewBtn.addEventListener('click', () => { showProfileView(); });
-    if (autofillViewBtn) autofillViewBtn.addEventListener('click', () => { showAutofillView(); });
-
-
-    // --- Profile Management ---
-    // Listener for the profile form submission (Save Profile button)
-    // Check if profileForm exists before adding listener
-    if (profileForm) profileForm.addEventListener('submit', (event) => {
-        event.preventDefault(); // Prevent default form submission
-        console.log("Popup: Profile form submitted (Save Profile button clicked).");
-        saveProfileFromForm(); // Function to save the profile data from the form
+// --- View/Tab Management ---
+function showView(viewId) {
+    console.log("Popup: Switching to view:", viewId);
+    document.querySelectorAll('.view-container').forEach(view => {
+        view.style.display = 'none'; // Hide all views
     });
-    // Note: Add/Delete profile buttons are removed in this simplified structure.
-    // This assumes managing a single primary profile via the form.
-
-    // --- Settings Controls ---
-    // Check if elements exist before adding listeners
-    if (autofillHighlightToggle) autofillHighlightToggle.addEventListener('change', (e) => {
-        const isEnabled = e.target.checked;
-        console.log("Popup: Autofill Highlight toggle changed to", isEnabled);
-        // Save the setting
-        saveSettings({ autofillHighlightEnabled: isEnabled }); // Use saveSettings helper
-        // Message content script to update its highlighting state
-        sendMessageToContentScript({ action: 'toggleAutofillHighlighting', isActive: isEnabled });
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active'); // Deactivate all tab buttons
     });
 
-    if (highContrastToggle) highContrastToggle.addEventListener('change', (e) => {
-        const isEnabled = e.target.checked;
-        console.log("Popup: High contrast toggle changed to", isEnabled);
-        // Apply changes immediately to popup UI
-        applyHighContrast(isEnabled); // Apply the CSS class
-        // Save settings
-        saveSettings({ highContrast: isEnabled }); // Use saveSettings helper
-    });
-
-    // Add click listener to the toggle button
-    if (togglePasswordVisibilityButton && profilePasswordInput) {
-        togglePasswordVisibilityButton.addEventListener('click', () => {
-            // Toggle the input type between 'password' and 'text'
-            const currentType = profilePasswordInput.type;
-            if (currentType === 'password') {
-                profilePasswordInput.type = 'text';
-                // Change the button's text to "Hide"
-                togglePasswordVisibilityButton.textContent = 'Hide';
-            } else {
-                profilePasswordInput.type = 'password';
-                // Change the button's text back to "Show"
-                togglePasswordVisibilityButton.textContent = 'Show';
-            }
-        });
+    const targetView = getElement(viewId);
+    if (targetView) {
+        targetView.style.display = 'block'; // Show the target view
     }
 
-    // --- Form Actions (Autofill View) ---
-    // This button triggers the scan, fill, and preview flow
-    // Check if triggerAutofillBtn exists
-    if (triggerAutofillBtn) triggerAutofillBtn.addEventListener('click', () => {
-        console.log("Popup: Autofill Page button clicked.");
-        if (!activeProfile || !activeProfile.firstName) { // Check if profile data exists
-            // --- USE showStatus ---
-            showStatus('Please save your profile information first.', 'warning', 5000); // Show for longer
-            // --- END USE showStatus ---
-            return; // Stop if no profile data
+    // Activate the corresponding tab button
+    const tabButton = getElement(`${viewId.replace('View', '')}TabBtn`); // e.g., 'profileView' -> 'profileTabBtn'
+    if (tabButton) {
+        tabButton.classList.add('active');
+    }
+}
+
+function updateProfileActionsButtons(currentActiveProfileId, allLoadedProfiles) {
+    const autofillCurrentPageBtn = getElement('fillFormButton', 'popup.html');
+    const editProfileBtn = getElement('editProfileBtn', 'popup.html'); // This button should open bulk_autofill.html for editing
+
+    const hasProfiles = Object.keys(allLoadedProfiles).length > 0;
+    const isDefaultProfile = currentActiveProfileId === 'default-profile';
+
+    if (autofillCurrentPageBtn) {
+        autofillCurrentPageBtn.disabled = !hasProfiles || !currentActiveProfileId;
+    }
+
+    if (editProfileBtn) {
+        editProfileBtn.disabled = !hasProfiles || !currentActiveProfileId || isDefaultProfile;
+        // Event listener for edit button - will open bulk_autofill.html
+        editProfileBtn.onclick = () => {
+            // We can pass the activeProfileId to the options page via query parameters if needed
+            // But often, the options page just loads all profiles itself.
+            chrome.runtime.openOptionsPage();
+            window.close(); // Close the popup
+        };
+    }
+
+    // Ensure the 'openBulkAutofillBtn' is always available if you want it to be
+    const openBulkAutofillBtn = getElement('openBulkAutofillBtn', 'popup.html');
+    if (openBulkAutofillBtn) {
+        openBulkAutofillBtn.disabled = false;
+        openBulkAutofillBtn.onclick = () => {
+            chrome.runtime.openOptionsPage();
+            window.close();
+        };
+    }
+}
+
+function setAutofillButtonState(enabled) {
+    const autofillButton = getElement('fillFormButton');
+    if (autofillButton) {
+        autofillButton.disabled = !enabled;
+        if (enabled) {
+            autofillButton.classList.remove('disabled');
+        } else {
+            autofillButton.classList.add('disabled');
         }
+    }
+}
 
-        // --- USE showStatus ---
-        showStatus('Scanning page for forms...', 'info'); // Use the general status area
-        // --- END USE showStatus ---
+// --- Profile Management Functions ---
 
-        sendMessageToContentScript({ action: 'fillForm', profile: activeProfile })
-            .then(response => {
-                console.log("Popup: Fill form response received:", response);
-                if (response && response.formData && Object.keys(response.formData).length > 0) {
-                    // Content script responded with data it attempted to fill
-                    formPreviewData = response.formData; // Store this data
-                    // Show the preview overlay for user confirmation
-                    displayFieldPreview(formPreviewData);
-                    // --- USE showStatus ---
-                    showStatus('Fields found and filled. Review and confirm on the page.', 'success', 5000);
-                    // --- END USE showStatus ---
-                } else {
-                    // No fields were detected or filled with the profile data
-                    formPreviewData = null; // Clear preview data
-                    hideFieldPreview(); // Ensure preview is hidden if it was shown
-                    // --- USE showStatus ---
-                    showStatus('No recognizable fields could be filled on this page with your profile data.', 'warning', 5000);
-                    // --- END USE showStatus ---
-                }
-            })
-            .catch(error => {
-                // sendMessageToContentScript already handles showing error status using showStatus
-                console.error("Popup: Error sending fill message:", error);
-                formPreviewData = null;
-                hideFieldPreview();
-                // Error status is shown by sendMessageToContentScript's catch
-                // showStatus('Error attempting autofill.', 'error', 5000); // Redundant if sendMessageToContentScript handles it
-                // Ensure button is disabled if content script is unreachable
-                getCurrentTabStatus(); // Re-check status
-            });
-    });
+let allProfiles = {}; // Store all profiles loaded from background
+let activeProfileId = null;
 
-    // Check if helpBtn exists before adding listener
-    if (helpBtn) helpBtn.addEventListener('click', () => { showHelpModal(); }); // Help button in the footer
-    function setupEventListeners() {
-        console.log("Popup: Setting up event listeners.");
-        // ... existing listeners ...
+async function loadAndDisplayProfiles() {
+    try {
+        const response = await chrome.runtime.sendMessage({ action: 'loadProfile' });
+        if (response && response.success) { // Check for success flag
+            // Update global variables for popup.js
+            profiles = response.profiles || {};
+            activeProfileId = response.activeProfileId;
+            console.log("Popup: All profiles loaded:", profiles);
+            console.log("Popup: Active profile ID:", activeProfileId);
 
-        // Add listener for the options link
-        if (openOptionsLink) {
-            openOptionsLink.addEventListener('click', (event) => {
-                event.preventDefault(); // Prevent default link behavior
-                chrome.runtime.openOptionsPage(); // Open the options page
-            });
+            // 1. Render the <select> dropdown with all profiles
+            renderProfileList(profiles, activeProfileId);
+
+            // 2. Update display elements for the currently selected profile (if any)
+            //    This function should only update text/labels, not form inputs.
+            updateCurrentSelectedProfileDisplay(activeProfileId, profiles); // Pass ID and full profiles obj
+
+            // 3. Enable/disable buttons based on whether profiles exist and active selection
+            updateProfileActionsButtons(activeProfileId, profiles); // Pass ID and full profiles obj
+
+            // *** REMOVED: Interactions with profileFormContainer, updateProfileForm ***
+            // The popup should NOT hide/show a profile form or call updateProfileForm.
+            // That logic belongs in bulk_autofill.js.
+
+        } else {
+            const errorMsg = response ? response.error : "No response or success flag missing.";
+            console.error("Popup: Error loading profiles:", errorMsg);
+            showStatusMessage(`Error loading profiles: ${errorMsg}`, 'error');
+            // If no profiles loaded, disable everything
+            renderProfileList({}, ''); // Render empty list
+            updateCurrentSelectedProfileDisplay('', {});
+            updateProfileActionsButtons('', {});
         }
-
-        console.log("Popup: All event listeners set up.");
+    } catch (error) {
+        console.error("Popup: Error loading profiles:", error);
+        showStatusMessage(`Error communicating with background: ${error.message}`, 'error');
+        // If error, disable everything
+        renderProfileList({}, ''); // Render empty list
+        updateCurrentSelectedProfileDisplay('', {});
+        updateProfileActionsButtons('', {});
     }
 }
 
-/** Hides all main content views. */
-function hideAllViews() {
-    const views = document.querySelectorAll('.view');
-    views.forEach(view => {
-        view.classList.remove('active');
-    });
-    const tabButtons = document.querySelectorAll('.view-switcher .tab-button');
-    tabButtons.forEach(button => {
-        button.classList.remove('active');
-    });
-}
-
-/** Shows the Profile view. */
-function showProfileView() {
-    console.log("Popup: Showing Profile view.");
-    hideAllViews();
-    if (profileView) profileView.classList.add('active');
-    if (profileViewBtn) profileViewBtn.classList.add('active');
-    // Ensure profile data is loaded into the form when showing the profile view
-    loadProfileDataIntoForm(activeProfile);
-    // Reset status when changing views
-    // --- USE showStatus ---
-    showStatus('Ready.', 'info'); // Use general status area
-    // --- END USE showStatus ---
-}
-
-/** Shows the Autofill view. */
-function showAutofillView() {
-    console.log("Popup: Showing Autofill view.");
-    hideAllViews();
-    if (autofillView) autofillView.classList.add('active');
-    if (autofillViewBtn) autofillViewBtn.classList.add('active');
-    // When showing the Autofill view, check the current page status
-    getCurrentTabStatus(); // Update status message and button state
-}
-
-/**
- * Loads the active profile data into the form fields in the Profile view.
- * @param {Object} profileData - The profile data object.
- */
-function loadProfileDataIntoForm(profileData) {
-    console.log("Popup: Loading profile data into form.");
-    if (!profileData) {
-        profileData = DEFAULT_PROFILE; // Use default if none provided
-        console.log("Popup: Using default profile data for form.");
-    }
-
-    // Check if input elements exist before setting value
-    if (profileFirstNameInput) profileFirstNameInput.value = profileData.firstName || '';
-    if (profileLastNameInput) profileLastNameInput.value = profileData.lastName || '';
-    if (profileEmailInput) profileEmailInput.value = profileData.email || '';
-    if (profilePasswordInput) profilePasswordInput.value = profileData.password || '';
-    if (profileBirthdayInput) profileBirthdayInput.value = profileData.birthday || '';
-    if (profileCountryCode) profileCountryCode.value = profileData.countryCode || '';
-    if (profilePhoneInput) profilePhoneInput.value = profileData.phone || '';
-    if (profileAddressInput) profileAddressInput.value = profileData.address || '';
-    if (profileCityInput) profileCityInput.value = profileData.city || '';
-    if (profileStateInput) profileStateInput.value = profileData.state || '';
-    if (profileZipInput) profileZipInput.value = profileData.zip || '';
-
-    console.log("Popup: Profile form fields updated.");
-}
-
-/**
- * Saves the data from the Profile form fields into the activeProfile variable
- * and persists it in Chrome Storage.
- */
-function saveProfileFromForm() {
-    console.log("Popup: Saving profile data from form.");
-    if (!profileForm) {
-        console.error("Popup: Profile form element not found.");
-        // --- USE showStatus ---
-        showStatus('Error: Profile form missing.', 'error');
-        // --- END USE showStatus ---
+function renderProfileList(loadedProfiles, currentActiveProfileId) {
+    const profileSelect = getElement('profileSelect', 'popup.html');
+    if (!profileSelect) {
+        console.error("Popup: 'profileSelect' element not found. Cannot render profile list.");
         return;
     }
 
-    // Create a new profile object from the current form values
-    const updatedProfile = {
-        firstName: profileFirstNameInput ? profileFirstNameInput.value.trim() : '',
-        lastName: profileLastNameInput ? profileLastNameInput.value.trim() : '',
-        email: profileEmailInput ? profileEmailInput.value.trim() : '',
-        password: profilePasswordInput ? profilePasswordInput.value.trim() : '',
-        birthday: profileBirthdayInput ? profileBirthdayInput.value : '', // Date input value isYYYY-MM-DD
-        countryCode: profileCountryCode ? profileCountryCode.value.trim() : '',
-        phone: profilePhoneInput ? profilePhoneInput.value.trim() : '',
-        address: profileAddressInput ? profileAddressInput.value.trim() : '',
-        city: profileCityInput ? profileCityInput.value.trim() : '',
-        state: profileStateInput ? profileStateInput.value.trim() : '',
-        zip: profileZipInput ? profileZipInput.value.trim() : '',
-        // Add other fields here
+    // Clear existing options
+    profileSelect.innerHTML = '';
+
+    // Add a default "Select a Profile" option if desired, or if no profiles exist
+    if (Object.keys(loadedProfiles).length === 0) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No Profiles Available';
+        option.disabled = true;
+        profileSelect.appendChild(option);
+        profileSelect.value = ''; // Ensure nothing is selected
+        profileSelect.disabled = true; // Disable the select if no profiles
+    } else {
+        // Populate with actual profiles
+        for (const id in loadedProfiles) {
+            const profile = loadedProfiles[id];
+            const option = document.createElement('option');
+            option.value = id;
+            option.textContent = profile.name;
+            profileSelect.appendChild(option);
+        }
+        // Set the selected value to the active profile ID
+        profileSelect.value = currentActiveProfileId;
+        profileSelect.disabled = false; // Enable the select if profiles exist
+    }
+
+    // Add event listener for when the user changes the selection
+    profileSelect.onchange = async () => {
+        const newActiveProfileId = profileSelect.value;
+        if (newActiveProfileId && newActiveProfileId !== activeProfileId) {
+            // Send message to background script to update the active profile in storage
+            const response = await chrome.runtime.sendMessage({
+                action: 'setActiveProfile',
+                profileId: newActiveProfileId
+            });
+            if (response && response.success) {
+                activeProfileId = newActiveProfileId; // Update local state
+                console.log("Popup: Active profile set to:", activeProfileId);
+                showStatusMessage(`Active profile set to: ${loadedProfiles[activeProfileId].name}`, 'success');
+                // Re-run UI updates to reflect the new active profile if needed
+                updateCurrentSelectedProfileDisplay(activeProfileId, profiles);
+                updateProfileActionsButtons(activeProfileId, profiles);
+            } else {
+                console.error("Popup: Failed to set active profile:", response ? response.error : "Unknown error");
+                showStatusMessage(`Error setting active profile: ${response ? response.error : 'Unknown error'}`, 'error');
+                // Revert select back to old value if setting failed
+                profileSelect.value = activeProfileId;
+            }
+        }
+    };
+}
+
+
+function updateCurrentSelectedProfileDisplay(currentActiveProfileId, allLoadedProfiles) {
+    const profileNameDisplay = getElement('profileNameDisplay', 'popup.html'); // Assuming you have an element to show the name
+    const profileEmailDisplay = getElement('profileEmailDisplay', 'popup.html'); // Assuming you have an element to show the email
+
+    const activeProfile = allLoadedProfiles[currentActiveProfileId];
+
+    if (activeProfile) {
+        if (profileNameDisplay) profileNameDisplay.textContent = `Selected: ${activeProfile.name}`;
+        if (profileEmailDisplay) profileEmailDisplay.textContent = `Email: ${activeProfile.email}`; // Example
+    } else {
+        if (profileNameDisplay) profileNameDisplay.textContent = 'No profile selected';
+        if (profileEmailDisplay) profileEmailDisplay.textContent = '';
+    }
+
+}
+
+async function handleAddProfile() {
+    console.log("Popup: Adding new profile.");
+    updateProfileForm(null); // Clear the form for a new entry
+    getElement('profileNameInput').focus(); // Set focus to the first field
+    showStatusMessage("Enter details for a new profile.", "info");
+}
+
+async function handleSaveProfile() {
+    console.log("Popup: Saving profile...");
+    const profileId = getElement('profileIdHidden').value;
+    const profileName = getElement('profileNameInput').value;
+    const firstName = getElement('firstNameInput').value;
+    const lastName = getElement('lastNameInput').value;
+    const email = getElement('emailInput').value;
+    const phoneCountryCode = getElement('phoneCountryCode').value;
+    const phone = getElement('phoneInput').value;
+    const dob = getElement('dobInput').value;
+    const address1 = getElement('address1Input').value;
+    const address2 = getElement('address2Input').value;
+    const city = getElement('cityInput').value;
+    const state = getElement('stateInput').value;
+    const zip = getElement('zipInput').value;
+    const password = getElement('passwordInput').value;
+    const gender = getElement('genderSelect').value;
+
+    if (!profileName) {
+        showStatusMessage("Profile Name is required!", "error");
+        return;
+    }
+
+    const profileData = {
+        id: profileId || `profile_${Date.now()}`, // Generate new ID if not existing
+        name: profileName,
+        firstName, lastName, email, phoneCountryCode, phone, dob, address1, address2, city, state, zip, password, gender
     };
 
-    const validationResult = validateFormData(updatedProfile); // Call the validation function
-    if (!validationResult.valid) {
-        console.warn("Popup: Profile validation failed:", validationResult.errors);
-        // Display validation errors to the user
-        let errorMessage = 'Validation errors:';
-        for (const field in validationResult.errors) {
-            errorMessage += ` ${field.replace(/([A-Z])/g, ' $1').trim().toLowerCase()} - ${validationResult.errors[field]};`;
+    try {
+        const response = await chrome.runtime.sendMessage({ action: 'saveProfile', profile: profileData });
+        if (response && response.success) {
+            console.log("Profile saved successfully:", response.profiles);
+            allProfiles = response.profiles; // Update local profiles object
+            showStatusMessage("Profile saved successfully!", "success");
+            loadAndDisplayProfiles(); // Re-render the list and update UI
+            // Optionally, you might want to switch back to just showing the list
+            // without an active form, or keep the just-saved profile active.
+            // For now, it will load the previously active profile or default.
+            updateProfileForm(null); // Hide form after saving
+        } else {
+            throw new Error(response.error || "Unknown error saving profile.");
         }
-        // Use showStatus or update specific error elements
-        showStatus(errorMessage, 'warning', 8000); // Show validation errors as warnings for longer
-        // Consider adding specific error messages next to each field input
-        return; // Stop the save process if validation fails
+    } catch (error) {
+        console.error("Error saving profile:", error);
+        showStatusMessage(`Error saving profile: ${error.message}`, "error");
     }
-    // --- End Add Validation Call ---
-
-
-    // If validation passed:
-    activeProfile = updatedProfile;
-    console.log("Popup: Active profile updated in memory:", activeProfile);
-
-    chrome.storage.sync.set({ profile: activeProfile }, () => {
-        console.log("Popup: Profile saved to storage.");
-        showStatus('Profile saved successfully!', 'success', 3000);
-    });
-
 }
 
-// --- Settings Management ---
-
-/**
- * Saves updated settings to Chrome Storage.
- * @param {Object} updatedSettings - Partial object with settings to update.
- */
-function saveSettings(updatedSettings) {
-    console.log("Popup: Saving settings:", updatedSettings);
-    // Get current settings first to merge
-    chrome.storage.sync.get('settings', (data) => {
-        const currentSettings = data.settings || DEFAULT_SETTINGS;
-        const newSettings = { ...currentSettings, ...updatedSettings };
-
-        chrome.storage.sync.set({ settings: newSettings }, () => {
-            console.log("Popup: Settings saved.", newSettings);
-
-            if (updatedSettings.hasOwnProperty('autofillHighlightEnabled') || updatedSettings.hasOwnProperty('highContrast')) {
-                console.log("Popup: Sending updated settings affecting content script.");
-                // Message all tabs - content script in each tab decides if it needs the setting
-                chrome.tabs.query({}, (tabs) => {
-                    tabs.forEach(tab => {
-                        // Include all settings content script might need
-                        // Use chrome.tabs.sendMessage directly, catching potential errors if content script isn't there
-                        chrome.tabs.sendMessage(tab.id, {
-                            action: 'setInitialSettings', // Re-using initial settings action to send settings
-                            settings: newSettings,
-                            activeProfile: activeProfile // Also send profile as content script needs it for highlighting if auto-highlighting is on
-                        }).catch(() => {
-                            // Ignore error if content script not in this tab
-                        });
-                    });
-                });
-            }
-        });
-    });
-}
-
-/**
- * Applies or removes the high contrast CSS class to the body.
- * @param {boolean} enabled - True to enable high contrast, false to disable.
- */
-function applyHighContrast(enabled) {
-    if (!document.body) {
-        console.error("Popup: Document body not available to apply high contrast.");
-        return;
-    }
-    if (enabled) {
-        document.body.classList.add('high-contrast');
-    } else {
-        document.body.classList.remove('high-contrast');
-    }
-    console.log("Popup: High contrast mode applied:", enabled);
-}
-
-/**
- * Gets the CSS font size value based on the setting name.
- * Note: Font size selector is removed in simplified UI, keep this function if needed elsewhere.
- * @param {string} sizeSetting - The font size setting name ('normal', 'large', 'x-large').
- * @returns {string} The corresponding CSS font size value.
- */
-// This function is likely not used in the current simplified UI, but kept if needed elsewhere
-// function getFontSizeValue(sizeSetting) {
-//     switch (sizeSetting) {
-//         case 'large': return '18px'; // Example values, match your CSS
-//         case 'x-large': return '22px'; // Example values, match your CSS
-//         case 'normal': // Fall through
-//         default: return '14px'; // Default base font size for popup
-//     }
-// }
-
-
-/**
- * Displays a status message in the popup UI.
- * @param {string} message - The message text.
- * @param {'info'|'success'|'warning'|'error'} type - The type of status.
- * @param {number} duration - How long to show the message in milliseconds.
- */
-// --- ADD THE CORRECT showStatus function ---
-let statusTimeoutId = null; // Define statusTimeoutId in a scope accessible by showStatus
-
-function showStatus(message, type = 'info', duration = 3000) {
-    console.log(`Popup Status [${type.toUpperCase()}]: ${message}`);
-    // Check if status elements exist
-    if (!statusTextElement || !statusContainer) {
-        console.error("Popup status elements not found!");
+async function handleDeleteProfile() {
+    const profileId = getElement('profileIdHidden').value;
+    if (!profileId || profileId === 'default-profile') {
+        showStatusMessage("Cannot delete default or unsaved profile.", "warning");
         return;
     }
 
-    // Set text and type class
-    statusTextElement.textContent = message;
-    statusContainer.className = 'status-container'; // Reset classes
-    statusContainer.classList.add(type); // Add type class for styling
+    if (!confirm(`Are you sure you want to delete profile "${allProfiles[profileId]?.name}"?`)) {
+        return;
+    }
 
-    // Determine and set icon (optional - requires statusIconElement)
-    if (statusIconElement) {
-        switch (type) {
-            case 'success': statusIconElement.textContent = '✅'; break; // Checkmark
-            case 'error': statusIconElement.textContent = '❌'; break;   // Cross mark
-            case 'warning': statusIconElement.textContent = '⚠️'; break; // Warning sign
-            case 'info': statusIconElement.textContent = 'ℹ️'; break;    // Info sign (or '💬' for message)
-            default: statusIconElement.textContent = ''; // No icon for unknown types
+    try {
+        const response = await chrome.runtime.sendMessage({ action: 'deleteProfile', profileId });
+        if (response && response.success) {
+            console.log("Profile deleted successfully:", response.profiles);
+            allProfiles = response.profiles; // Update local profiles object
+            showStatusMessage("Profile deleted successfully!", "success");
+            loadAndDisplayProfiles(); // Re-render list
+            updateProfileForm(null); // Clear/hide form
+        } else {
+            throw new Error(response.error || "Unknown error deleting profile.");
         }
-    } else {
-        // Ensure icon area is cleared if no icon is applicable or element is missing
-        const iconSpan = statusContainer.querySelector('.status-icon');
-        if (iconSpan) iconSpan.textContent = '';
+    } catch (error) {
+        console.error("Error deleting profile:", error);
+        showStatusMessage(`Error deleting profile: ${error.message}`, "error");
     }
-
-
-    // Show message (fade-in via CSS transition on opacity)
-    statusContainer.style.opacity = '1';
-
-    // Clear any previous timeout
-    if (statusTimeoutId) {
-        clearTimeout(statusTimeoutId);
-        statusTimeoutId = null; // Clear the ID after clearing the timeout
-    }
-
-    // Set timeout to hide message (fade-out via CSS transition)
-    statusTimeoutId = setTimeout(() => {
-        statusContainer.style.opacity = '0';
-        // Optional: Clear text content after fading out for accessibility/cleanliness
-        // This waits for the CSS fade-out transition to finish
-        statusContainer.addEventListener('transitionend', function clearText(event) {
-            if (event.propertyName === 'opacity' && statusContainer.style.opacity === '0') {
-                statusTextElement.textContent = '';
-                if (statusIconElement) statusIconElement.textContent = ''; // Clear icon as well
-                statusContainer.removeEventListener('transitionend', clearText);
-            }
-        });
-    }, duration);
 }
 
-/**
- * Sends a message to the content script in the active tab.
- * Handles potential errors if the content script is not available.
- * @param {Object} message - The message payload.
- * @returns {Promise<any>} A promise that resolves with the content script's response.
- */
+async function handleActivateProfile(profileId) {
+    console.log("Popup: Activating profile:", profileId);
+    if (!allProfiles[profileId]) {
+        showStatusMessage("Profile not found to activate.", "error");
+        return;
+    }
+    try {
+        const response = await chrome.runtime.sendMessage({ action: 'setActiveProfile', profileId });
+        if (response && response.success) {
+            activeProfileId = response.activeProfileId; // Update local active ID
+            console.log("Popup: Active profile set to:", activeProfileId);
+            showStatusMessage(`Profile "${allProfiles[activeProfileId]?.name}" activated!`, "success");
+            loadAndDisplayProfiles(); // Re-render list to show active state
+            updateProfileForm(null); // Hide form
+        } else {
+            throw new Error(response.error || "Unknown error activating profile.");
+        }
+    } catch (error) {
+        console.error("Popup: Error activating profile:", error);
+        showStatusMessage(`Error activating profile: ${error.message}`, "error");
+    }
+}
+
+function handleCancelEdit() {
+    console.log("Popup: Cancelling profile edit.");
+    updateProfileForm(null); // Clear/hide the form
+    showStatusMessage("Profile editing cancelled.", "info");
+}
+
+// --- Autofill Functions ---
+
+async function handleFillForm() {
+    console.log("Popup: Autofill Page button clicked.");
+
+    // Crucial Check: Ensure activeProfile has loaded and contains data
+    if (!activeProfile || Object.keys(activeProfile).length === 0) { // Check if profile is empty
+        showStatusMessage('Please save your profile information first.', 'warning', 5000);
+        return; // Stop if no profile data
+    }
+
+    showStatusMessage('Scanning page for forms...', 'info');
+
+    try {
+        // Ensure content.js is injected. This is a common pattern for single autofill.
+        // If content.js is already declared in manifest.json for 'matches' on all URLs,
+        // this executeScript might not be strictly necessary, but it acts as a safeguard.
+        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (activeTab && activeTab.id) {
+            await chrome.scripting.executeScript({
+                target: { tabId: activeTab.id },
+                files: ['content.js']
+            }).catch(e => {
+                // This catch handles cases where content.js might already be injected (e.g., manifest declared)
+                // or if there's a permission issue.
+                console.warn("Popup: Content script injection might be redundant or failed:", e.message);
+            });
+
+            // Send message to content script (using your provided sendMessageToContentScript helper)
+            const response = await sendMessageToContentScript({ action: 'fillForm', profile: activeProfile });
+
+            console.log("Popup: Fill form response received:", response);
+
+            if (response && response.formData && Object.keys(response.formData).length > 0) {
+                formPreviewData = response.formData; // Store this data
+                displayFieldPreview(formPreviewData); // Show the preview overlay
+                showStatusMessage('Fields found and filled. Review and confirm on the page.', 'success', 5000);
+            } else {
+                formPreviewData = null; // Clear preview data
+                hideFieldPreview(); // Ensure preview is hidden
+                showStatusMessage('No recognizable fields could be filled on this page with your profile data.', 'warning', 5000);
+            }
+        } else {
+            showStatusMessage("No active tab found.", "warning");
+        }
+    } catch (error) {
+        console.error("Popup: Error during autofill process:", error);
+        // The sendMessageToContentScript already handles showing errors, so this might be redundant,
+        // but it's good for overall catch-all for `executeScript` or other issues.
+        showStatusMessage(`Autofill failed: ${error.message}.`, 'error', 5000);
+        formPreviewData = null;
+        hideFieldPreview();
+        // Re-check content script status, as an error might mean it's unreachable
+        getCurrentTabStatus();
+    }
+}
+
+async function handleClearForm() {
+    console.log("Popup: Clear Form clicked.");
+    try {
+        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (activeTab && activeTab.id) {
+            // Ensure content.js is injected
+            await chrome.scripting.executeScript({
+                target: { tabId: activeTab.id },
+                files: ['content.js']
+            }).catch(e => {
+                console.warn("Content script might already be injected or injection failed:", e.message);
+            });
+
+            const response = await chrome.tabs.sendMessage(activeTab.id, { action: 'clearForm' });
+            console.log('Response from content script (clearForm):', response);
+            if (response && response.success) {
+                showStatusMessage("Form cleared successfully!", "success");
+            } else {
+                showStatusMessage(response.error || "Clearing form failed. No fields found or unknown error.", "error");
+            }
+        } else {
+            showStatusMessage("No active tab found.", "warning");
+        }
+    } catch (error) {
+        console.error("Popup: Error clearing form:", error);
+        showStatusMessage(`Error clearing form: ${error.message}. Is content.js loaded?`, "error");
+    }
+}
+
+async function handleOpenBulkAutofillDashboard() {
+    console.log("Popup: Opening Bulk Autofill Dashboard.");
+    try {
+        await chrome.tabs.create({ url: 'bulk_autofill.html' }); // Assuming you have a dashboard.html
+        showStatusMessage("Bulk Autofill Dashboard opened.", "info");
+    } catch (error) {
+        console.error("Error opening dashboard:", error);
+        showStatusMessage("Could not open Bulk Autofill Dashboard.", "error");
+    }
+}
+
+// --- Settings Functions ---
+
+async function loadSettings() {
+    console.log("Popup: Loading settings.");
+    try {
+        const response = await chrome.runtime.sendMessage({ action: 'loadSettings' });
+        console.log("Popup: Settings loaded and applied.", response);
+        if (response && response.settings) {
+            const settings = response.settings;
+            // Apply loaded settings to UI elements
+            getElement('autofillHighlightToggle').checked = settings.autofillHighlight || false;
+            getElement('autoclickSubmitCheckbox').checked = settings.autoclickSubmit || false;
+            getElement('showNotificationsCheckbox').checked = settings.showNotifications || false;
+
+            console.log("Popup: Settings applied to UI.");
+        }
+    } catch (error) {
+        console.error("Popup: Error loading settings:", error);
+        showStatusMessage("Error loading settings.", "error");
+    }
+}
+
+async function handleSaveSettings() {
+    console.log("Popup: Saving settings.");
+    const settings = {
+        autofillHighlight: getElement('autofillHighlightToggle').checked,
+        autoclickSubmit: getElement('autoclickSubmitCheckbox').checked,
+        showNotifications: getElement('showNotificationsCheckbox').checked
+    };
+    try {
+        const response = await chrome.runtime.sendMessage({ action: 'saveSettings', settings });
+        if (response && response.success) {
+            console.log("Settings saved successfully:", response.settings);
+            showStatusMessage("Settings saved successfully!", "success");
+        } else {
+            throw new Error(response.error || "Unknown error saving settings.");
+        }
+    } catch (error) {
+        console.error("Popup: Error saving settings:", error);
+        showStatusMessage(`Error saving settings: ${error.message}`, "error");
+    }
+}
+
+async function handleSubmitForm() {
+    console.log("Popup: Submit Form clicked.");
+    try {
+        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (activeTab && activeTab.id) {
+            // It's good practice to ensure content.js is injected even for simple actions,
+            // as the executeScript function below runs in the isolated world.
+            await chrome.scripting.executeScript({
+                target: { tabId: activeTab.id },
+                files: ['content.js']
+            }).catch(e => {
+                console.warn("Content script might already be injected for submitForm:", e.message);
+            });
+
+            const results = await chrome.scripting.executeScript({
+                target: { tabId: activeTab.id },
+                function: () => {
+                    // --- IMPORTANT: You need to customize the selector below ---
+                    // Find the actual submit button for the form.
+                    // Try these selectors one by one, inspecting the Starbucks page to find the correct one.
+
+                    // Example 1: By ID (most reliable if it has one)
+                    let submitButton = document.getElementById('createAccountButton'); // Replace with actual ID
+                    if (!submitButton) {
+                        // Example 2: By type="submit" within a form
+                        submitButton = document.querySelector('form button[type="submit"], form input[type="submit"]');
+                    }
+                    if (!submitButton) {
+                        // Example 3: By specific class name (common for primary buttons)
+                        submitButton = document.querySelector('.some-submit-button-class'); // Replace with actual class
+                    }
+                    if (!submitButton) {
+                        // Example 4: By text content (less reliable, but sometimes necessary)
+                        // This is more complex and might need iterating over all buttons
+                        const buttons = document.querySelectorAll('button, input[type="submit"]');
+                        for (let i = 0; i < buttons.length; i++) {
+                            if (buttons[i].textContent.toLowerCase().includes('create account') || buttons[i].value.toLowerCase().includes('create account') || buttons[i].ariaLabel && buttons[i].ariaLabel.toLowerCase().includes('create account')) {
+                                submitButton = buttons[i];
+                                break;
+                            }
+                        }
+                    }
+                    // --- END IMPORTANT SECTION ---
+
+
+                    if (submitButton) {
+                        // Use robust click simulation for the submit button as well
+                        console.log("Content script: Attempting robust click on submit button:", submitButton.id || submitButton.className || submitButton.tagName);
+
+                        const mouseDownEvent = new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window });
+                        const mouseUpEvent = new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window });
+                        const clickEvent = new MouseEvent('click', { bubbles: true, cancelable: true, view: window });
+
+                        submitButton.dispatchEvent(mouseDownEvent);
+                        submitButton.dispatchEvent(mouseUpEvent);
+                        submitButton.dispatchEvent(clickEvent);
+
+                        console.log("Content script: Simulated robust click on submit button.");
+                        return { success: true, message: "Submit button clicked." };
+                    } else {
+                        console.log("Content script: Submit button not found on page.");
+                        return { success: false, message: "Submit button not found." };
+                    }
+                }
+            });
+
+            const response = results && results[0] && results[0].result;
+            console.log('Response from content script (submitForm):', response);
+            if (response && response.success) {
+                showStatusMessage(response.message, "success");
+            } else {
+                showStatusMessage(response.message || "Failed to submit form due to an unknown error.", "error");
+            }
+        } else {
+            showStatusMessage("No active tab found.", "warning");
+        }
+    } catch (error) {
+        console.error("Popup: Error submitting form:", error);
+        showStatusMessage(`Error submitting form: ${error.message}.`, "error");
+    }
+}
+
+// --- NEW CODE FOR BULK AUTOFILL MANAGEMENT ---
+let allRetailers = {}; // Stores all retailers loaded from background
+
+async function loadAndDisplayRetailers() {
+    console.log("Popup: Loading and displaying retailers for bulk autofill...");
+    try {
+        const response = await chrome.runtime.sendMessage({ action: 'loadRetailers' });
+        console.log("Popup: All retailers loaded:", response);
+        if (response && response.retailers) {
+            allRetailers = response.retailers; // Store all retailers
+            renderRetailerList(allRetailers);
+        } else {
+            allRetailers = {};
+            renderRetailerList({});
+            showStatusMessage("No retailers found for bulk autofill.", "info");
+        }
+    } catch (error) {
+        console.error("Popup: Error loading retailers:", error);
+        showStatusMessage("Error loading retailers for bulk autofill. See console for details.", "error");
+    }
+}
+
+function renderRetailerList(retailers) {
+    const retailerListElement = getElement('retailerList'); // Assuming an element with this ID in popup.html
+    if (!retailerListElement) return;
+
+    retailerListElement.innerHTML = ''; // Clear existing list
+
+    if (Object.keys(retailers).length === 0) {
+        retailerListElement.innerHTML = '<li>No retailers configured for bulk autofill.</li>';
+        return;
+    }
+
+    Object.values(retailers).forEach(retailer => {
+        const listItem = document.createElement('li');
+        listItem.className = 'retailer-list-item';
+        listItem.innerHTML = `
+            <label>
+                <input type="checkbox" class="retailer-checkbox" data-retailer-id="${retailer.id}">
+                ${retailer.name} (${retailer.url})
+            </label>
+        `;
+        retailerListElement.appendChild(listItem);
+    });
+}
+
+// --- Initialization ---
+
+async function initializeDashboard() {
+    console.log("Dashboard: Initializing...");
+    setupEventListeners(); // Set up interaction listeners
+
+    try {
+        // 1. Fetch and render retailers
+        const retailerResponse = await chrome.runtime.sendMessage({ action: 'getRetailerDatabase' });
+        if (retailerResponse && retailerResponse.retailers) { // Assuming 'retailers' key from background.js
+            renderRetailerList(retailerResponse.retailers);
+        } else {
+            showStatusMessage("No retailer data found for dashboard.", "info");
+        }
+
+        // 2. Fetch and render profiles
+        const profileResponse = await chrome.runtime.sendMessage({ action: 'loadProfile' }); // This typically loads all profiles and the active one
+        if (profileResponse && profileResponse.profiles) {
+            renderProfilesList(profileResponse.profiles, profileResponse.activeProfileId);
+            // You might also display the active profile name prominently
+            const activeProfileNameElement = getElement('activeProfileName');
+            if (activeProfileNameElement) {
+                const activeProfile = profileResponse.profiles[profileResponse.activeProfileId];
+                activeProfileNameElement.textContent = activeProfile ? `Active: ${activeProfile.name}` : 'No active profile';
+            }
+        } else {
+            showStatusMessage("No profile data found for dashboard.", "info");
+        }
+
+        // 3. (Optional) Fetch and display general settings
+        const settingsResponse = await chrome.runtime.sendMessage({ action: 'loadSettings' });
+        if (settingsResponse && settingsResponse.settings) {
+            // Populate settings form fields, e.g., getElement('optOutEmailCheckbox').checked = settingsResponse.settings.autoOptOutEmailSubscription;
+            console.log("Dashboard: Loaded settings:", settingsResponse.settings);
+        }
+
+        // ... other dashboard specific data loading or component initialization
+        console.log("Dashboard: All initializations complete.");
+
+    } catch (error) {
+        console.error("Dashboard: Error during initialization:", error);
+        showStatusMessage(`Error loading dashboard data: ${error.message}`, "error");
+    }
+}
+
+async function initializePopup() {
+    console.log("Popup: DOM fully loaded, initializing.");
+    console.log("Popup: Initializing popup.");
+
+    showView('profileView'); // Initial view is profiles
+
+    // Load initial data
+    await loadAndDisplayProfiles();
+    // REMOVE await loadAndPopulateRetailerDropdown(); // REMOVE THIS LINE
+    await loadSettings();
+
+    setupEventListeners();
+
+
+    console.log("Popup: All initializations complete.");
+}
+
+function displayFieldPreview(formData) {
+    const previewArea = document.getElementById('formPreviewArea'); // Assuming you have a div for this
+    if (!previewArea) {
+        console.warn("Popup: No 'formPreviewArea' element found for preview.");
+        return;
+    }
+    previewArea.innerHTML = '<h4>Filled Fields:</h4>';
+    if (Object.keys(formData).length === 0) {
+        previewArea.innerHTML += '<p>No fields were filled.</p>';
+    } else {
+        const ul = document.createElement('ul');
+        for (const key in formData) {
+            const li = document.createElement('li');
+            li.textContent = `${key}: ${formData[key]}`;
+            ul.appendChild(li);
+        }
+        previewArea.appendChild(ul);
+    }
+    previewArea.style.display = 'block'; // Show the preview area
+}
+
+function hideFieldPreview() {
+    const previewArea = document.getElementById('formPreviewArea'); // Assuming you have a div for this
+    if (previewArea) {
+        previewArea.style.display = 'none';
+        previewArea.innerHTML = ''; // Clear content
+    }
+}
+
+async function getCurrentTabStatus() {
+    try {
+        const response = await sendMessageToContentScript({ action: 'ping' });
+        if (response && response.status === 'pong') {
+            setAutofillButtonState(true); // Content script is ready
+        } else {
+            setAutofillButtonState(false); // Content script responded but not as expected
+        }
+    } catch (error) {
+        console.log("Popup: Content script not reachable/responsive for status check.", error.message);
+        setAutofillButtonState(false); // Content script not ready or error
+    }
+}
+
+function setupPopupEventListeners() {
+    // Listener for the button to open the bulk autofill page
+    const autofillCurrentPageBtn = getElement('fillFormButton');
+    if (autofillCurrentPageBtn) {
+        autofillCurrentPageBtn.addEventListener('click', handleFillForm);
+    } else {
+        console.warn("Popup: Autofill Current Page button (ID: 'fillFormButton') not found.");
+    }
+
+    // 2. Edit Profile Button (Opens options page for editing)
+    const editProfileBtn = getElement('editProfileBtn');
+    if (editProfileBtn) {
+        editProfileBtn.addEventListener('click', () => {
+            console.log("Popup: Edit Profile button clicked. Opening options page.");
+            chrome.runtime.openOptionsPage(); // This opens bulk_autofill.html (your options page)
+            window.close(); // Close the popup immediately
+        });
+    } else {
+        console.warn("Popup: Edit Profile button (ID: 'editProfileBtn') not found.");
+    }
+    // Add other event listeners for your popup.html elements here
+    // e.g., autofillCurrentPageBtn, profileSelect change listener, etc.
+    const openBulkAutofillBtn = getElement('openBulkAutofillBtn');
+    if (openBulkAutofillBtn) {
+        openBulkAutofillBtn.addEventListener('click', () => {
+            console.log("Popup: Opening Bulk Autofill / Manage Profiles page.");
+            chrome.runtime.openOptionsPage(); // This opens bulk_autofill.html in a new tab
+            window.close(); // Close the popup immediately
+        });
+    } else {
+        console.warn("Popup: Button with ID 'openBulkAutofillBtn' not found. Cannot set up link to Bulk Autofill page.");
+    }
+    console.log("Popup: All event listeners set up.");
+}
+
+function setAutofillButtonState(enabled) {
+    const autofillButton = document.getElementById('fillFormButton'); t
+    if (autofillButton) {
+        autofillButton.disabled = !enabled;
+        // Optionally add/remove a class for visual feedback
+        if (enabled) {
+            autofillButton.classList.remove('disabled');
+        } else {
+            autofillButton.classList.add('disabled');
+        }
+    }
+}
+
 async function sendMessageToContentScript(message) {
     console.log("Popup: Sending message to content script:", message.action);
     return new Promise((resolve, reject) => {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             if (!tabs || tabs.length === 0 || !tabs[0]) {
                 console.warn("Popup: No active tab found to send message to.");
-                // --- USE showStatus ---
-                showStatus('No active tab available.', 'warning', 3000);
-                // --- END USE showStatus ---
-                // Disable autofill button if no tab
+                showStatusMessage('No active tab available.', 'warning', 3000);
                 setAutofillButtonState(false);
                 reject(new Error('No active tab'));
                 return;
             }
             const tabId = tabs[0].id;
 
-            // Use chrome.tabs.sendMessage and check for runtime errors
             chrome.tabs.sendMessage(tabId, message, (response) => {
-                // Check chrome.runtime.lastError to detect if content script failed to respond
-                // This happens if content script is not injected or threw an error
                 if (chrome.runtime.lastError) {
                     const error = chrome.runtime.lastError;
                     console.error(`Popup: Error sending message to tab ${tabId}:`, error.message);
-                    // Depending on the action, show relevant error status
                     let statusMsg = `Error interacting with page.`;
                     if (error.message.includes('Could not establish connection')) {
                         statusMsg = 'Content script not loaded on this page.';
-                        // If content script is not there, disable autofill button
                         setAutofillButtonState(false);
                     }
-                    // --- USE showStatus ---
-                    showStatus(statusMsg, 'error', 5000); // Show errors longer
-                    // --- END USE showStatus ---
-                    reject(error); // Reject the promise
+                    showStatusMessage(statusMsg, 'error', 5000);
+                    reject(error);
                 } else {
                     console.log(`Popup: Response from content script (tab ${tabId}) for ${message.action}:`, response);
-                    resolve(response); // Resolve the promise with the response
+                    resolve(response);
                 }
             });
         });
     });
 }
 
-/**
- * Gets the current form status from the content script and updates UI elements.
- */
-function getCurrentTabStatus() {
-    console.log("Popup: Getting current tab status from content script.");
-    // Reset status display while checking
-    // --- USE showStatus ---
-    showStatus('Checking page status...', 'info');
-    // --- END USE showStatus ---
 
-    // Request status from content script
-    sendMessageToContentScript({ action: 'getFormStatus' })
-        .then(response => {
-            console.log("Popup: Received form status:", response);
-            if (response && response.formDetected !== undefined) {
-                // Update UI based on response
-                if (response.formDetected) {
-                    // --- USE showStatus ---
-                    showStatus(`Form detected with ${response.fieldCount} fields.`, 'info');
-                    // --- END USE showStatus ---
-                    // Enable Autofill button IF a profile is loaded AND form is detected
-                    setAutofillButtonState(!!activeProfile && !!activeProfile.firstName);
+function setupEventListeners() {
+    console.log("Popup: Setting up event listeners.");
 
-                } else {
-                    // --- USE showStatus ---
-                    showStatus('No form detected on this page.', 'info');
-                    // --- END USE showStatus ---
-                    // Disable Autofill button if no form is detected
-                    setAutofillButtonState(false);
-                }
-            } else {
-                // Handle cases where response is malformed but no chrome.runtime.lastError
-                console.warn("Popup: Received unexpected status response:", response);
-                // --- USE showStatus ---
-                showStatus('Could not determine page status.', 'warning', 5000);
-                // --- END USE showStatus ---
-                setAutofillButtonState(false); // Disable button conservatively
-            }
-        })
-        .catch(error => {
-            // sendMessageToContentScript already handles showing error status using showStatus
-            console.log("Popup: getCurrentTabStatus caught error from sendMessageToContentScript.");
-            // Button would have been disabled by sendMessageToContentScript error handling
-        });
-}
+    // Tab buttons
+    getElement('profileTabBtn')?.addEventListener('click', () => showView('profileView'));
+    getElement('autofillTabBtn')?.addEventListener('click', () => showView('autofillView'));
+    getElement('autoSignupTabBtn')?.addEventListener('click', () => showView('autoSignupView'));
+    getElement('settingsTabBtn')?.addEventListener('click', () => showView('settingsView'));
 
-/**
- * Helper function to set the disabled state of the main autofill button.
- * @param {boolean} enable - True to enable, False to disable.
- */
-function setAutofillButtonState(enable) {
-    if (triggerAutofillBtn) {
-        triggerAutofillBtn.disabled = !enable;
-        console.log("Popup: Autofill button enabled state set to:", enable);
-    } else {
-        console.error("Popup: Autofill button element not found!");
-    }
-}
+    // Profile Management Buttons
+    getElement('addNewProfileButton')?.addEventListener('click', handleAddProfile);
+    getElement('saveProfileButton')?.addEventListener('click', handleSaveProfile);
+    getElement('deleteProfileButton')?.addEventListener('click', handleDeleteProfile);
+    getElement('cancelEditButton')?.addEventListener('click', handleCancelEdit);
 
-/**
- * Gets the URL of the currently active tab.
- * @returns {Promise<string>} A promise that resolves with the current tab's URL.
- */
-async function getCurrentTabUrl() {
-    return new Promise((resolve, reject) => {
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            if (tabs && tabs.length > 0 && tabs[0].url) {
-                resolve(tabs[0].url);
-            } else {
-                console.warn("Popup: Could not get current tab URL.");
-                reject(new Error('Could not get active tab URL'));
-            }
-        });
-    });
-}
-
-/**
- * Applies the loaded settings to the popup's UI.
- * @param {Object} settings - The settings object.
- */
-function applySettings(settings) {
-    console.log("Popup: Applying settings to UI.", settings);
-
-    // Apply high contrast setting to the toggle and the body
-    if (highContrastToggle) {
-        highContrastToggle.checked = settings.highContrast;
-        applyHighContrast(settings.highContrast);
-    }
-
-    // Apply autofill highlight setting to the toggle
-    if (autofillHighlightToggle) {
-        autofillHighlightToggle.checked = settings.autofillHighlightEnabled;
-    }
-}
-
-/**
- * Applies or removes the high contrast CSS class to the body.
- * @param {boolean} enabled - True to enable high contrast, false to disable.
- */
-function applyHighContrast(enabled) {
-    if (!document.body) {
-        console.error("Popup: Document body not available to apply high contrast.");
-        return;
-    }
-    if (enabled) {
-        document.body.classList.add('high-contrast');
-    } else {
-        document.body.classList.remove('high-contrast');
-    }
-    console.log("Popup: High contrast mode applied:", enabled);
-}
-
-
-/**
- * Displays the field preview overlay with data from the fill process.
- * @param {Object} formData - Object containing the field types and values that were filled.
- */
-function displayFieldPreview(formData) {
-    if (!fieldPreviewTemplate) {
-        console.error("Popup: Field preview template not found!");
-        // Fallback: show a status message instead of overlay
-        // --- USE showStatus ---
-        showStatus('Field preview not available, review fields on page.', 'warning', 5000);
-        // --- END USE showStatus ---
-        // Also decide how submission happens if no preview (manual?)
-        return;
-    }
-    console.log("Popup: Displaying field preview.", formData);
-
-    // Remove any existing preview overlay to avoid duplicates
-    const existingPreview = document.querySelector('.field-preview-overlay');
-    if (existingPreview) {
-        existingPreview.remove();
-    }
-
-    // Clone the template content
-    const previewOverlay = fieldPreviewTemplate.content.cloneNode(true).firstElementChild;
-
-    // Get references to elements within the cloned template
-    const fieldList = previewOverlay.querySelector('.field-list');
-    const closeBtn = previewOverlay.querySelector('.close-preview');
-    const cancelBtn = previewOverlay.querySelector('.cancel-fill'); // Corrected class
-    const confirmBtn = previewOverlay.querySelector('.confirm-fill'); // Corrected class text to Confirm & Submit
-    fieldList.innerHTML = '';
-
-    // Populate the field list with the data that was filled
-    if (formData && Object.keys(formData).length > 0) {
-        for (const fieldType in formData) {
-            if (formData.hasOwnProperty(fieldType)) {
-                const fieldItem = document.createElement('div');
-                fieldItem.className = 'field-item';
-
-                const fieldName = document.createElement('div');
-                fieldName.className = 'field-name';
-                // Format the field type name nicely (e.g., "firstName" -> "First Name")
-                fieldName.textContent = fieldType.replace(/([A-Z])/g, ' $1').trim().replace(/^./, str => str.toUpperCase());
-
-                const fieldValue = document.createElement('div');
-                fieldValue.className = 'field-value';
-                const value = formData[fieldType];
-                fieldValue.textContent = (value === '' || value === null || value === undefined) ? '[Empty]' : value;
-
-                fieldItem.appendChild(fieldName);
-                fieldItem.appendChild(fieldValue);
-                fieldList.appendChild(fieldItem);
-            }
+    // Delegated listeners for dynamic profile list items
+    getElement('profileList')?.addEventListener('click', (event) => {
+        const target = event.target;
+        const profileId = target.dataset.profileId;
+        if (target.classList.contains('activate-profile-button') && profileId) {
+            handleActivateProfile(profileId);
+        } else if (target.classList.contains('edit-profile-button') && profileId) {
+            handleEditProfile(profileId);
         }
-    } else {
-        // Handle case where no fields were filled but preview was still shown (shouldn't happen with current logic)
-        const noFieldsMessage = document.createElement('div');
-        noFieldsMessage.textContent = 'No recognizable fields were filled.';
-        noFieldsMessage.style.fontStyle = 'italic';
-        noFieldsMessage.style.color = '#666';
-        fieldList.appendChild(noFieldsMessage);
-        // Disable confirm button if nothing was filled
-        if (confirmBtn) {
-            confirmBtn.disabled = true;
-            confirmBtn.textContent = 'No fields to confirm';
-            confirmBtn.classList.remove('btn-primary');
-            confirmBtn.classList.add('btn-secondary');
-        }
-    }
-
-    if (closeBtn) closeBtn.addEventListener('click', () => { hideFieldPreview(); });
-    if (cancelBtn) cancelBtn.addEventListener('click', () => {
-        console.log("Popup: Field preview cancelled.");
-        hideFieldPreview(); // Hide the overlay
-        // --- USE showStatus ---
-        showStatus('Autofill cancelled.', 'info', 3000); // Use general status area
-        // --- END USE showStatus ---
-    });
-    if (confirmBtn) confirmBtn.addEventListener('click', (event) => {
-        // This button triggers the actual form submission message
-        handleConfirmFillClick(event);
     });
 
-    // Add the populated overlay to the body
-    document.body.appendChild(previewOverlay);
+    // Autofill Buttons
+    // REMOVE getElement('retailerSelect')?.addEventListener('change', handleRetailerSelectChange); // REMOVE THIS LINE
+    getElement('fillFormButton')?.addEventListener('click', handleFillForm);
+    getElement('clearFormButton')?.addEventListener('click', handleClearForm);
+    getElement('submitFormButton')?.addEventListener('click', handleSubmitForm);
+    getElement('openBulkAutofillDashboardBtn')?.addEventListener('click', handleOpenBulkAutofillDashboard);
 
-    // Make the element visible (but still off-screen due to transform) immediately
-    // This is necessary for the CSS 'transform' transition to work from 'display: none'
-    previewOverlay.style.display = 'block';
+    // Settings Buttons
+    getElement('saveSettingsButton')?.addEventListener('click', handleSaveSettings);
 
-
-    // Add 'active' class to trigger CSS transition (slide-in effect)
-    // Use a slight timeout to ensure the element is added to the DOM before transition
-    setTimeout(() => {
-        if (previewOverlay) { // Check exists before adding class
-            previewOverlay.classList.add('active');
-            console.log("Popup: Field preview overlay should now be visible.");
-        }
-    }, 10); // Small delay
+    console.log("Popup: All event listeners set up.");
 }
 
-function hideFieldPreview() {
-    console.log("Popup: Hiding field preview.");
-    const previewOverlay = document.querySelector('.field-preview-overlay');
-    if (previewOverlay) {
-        // Trigger CSS transition (slide-out effect)
-        previewOverlay.classList.remove('active');
-
-        // Listen for the end of the transition to remove the element
-        // Use a named function or check the element's parent to avoid issues if element is removed quickly
-        previewOverlay.addEventListener('transitionend', function handler(event) {
-            // Ensure the event is for the transform property and the element is still in the DOM
-            if (event.propertyName === 'transform' && document.body.contains(previewOverlay) && !previewOverlay.classList.contains('active')) {
-                previewOverlay.style.display = 'none'; // Hide element from layout
-                previewOverlay.remove(); // Remove from DOM
-                formPreviewData = null; // Clear stored data
-                console.log("Popup: Field preview element hidden and removed after transition.");
-            }
-            previewOverlay.removeEventListener('transitionend', handler);
-        });
-    }
-}
-
-function handleConfirmFillClick(event) {
-    console.log("Popup: Confirm & Submit button clicked.");
-    // Prevent default button behavior if it's inside a form (though this is a template)
-    if (event) event.preventDefault();
-
-    // Hide the preview overlay immediately
-    hideFieldPreview();
-
-    // Send the submit message to the content script
-    // --- USE showStatus ---
-    showStatus('Attempting to submit form...', 'info'); // Show status while waiting for submit response
-    // --- END USE showStatus ---
-    sendMessageToContentScript({ action: 'submitForm' })
-        .then(response => {
-            console.log("Popup: Submit form response received:", response);
-            // Handle response: success, captcha detected, hasBirthdayField etc.
-            if (response && response.success) {
-                // Submission attempted successfully (doesn't guarantee server success)
-                // --- USE showStatus ---
-                showStatus('Form submission attempted.', 'success', 5000);
-                // --- END USE showStatus ---
-                // Add tracker entry if submission was attempted (and not blocked by captcha)
-                // Need addTrackerEntry function from utils or background script
-                // Assuming addTrackerEntry is available or sent to background
-                // if (!response.captchaDetected) {
-                //     getCurrentTabUrl().then(url => {
-                //       // Assuming the content script response includes whether a birthday field was found on the page
-                //       addTrackerEntry(url, response.hasBirthdayField, response.captchaDetected);
-                //     });
-                // }
-
-
-            } else if (response && response.captchaDetected) {
-                // CAPTCHA was detected by the content script and submission was aborted by content script
-                // --- USE showStatus ---
-                showStatus('CAPTCHA detected. Please submit manually on the page.', 'warning', 8000); // Longer duration
-                // --- END USE showStatus ---
-                // Still add tracker entry, noting captcha was detected
-                // Assuming addTrackerEntry is available or sent to background
-                // getCurrentTabUrl().then(url => {
-                //     addTrackerEntry(url, response.hasBirthdayField || false, true); // Mark as captcha detected
-                // });
-
-
-            } else {
-                // Submission failed for other reasons (e.g., no form/button found by content script)
-                // --- USE showStatus ---
-                showStatus('Could not submit form automatically.', 'error', 8000); // Longer duration
-                // --- END USE showStatus ---
-                // Decide if you want to track failed attempts or just successful attempts (or attempts not blocked by captcha)
-            }
-            // Re-check status after potential submission
-            getCurrentTabStatus(); // This will update based on new page state or report if content script is gone
-        })
-        .catch(error => {
-            // sendMessageToContentScript already handles showing error status and disabling button
-            console.error("Popup: Error sending submit message:", error);
-            // Error status is shown by sendMessageToContentScript's catch
-            // showStatus('Error during form submission.', 'error', 8000); // Redundant
-            getCurrentTabStatus(); // Re-check status
-        });
-}
-
-function showHelpModal() {
-    if (!helpModalTemplate) {
-        console.error("Popup: Help modal template not found!");
-        // Use generic status if help is unavailable
-        // --- USE showStatus ---
-        showStatus('Help content not available.', 'warning', 3000);
-        // --- END USE showStatus ---
-        return;
-    }
-    console.log("Popup: Showing help modal.");
-
-    // Remove any existing modal
-    const existingModal = document.querySelector('.modal-overlay');
-    if (existingModal) {
-        existingModal.remove();
-    }
-
-    // Clone the template
-    const modalOverlay = helpModalTemplate.content.cloneNode(true).firstElementChild;
-
-    // Get the close button inside the modal
-    const closeBtn = modalOverlay.querySelector('.close-modal');
-
-    // Add event listener to close button
-    if (closeBtn) closeBtn.addEventListener('click', () => {
-        console.log("Popup: Help modal closed.");
-        modalOverlay.classList.remove('active'); // Trigger fade out
-        // Remove element after transition or immediately if no transition
-        modalOverlay.addEventListener('transitionend', function handler() {
-            if (!modalOverlay.classList.contains('active')) {
-                modalOverlay.remove();
-                console.log("Popup: Help modal element removed from DOM.");
-            }
-            modalOverlay.removeEventListener('transitionend', handler);
-        });
-        // Fallback for removal if transitionend doesn't fire
-        // --- FIXED INCOMPLETE SETTIMEOUT ---
-        setTimeout(() => { if (document.body.contains(modalOverlay)) modalOverlay.remove(); }, 400); // Fixed closing parenthesis and block
-        // --- END FIXED ---
-    });
-
-    // Add the modal to the body
-    document.body.appendChild(modalOverlay);
-
-    // Add 'active' class to trigger CSS transition (fade-in effect)
-    // Use a slight timeout to ensure the element is added to the DOM before transition
-    setTimeout(() => {
-        if (modalOverlay) { // Check exists before adding class
-            modalOverlay.classList.add('active');
-            console.log("Popup: Help modal overlay should now be visible.");
-        }
-    }, 10); // Small delay
-}
-
-// --- Placeholder/To Be Implemented (Simplified) ---
-// Profile management is simplified to saving/loading a single profile from the form.
-// Tracker is removed.
-// Full settings page is removed, only toggles in Autofill view.
-// Custom keywords feature is removed in this simplification, identifyFieldType will use its defaults + any base keywords.
-
-// --- Assuming addTrackerEntry is handled elsewhere (e.g., background script or utils.js) ---
-// If addTrackerEntry was defined here or used functions that were removed, it might cause errors.
-// For now, assuming addTrackerEntry comes from utils.js or is a message to background.
-// function addTrackerEntry(domain, birthdayFieldDetected, captchaDetected = false) { ... }
-
-// Assuming you don't need this for the simplified UI:
-// function getFontSizeValue(sizeSetting) { ... }
-
-// --- Self-invoking function end ---
-// No IIFE needed in modern ES Modules
+// Initializing the popup when the DOM content is fully loaded
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("Popup: DOM fully loaded, initializing.");
+    initializePopup();
+    setupPopupEventListeners(); // Call a dedicated function for listeners
+});

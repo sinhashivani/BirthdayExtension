@@ -1,37 +1,58 @@
 // websiteNavigator.js
 
 // Database of popular retailers and their loyalty program signup URLs
-// You can expand this object with more retailers.
-// Consider adding specific instructions or field overrides here later if needed for complex sites.
-const retailerDatabase = {
-    victoriaSecret: {
+// Changed to an ARRAY of objects for easier iteration in the background script.
+const retailerDatabase = [
+    {
+        id: "victoriaSecret", // Added a unique ID for each retailer
         name: "Victoria's Secret",
         signupUrl: "https://www.victoriassecret.com/us/vs/rewards-signup",
         // Optional: Add site-specific notes or instructions
         // notes: "Might have a popup. Requires email confirmation.",
         // fieldOverrides: { email: 'vs_email_field_id', firstName: 'vs_first_name_name_attr' } // Example
     },
-    starbucks: {
+    {
+        id: "starbucks",
         name: "Starbucks",
         signupUrl: "https://www.starbucks.com/account/create", // Example URL, verify actual
         // notes: "Multi-step form.",
         // steps: [ { action: 'fill', fields: ['email', 'password'] }, { action: 'click', selector: '#nextButton' }, ... ] // Example
     },
-    sephora: {
+    {
+        id: "sephora",
         name: "Sephora",
         signupUrl: "https://www.sephora.com/beautyinsider/signup", // Example URL, verify actual
         // notes: "Check for cookie consent.",
     },
     // Add more retailers here following the same structure
-    // retailerId: { name: "Display Name", signupUrl: "..." },
-};
+    // { id: "retailerId", name: "Display Name", signupUrl: "..." },
+];
 
 /**
  * Returns the retailer database.
- * @returns {object} The retailer database.
+ * @returns {Array<object>} The retailer database (now an array).
  */
 function getRetailerDatabase() {
     return retailerDatabase;
+}
+
+/**
+ * Returns a retailer object by its ID.
+ * @param {string} retailerId - The ID of the retailer.
+ * @returns {object|null} The retailer object or null if not found.
+ */
+function getRetailerById(retailerId) {
+    return retailerDatabase.find(retailer => retailer.id === retailerId) || null;
+}
+
+// Make functions accessible if imported via importScripts in service worker
+if (typeof importScripts !== 'undefined') {
+    this.getRetailerDatabase = getRetailerDatabase;
+    this.getRetailerById = getRetailerById;
+} else {
+    // For use in other scripts that import this directly (e.g., content script if needed)
+    // Or if using ES Modules in background.js (Manifest V3 supports this for background)
+    // export { getRetailerDatabase, getRetailerById };
 }
 
 /**
@@ -41,7 +62,7 @@ function getRetailerDatabase() {
  * @param {object} profileData - The user's profile data to be used for autofill.
  */
 function navigateToSignup(retailerId, profileData) {
-    const retailer = retailerDatabase[retailerId];
+    const retailer = retailerDatabase.find(r => r.id === retailerId); // Use find on the array
     if (!retailer) {
         console.error(`Website Navigator: Retailer with ID "${retailerId}" not found.`);
         // TODO: Notify popup or user of error
