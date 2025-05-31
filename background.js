@@ -8,15 +8,6 @@ let currentBulkJobStatus = {}; // retailerId: { status: 'pending'|'in_progress'|
 let activeProcessingCount = 0;
 const MAX_CONCURRENT_PROCESSES = 1; // Start with 1 for simplicity, can increase later
 
-let retailerDatabase = [];
-let bulkAutofillQueue = [];
-let bulkAutofillStatuses = {};
-let currentAutofillTabId = null;
-let uiPort = null;
-let allProfiles = {}; // Stores all user-defined profiles
-let activeProfileId = null; // Stores the ID of the currently active profile
-
-
 let bulkUIPort = null; // For long-lived connection with bulk_autofill.html
 
 chrome.runtime.onConnect.addListener((port) => {
@@ -71,75 +62,202 @@ async function initializeBulkProcess(selectedRetailerIds) {
     processNextRetailer();
 }
 
-function processNextRetailer() {
-    if (activeProcessingCount >= MAX_CONCURRENT_PROCESSES) {
-        return; // Wait for an active process to finish
+async function loadProfilesFromStorage() {
+    const result = await chrome.storage.local.get(['userProfiles', 'activeProfileId']);
+    allProfiles = result.userProfiles || {};
+    activeProfileId = result.activeProfileId || (Object.keys(allProfiles)[0] || null); // Set first as active if none
+    console.log("Profiles loaded:", allProfiles, "Active ID:", activeProfileId);
+}
+
+async function saveProfileToStorage(profileData) {
+    let newProfileId = profileData.id;
+    if (!newProfileId || newProfileId === 'new') { // For new profiles
+        newProfileId = 'profile-' + Date.now(); // Simple unique ID
+    }
+    allProfiles[newProfileId] = { ...profileData, id: newProfileId };
+    await chrome.storage.local.set({ userProfiles: allProfiles });
+    await setActiveProfile(newProfileId); // Make the new/saved profile active
+    return newProfileId;
+}
+
+async function deleteProfileFromStorage(profileId) {
+    if (allProfiles[profileId]) {
+        delete allProfiles[profileId];
+        await chrome.storage.local.set({ userProfiles: allProfiles });
+        if (activeProfileId === profileId) {
+            // If the deleted profile was active, set a new active one or null
+            activeProfileId = Object.keys(allProfiles)[0] || null;
+            await chrome.storage.local.set({ activeProfileId: activeProfileId });
+        }
+        return true;
+    }
+    return false;
+}
+
+async function setActiveProfile(profileId) {
+    activeProfileId = profileId;
+    await chrome.storage.local.set({ activeProfileId: profileId });
+    console.log("Active profile set to:", activeProfileId);
+}
+
+let currentBulkProfile = null;
+
+async function processNextRetailer() {
+    const MAX_RETRIES = 2;
+    if (response.status === 'error' && retailer.retryCount < MAX_RETRIES) {
+        retailer.retryCount = (retailer.retryCount || 0) + 1;
+        bulkAutofillQueue.push(retailerId); // Re-queue for retry
+        console.log(`Retrying retailer ${retailer.name} (${retailerId}), attempt ${retailer.retryCount}`);
+        updateRetailerStatus(retailerId, 'pending', `Retrying... (${retailer.retryCount})`);
     }
 
-    const nextRetailerJob = bulkProcessQueue.find(r => currentBulkJobStatus[r.id]?.status === 'pending');
-    if (!nextRetailerJob) {
-        if (activeProcessingCount === 0) {
-            console.log("Bulk process queue finished.");
-            notifyUI({ action: 'bulkProcessComplete', statuses: currentBulkJobStatus });
-        }
+    if (bulkAutofillQueue.length === 0) {
+        console.log("Bulk autofill process complete!");
+        updateUI('bulkProcessComplete', { statuses: bulkAutofillStatuses });
+        currentAutofillTabId = null; // Reset
+        currentBulkProfile = null; // Reset profile for this run
         return;
     }
 
-    activeProcessingCount++;
-    currentBulkJobStatus[nextRetailerJob.id].status = 'in_progress';
-    currentBulkJobStatus[nextRetailerJob.id].message = 'Opening tab...';
-    notifyUI({ action: 'bulkProcessUpdate', statuses: currentBulkJobStatus });
+    const retailerId = bulkAutofillQueue.shift(); // Get next retailer
+    const retailer = retailerDatabase.find(r => r.id === retailerId);
 
-    const retailerUrl = nextRetailerJob.membershipPageUrl;
-    chrome.tabs.create({ url: retailerUrl, active: false }, async (tab) => {
-        if (chrome.runtime.lastError || !tab) {
-            console.error("Error creating tab:", chrome.runtime.lastError?.message);
-            handleRetailerCompletion(nextRetailerJob.id, 'error', 'Failed to open tab.');
-            return;
-        }
-        currentBulkJobStatus[nextRetailerJob.id].tabId = tab.id;
-        currentBulkJobStatus[nextRetailerJob.id].message = 'Tab opened, waiting for page load...';
-        notifyUI({ action: 'bulkProcessUpdate', statuses: currentBulkJobStatus });
+    if (!retailer) {
+        updateRetailerStatus(retailerId, 'error', 'Retailer not found in database.');
+        processNextRetailer(); // Move to next
+        return;
+    }
 
-        // Listen for tab update to ensure page is loaded before sending message
-        chrome.tabs.onUpdated.addListener(async function tabUpdateListener(tabId, changeInfo, updatedTab) {
-            if (tabId === tab.id && changeInfo.status === 'complete') {
-                chrome.tabs.onUpdated.removeListener(tabUpdateListener); // Clean up listener
+    updateRetailerStatus(retailerId, 'in_progress', 'Opening tab...');
 
-                currentBulkJobStatus[nextRetailerJob.id].message = 'Page loaded, attempting autofill...';
-                notifyUI({ action: 'bulkProcessUpdate', statuses: currentBulkJobStatus });
+    try {
+        const tab = await chrome.tabs.create({ url: retailer.url, active: false });
+        currentAutofillTabId = tab.id; // Store for tab update listener
 
-                // Send message to content script to start autofill
-                // Ensure you have user profile data available to send
-                const userData = (await chrome.storage.local.get('userProfileData'))?.userProfileData; // Example
-                if (!userData) {
-                    handleRetailerCompletion(nextRetailerJob.id, 'error', 'User profile data not found.');
-                    return;
-                }
-
-                chrome.tabs.sendMessage(
-                    tab.id,
-                    {
-                        action: "executeAutofill",
-                        retailerInfo: nextRetailerJob, // For context, if needed by content.js
-                        userData: userData // The actual data to fill
-                    },
-                    (response) => {
-                        if (chrome.runtime.lastError) {
-                            handleRetailerCompletion(nextRetailerJob.id, 'error', `Autofill communication error: ${chrome.runtime.lastError.message}`);
-                        } else if (response) {
-                            handleRetailerCompletion(nextRetailerJob.id, response.success ? 'complete' : 'error', response.message);
-                        } else {
-                            handleRetailerCompletion(nextRetailerJob.id, 'error', 'No response from content script.');
-                        }
-                    }
-                );
+        const tabLoadTimeout = setTimeout(() => {
+            updateRetailerStatus(retailerId, 'error', 'Tab took too long to load.');
+            if (currentAutofillTabId === tab.id) {
+                chrome.tabs.remove(tab.id);
             }
-        });
-    });
+            processNextRetailer();
+        }, 30000); // 30 seconds timeout
+
+        const onTabUpdated = async (updatedTabId, changeInfo, updatedTab) => {
+            if (updatedTabId === tab.id && changeInfo.status === 'complete') {
+                clearTimeout(tabLoadTimeout);
+                chrome.tabs.onUpdated.removeListener(onTabUpdated);
+
+                updateRetailerStatus(retailerId, 'in_progress', 'Injecting content script...');
+
+                try {
+                    await chrome.scripting.executeScript({
+                        target: { tabId: tab.id },
+                        files: ['content.js']
+                    });
+
+                    // Send message to content script, INCLUDING THE PROFILE DATA
+                    const response = await chrome.tabs.sendMessage(tab.id, {
+                        action: 'autofill',
+                        retailer: retailer,
+                        profile: currentBulkProfile // *** CRITICAL: Pass the profile here ***
+                    });
+
+                    if (response && response.status === 'success') {
+                        updateRetailerStatus(retailerId, 'complete', response.message || 'Autofill successful.');
+                    } else {
+                        updateRetailerStatus(retailerId, 'error', response.message || 'Autofill failed in content script.');
+                    }
+                } catch (e) {
+                    console.error(`Error during autofill for ${retailer.name}:`, e);
+                    updateRetailerStatus(retailerId, 'error', `Autofill error: ${e.message}`);
+                } finally {
+                    if (currentAutofillTabId === tab.id) {
+                        chrome.tabs.remove(tab.id);
+                    }
+                    processNextRetailer();
+                }
+            }
+        };
+
+        chrome.tabs.onUpdated.addListener(onTabUpdated);
+
+    } catch (e) {
+        console.error(`Error opening tab for ${retailer.name}:`, e);
+        updateRetailerStatus(retailerId, 'error', `Failed to open tab: ${e.message}`);
+        processNextRetailer();
+    }
 }
 
+chrome.runtime.onConnect.addListener((port) => {
+    if (port.name === "bulkAutofillUI") {
+        console.log("UI connected, port established.");
+        uiPort = port;
+
+        // Send initial statuses to the newly connected UI
+        updateUI('bulkProcessUpdate', { statuses: bulkAutofillStatuses });
+
+        uiPort.onMessage.addListener(async (msg) => {
+            console.log("Message from UI:", msg);
+            if (msg.action === 'startBulkAutofill') {
+                // Initialize queue and statuses for the new run
+                bulkAutofillQueue = [...msg.selectedRetailerIds];
+                currentBulkProfile = msg.profile; // Store the selected profile for this bulk run
+                bulkAutofillStatuses = {}; // Clear previous statuses
+                retailerDatabase.forEach(r => {
+                    if (msg.selectedRetailerIds.includes(r.id)) {
+                        bulkAutofillStatuses[r.id] = { status: 'ready', message: 'In Queue' };
+                    } else {
+                        bulkAutofillStatuses[r.id] = { status: 'skipped', message: 'Skipped' };
+                    }
+                });
+                updateUI('bulkProcessUpdate', { statuses: bulkAutofillStatuses }); // Send initial queue status
+
+                processNextRetailer(); // Start processing
+            }
+        });
+
+        uiPort.onDisconnect.addListener(() => {
+            console.log("UI port disconnected.");
+            uiPort = null; // Clear the port reference
+        });
+    }
+});
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === 'loadProfile') {
+        sendResponse({ success: true, profiles: allProfiles, activeProfileId: activeProfileId });
+        return true; // Keep the message channel open for sendResponse
+    }
+    if (request.action === 'saveProfile') {
+        saveProfileToStorage(request.profile)
+            .then(profileId => {
+                sendResponse({ success: true, profileId: profileId });
+            })
+            .catch(error => {
+                console.error("Error saving profile:", error);
+                sendResponse({ success: false, error: error.message });
+            });
+        return true; // Keep the message channel open for sendResponse
+    }
+    if (request.action === 'deleteProfile') {
+        deleteProfileFromStorage(request.profileId)
+            .then(success => {
+                sendResponse({ success: success });
+            })
+            .catch(error => {
+                console.error("Error deleting profile:", error);
+                sendResponse({ success: false, error: error.message });
+            });
+        return true;
+    }
+    if (request.action === 'setActiveProfile') {
+        setActiveProfile(request.profileId)
+            .then(() => sendResponse({ success: true }))
+            .catch(error => sendResponse({ success: false, error: error.message }));
+        return true;
+    }
+
+
     if (request.action === "retryRetailer") {
         console.log(`Received retry request for retailerId: ${request.retailerId}`);
         // Implement your retry logic here
@@ -148,8 +266,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // and then initiate the autofill flow for that single retailer.
         processNextRetailer(); // Assuming you have such a function
         sendResponse({ status: "success", message: "Retry initiated" });
+        return true;
     }
-    // ... other message listeners
+    if (request.action === 'getRetailerDatabase') { // For loading retailers in UI
+        sendResponse({ retailers: retailerDatabase });
+        return true;
+    }
+    if (request.action === 'getAutofillStatuses') { // For UI to get current statuses on load
+        sendResponse({ statuses: bulkAutofillStatuses });
+        return true;
+    }
+    if (request.action === 'isBackgroundReady') { // For UI to check if background is ready
+        sendResponse({ success: true }); // Always respond true as long as script is running
+        return true;
+    }
 });
 
 // background.js
@@ -190,6 +320,8 @@ async function retryRetailer(retailerId) {
     }
 }
 
+loadRetailerDatabase(); // Load retailer database on startup
+loadProfilesFromStorage(); // Load profiles on startup
 
 
 

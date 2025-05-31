@@ -258,15 +258,22 @@
           break;
 
         case 'fillForm':
+        case 'autofill':
+        case 'autofillForm':
         case 'executeAutofill':
           console.log("Content.js: Received executeAutofill command for", request.retailerInfo?.name);
+          const profile = request.profile;
+          if (!profile) {
+            sendResponse({ status: 'error', message: 'Autofill profile not provided.' });
+            return true;
+          }
           try {
             // --- YOUR EXISTING AUTOFILL LOGIC GOES HERE ---
             // Example: const success = autofillMyForm(request.userData, request.retailerInfo);
             // This function should return true on success, false on failure.
             // It might need to identify if it's on the correct page first.
             currentProfile = request.profile;
-            const success = detectAndFillForms();
+            const success = detectAndFillForms(profile, request.retailer || request.retailerInfo);
 
             if (success) {
               sendResponse({
@@ -518,16 +525,16 @@
    * Does NOT automatically submit the form.
    * @returns {Object|null} An object containing the fieldType and value for fields that were filled (excluding sensitive data), or null if no fields were detected/filled.
    */
-  function detectAndFillForms() {
+  function detectAndFillForms(profile, retailerInfo) {
+    let fieldsFilledCount = 0;
+    let filledFormData = {}; // Object to store data that was actually filled
+
     console.log("Content script: Detecting and filling forms.");
     // Ensure we have a profile to fill with
     if (!currentProfile || Object.keys(currentProfile).length === 0) {
       console.warn("Content script: No current profile to fill forms with.");
       return null; // Cannot fill if no profile
     }
-
-    const filledFormData = {}; // Data that was actually filled (for preview/logging, exclude sensitive)
-    let fieldsFilledCount = 0;
 
     // Get all input, select, and textarea elements on the page
     const inputs = document.querySelectorAll('input, select, textarea');
@@ -560,9 +567,22 @@
           }
           // --- End Attempt to fill the field ---
         }
-        // Fields where identifyField returned null are skipped.
-        // Fields where we don't have profile data are skipped.
-        // Fields where the profile data is empty string, null, or undefined are skipped for filling.
+
+        if (fieldsFilledCount > 0) {
+          console.log(`Content.js: Successfully filled ${fieldsFilledCount} fields.`);
+          return {
+            success: true,
+            message: "Autofill successful.",
+            fieldsFilledCount: fieldsFilledCount,
+            filledFormData: filledFormData
+          };
+        } else {
+          console.warn("Content.js: No fields were filled. Page might not be an autofill target or selectors are incorrect.");
+          return {
+            success: false,
+            message: "Autofill failed. No fields were found or filled. Page structure might have changed or CAPTCHA present."
+          };
+        }
 
       } catch (inputError) {
         // Log error for a specific input, but continue processing other inputs
