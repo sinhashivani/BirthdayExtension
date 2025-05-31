@@ -8,6 +8,15 @@ let currentBulkJobStatus = {}; // retailerId: { status: 'pending'|'in_progress'|
 let activeProcessingCount = 0;
 const MAX_CONCURRENT_PROCESSES = 1; // Start with 1 for simplicity, can increase later
 
+let retailerDatabase = [];
+let bulkAutofillQueue = [];
+let bulkAutofillStatuses = {};
+let currentAutofillTabId = null;
+let uiPort = null;
+let allProfiles = {}; // Stores all user-defined profiles
+let activeProfileId = null; // Stores the ID of the currently active profile
+
+
 let bulkUIPort = null; // For long-lived connection with bulk_autofill.html
 
 chrome.runtime.onConnect.addListener((port) => {
