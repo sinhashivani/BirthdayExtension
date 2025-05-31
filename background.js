@@ -130,6 +130,19 @@ function processNextRetailer() {
     });
 }
 
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === "retryRetailer") {
+        console.log(`Received retry request for retailerId: ${request.retailerId}`);
+        // Implement your retry logic here
+        // e.g., call the function that starts autofill for this specific retailer
+        // You might need to retrieve the retailer's details from your stored database
+        // and then initiate the autofill flow for that single retailer.
+        processNextRetailer(); // Assuming you have such a function
+        sendResponse({ status: "success", message: "Retry initiated" });
+    }
+    // ... other message listeners
+});
+
 // background.js
 function handleRetailerCompletion(retailerId, status, message) {
     const job = currentBulkJobStatus[retailerId];

@@ -144,23 +144,40 @@ h3 {
     margin-left: 10px;
 }
 
+/* Styles for retailer status messages */
+.status-display {
+    font-weight: bold;
+    margin-left: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    white-space: nowrap;
+    /* Prevents status text from wrapping */
+}
+
+/* Specific status colors */
+.status-ready {
+    color: green;
+    /* Makes the text green */
+    /* You could also add a background color for more emphasis, e.g.: */
+    /* background-color: #e6ffe6; */
+    /* border: 1px solid green; */
+}
+
 .status-pending {
-    color: #ffc107;
+    color: orange;
 }
 
-/* Orange */
 .status-in_progress {
-    color: #007bff;
+    color: blue;
 }
 
-/* Blue */
 .status-complete {
-    color: #28a745;
+    color: darkgreen;
 }
 
-/* Green */
 .status-error {
-    color: #dc3545;
+    color: red;
 }
 
 /* Red */
