@@ -232,20 +232,26 @@ function setupEventListeners() {
 
     // Check if helpBtn exists before adding listener
     if (helpBtn) helpBtn.addEventListener('click', () => { showHelpModal(); }); // Help button in the footer
-    function setupEventListeners() {
-        console.log("Popup: Setting up event listeners.");
-        // ... existing listeners ...
 
-        // Add listener for the options link
-        if (openOptionsLink) {
-            openOptionsLink.addEventListener('click', (event) => {
-                event.preventDefault(); // Prevent default link behavior
-                chrome.runtime.openOptionsPage(); // Open the options page
-            });
-        }
-
-        console.log("Popup: All event listeners set up.");
+    const openBulkButton = document.getElementById('openBulkAutofill');
+    if (openBulkButton) {
+        openBulkButton.addEventListener('click', () => {
+            // Get the full URL to your bulk_autofill.html within the extension
+            const bulkAutofillUrl = chrome.runtime.getURL('bulk_autofill.html');
+            chrome.tabs.create({ url: bulkAutofillUrl });
+        });
     }
+
+    // Add listener for the options link
+    if (openOptionsLink) {
+        openOptionsLink.addEventListener('click', (event) => {
+            event.preventDefault(); // Prevent default link behavior
+            chrome.runtime.openOptionsPage(); // Open the options page
+        });
+    }
+
+    console.log("Popup: All event listeners set up.");
+
 }
 
 /** Hides all main content views. */

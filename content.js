@@ -57,188 +57,6 @@
   // Note: Initial settings and profile should be sent from popup.js
   // using the 'setInitialSettings' action shortly after content script loads.
 
-  // --- Message Listener ---
-  /**
-   * Initializes message listeners for communication with the popup script and background script.
-   * This function contains the single chrome.runtime.onMessage.addListener.
-   * Includes try...catch blocks for robust error handling during message processing.
-   */
-  function initMessageListeners() {
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-      console.log("Content script: Received message:", request.action);
-
-      // We are planning to send a response for most handled actions to prevent "message port closed" errors.
-      // The try...catch ensures sendResponse is called even if an error occurs within a case.
-      let asyncResponse = true; // Assume we will send a response for handled cases
-
-
-      switch (request.action) {
-        case 'setInitialSettings':
-          try {
-            // Receive initial settings and profile from popup on page load
-            autofillActive = request.settings.autofillHighlightEnabled; // Assuming this setting exists
-            currentProfile = request.activeProfile;
-            console.log("Content script: Initial settings and profile received.", { autofillActive, currentProfile });
-            // Perform initial highlighting if needed
-            if (autofillActive) {
-              // Use a slight delay to wait for the page content to render
-              setTimeout(detectAndHighlightForms, 500);
-            }
-            sendResponse({ success: true, message: 'Initial settings applied' });
-          } catch (error) {
-            console.error("Content script: Error applying initial settings:", error);
-            // Send back an error response
-            sendResponse({ success: false, error: error.message, action: request.action });
-          }
-          break;
-
-        case 'toggleAutofillHighlighting':
-          try {
-            autofillActive = request.isActive;
-            handleAutofillToggle(); // Assuming handleAutofillToggle exists and applies/removes highlighting
-            sendResponse({ success: true, message: 'Autofill highlighting toggled' });
-          } catch (error) {
-            console.error("Content script: Error toggling highlighting:", error);
-            sendResponse({ success: false, error: error.message, action: request.action });
-          }
-          break;
-
-        case 'fillForm':
-          try {
-            console.log("Content script: Received fillForm request.");
-            currentProfile = request.profile; // Ensure profile is up-to-date
-
-            const filledFormData = {}; // Data that was actually filled (for preview/logging, exclude sensitive)
-            let fieldsFilledCount = 0;
-
-            const inputs = document.querySelectorAll('input, select, textarea');
-
-            inputs.forEach(input => {
-              // --- Add try...catch around processing each input to catch specific errors ---
-              try {
-                // Ensure input is visible and interactive before attempting to fill
-                if (input.offsetParent === null || input.disabled || input.readOnly) {
-                  return; // Skip hidden, disabled, or read-only fields
-                }
-
-                const fieldType = identifyField(input); // Identify the field type
-
-                // If a field type was identified AND we have a corresponding non-empty value in the current profile
-                if (fieldType && currentProfile && currentProfile[fieldType] !== undefined && currentProfile[fieldType] !== null && currentProfile[fieldType] !== '') {
-                  const valueToFill = currentProfile[fieldType];
-
-                  // --- Attempt to fill the field ---
-                  // Pass the fieldType to fillField so it can handle specific types (like select)
-                  const fillSuccess = fillField(input, valueToFill, fieldType); // Call the fillField function
-
-                  if (fillSuccess) {
-                    highlightField(input, fieldType, true); // Highlight as filled
-                    fieldsFilledCount++;
-                    // Add filled data to the response object (exclude sensitive passwords)
-                    filledFormData[fieldType] = (fieldType === 'password' || fieldType === 'confirmPassword') ? '[*****]' : valueToFill;
-                  } else {
-                    console.warn(`Content script: Failed to fill field for type ${fieldType} with value "${valueToFill}"`, input);
-                  }
-                  // --- End Attempt to fill the field ---
-                }
-                // Fields where identifyField returned null are skipped.
-                // Fields where we don't have profile data are skipped.
-                // Fields where the profile data is empty string, null, or undefined are skipped for filling.
-
-              } catch (inputError) {
-                // Log error for a specific input, but continue processing other inputs
-                console.error(`Content script: Error processing input ${input.id || input.name || input.tagName} during fillForm:`, inputError);
-              }
-              // --- End try...catch around processing each input ---
-            }); // End of inputs.forEach
-
-            console.log(`Content script: Attempted to fill ${fieldsFilledCount} fields.`);
-
-            // Send back the data that was actually filled (used by popup for preview)
-            // Send success: true even if 0 fields were filled, but include the count/data
-            sendResponse({ success: true, fieldsFilledCount: fieldsFilledCount, formData: filledFormData });
-
-          } catch (error) {
-            // This outer catch block captures errors that happen outside the forEach loop
-            console.error("Content script: Error during fillForm (outer catch):", error);
-            sendResponse({ success: false, error: error.message, action: request.action });
-          }
-          break;
-
-        case 'submitForm':
-          try {
-            console.log("Content script: Received submitForm request.");
-            const submitSuccess = submitForm(); // Call your local submit function
-
-            // Determine if a birthday field was present (if submitForm needs this info or it's checked here)
-            const hasBirthday = hasBirthdayField(); // Assuming this function checks for a birthday input
-
-            sendResponse({
-              success: submitSuccess, // Was a form submission *attempted* or successful?
-              hasBirthdayField: hasBirthday,
-              captchaDetected: false // Placeholder - implement actual detection if needed
-            });
-          } catch (error) {
-            console.error("Content script: Error during submitForm:", error);
-            sendResponse({ success: false, error: error.message, action: request.action });
-          }
-          break;
-
-        case 'getFormStatus':
-          try {
-            console.log("Content script: Received getFormStatus request.");
-            const inputs = document.querySelectorAll('input, select, textarea');
-            let detectedFieldCount = 0;
-            let formDetected = false;
-
-            inputs.forEach(input => {
-              // --- Add try...catch around processing each input to catch specific errors ---
-              try {
-                const fieldType = identifyField(input); // Identify the field type
-
-                if (fieldType) {
-                  detectedFieldCount++;
-                  if (!formDetected && input.closest('form')) {
-                    formDetected = true;
-                  }
-                }
-              } catch (inputError) {
-                // Log error for a specific input, but continue processing other inputs
-                console.error(`Content script: Error processing input ${input.id || input.name || input.tagName} in getFormStatus:`, inputError);
-              }
-              // --- End try...catch around processing each input ---
-            }); // End of inputs.forEach
-
-            // If no fields matched, check if there's at least one <form> element as a fallback for detection
-            if (!formDetected) {
-              formDetected = document.querySelectorAll('form').length > 0;
-            }
-
-            console.log("Content script: getFormStatus response:", { formDetected: formDetected, fieldCount: detectedFieldCount });
-            sendResponse({ formDetected: formDetected, fieldCount: detectedFieldCount });
-
-          } catch (error) {
-            // This outer catch block captures errors that happen outside the forEach loop
-            console.error("Content script: Error getting form status (outer catch):", error);
-            sendResponse({ success: false, error: error.message, action: request.action });
-          }
-          break;
-
-        default:
-          console.warn("Content script: Unknown message action:", request.action);
-          // For unknown actions, we don't expect a response, so no need to call sendResponse.
-          asyncResponse = false; // Indicate no response is planned for unhandled actions
-          break;
-      }
-
-      // Return true to indicate that sendResponse will be called asynchronously for handled cases.
-      // Return false for unhandled cases (where asyncResponse is false).
-      return asyncResponse;
-    });
-  }
-  // --- End Message Listener ---
-
-
   // --- Mutation Observer ---
   // Set up mutation observer to detect new forms or form fields added dynamically to the DOM
   function initMutationObserver() {
@@ -440,30 +258,30 @@
           break;
 
         case 'fillForm':
+        case 'executeAutofill':
+          console.log("Content.js: Received executeAutofill command for", request.retailerInfo?.name);
           try {
-            console.log("Content script: Received fillForm request.");
-            currentProfile = request.profile; // Ensure profile is up-to-date
+            // --- YOUR EXISTING AUTOFILL LOGIC GOES HERE ---
+            // Example: const success = autofillMyForm(request.userData, request.retailerInfo);
+            // This function should return true on success, false on failure.
+            // It might need to identify if it's on the correct page first.
+            currentProfile = request.profile;
+            const success = detectAndFillForms();
 
-            // Call the function to detect and fill forms.
-            // This function now returns an object { filledFormData, fieldsFilledCount } or null on error.
-            const fillResult = detectAndFillForms(); // Call the function
-
-            if (fillResult !== null) {
-              // Send back the data that was actually filled (used by popup for preview)
+            if (success) {
               sendResponse({
                 success: true,
+                message: "Autofill successful.",
                 fieldsFilledCount: fillResult.fieldsFilledCount,
                 formData: fillResult.filledFormData
               });
             } else {
-              // If detectAndFillForms returned null due to an internal error (already logged)
-              sendResponse({ success: false, error: 'Error during form filling.', action: request.action });
+              // Consider if specific elements were not found, CAPTCHA detected, etc.
+              sendResponse({ success: false, message: "Autofill failed. Page structure might have changed or CAPTCHA present." });
             }
-
           } catch (error) {
-            // This outer catch block captures errors directly within the fillForm case handler
-            console.error("Content script: Error during fillForm (outer catch):", error);
-            sendResponse({ success: false, error: error.message, action: request.action });
+            console.error("Content.js: Error during autofill:", error);
+            sendResponse({ success: false, message: `Autofill error: ${error.message}` });
           }
           break;
 

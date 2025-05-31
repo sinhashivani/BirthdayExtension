@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Bulk Autofill</title>
+    <link rel="stylesheet" href="bulk_autofill.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Bulk Autofill Dashboard</h1>
+
+        <div class="retailer-management">
+            <h2>Manage Retailers</h2>
+            <form id="addRetailerForm">
+                <input type="text" id="retailerName" placeholder="Retailer Name" required>
+                <input type="url" id="retailerUrl" placeholder="Membership Page URL" required>
+                <button type="submit">Add Retailer</button>
+            </form>
+
+            <h3>Your Retailers</h3>
+            <div id="retailerListContainer" class="retailer-list">
+                <p id="noRetailersMessage">No retailers added yet. Add one above!</p>
+            </div>
+            <button id="clearAllRetailers">Clear All Retailers</button>
+        </div>
+
+        <div class="bulk-autofill-controls">
+            <h2>Start Bulk Autofill</h2>
+            <button id="startBulkAutofillButton">Start Autofill for Selected</button>
+        </div>
+
+        <div class="status-summary">
+            <h2>Autofill Status</h2>
+            <div id="autofillStatusDisplay">
+                <p>Select retailers and click 'Start Autofill' to see status updates.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="bulk_autofill.js"></script>
+</body>
+
+</html>

@@ -3,7 +3,185 @@
 let websiteList = [];
 let currentWebsiteIndex = 0;
 let currentProcessingTabId = null; // To keep track of the tab we are currently processing
+let bulkProcessQueue = []; // Array of retailer IDs to process
+let currentBulkJobStatus = {}; // retailerId: { status: 'pending'|'in_progress'|'complete'|'error', message: '', tabId: null }
+let activeProcessingCount = 0;
+const MAX_CONCURRENT_PROCESSES = 1; // Start with 1 for simplicity, can increase later
 
+let bulkUIPort = null; // For long-lived connection with bulk_autofill.html
+
+chrome.runtime.onConnect.addListener((port) => {
+    if (port.name === "bulkAutofillUI") {
+        bulkUIPort = port;
+        console.log("Bulk Autofill UI connected.");
+
+        bulkUIPort.onMessage.addListener(async (msg) => {
+            if (msg.action === "startBulkAutofill" && msg.selectedRetailerIds) {
+                await initializeBulkProcess(msg.selectedRetailerIds);
+            } else if (msg.action === "retryRetailer" && msg.retailerId) {
+                // Add logic to retry a single failed retailer
+                retryRetailer(msg.retailerId);
+            }
+        });
+
+        bulkUIPort.onDisconnect.addListener(() => {
+            bulkUIPort = null;
+            console.log("Bulk Autofill UI disconnected.");
+            // Optionally: cancel ongoing bulk process if UI is closed? Or let it finish.
+        });
+    }
+});
+
+// Listener for tab updates - used to detect when a page has finished loading
+chrome.tabs.onUpdated.addListener(handleTabUpdated);
+
+chrome.action.onClicked.addListener(() => {
+    const bulkAutofillUrl = chrome.runtime.getURL('bulk_autofill.html');
+    chrome.tabs.create({ url: bulkAutofillUrl });
+});
+
+function notifyUI(statusUpdate) {
+    if (bulkUIPort) {
+        bulkUIPort.postMessage(statusUpdate);
+    }
+}
+
+async function initializeBulkProcess(selectedRetailerIds) {
+    const allRetailers = (await chrome.storage.local.get(['retailerDatabase']))?.retailerDatabase || [];
+    bulkProcessQueue = selectedRetailerIds
+        .map(id => allRetailers.find(r => r.id === id))
+        .filter(r => r); // Ensure retailer exists
+
+    currentBulkJobStatus = {};
+    bulkProcessQueue.forEach(retailer => {
+        currentBulkJobStatus[retailer.id] = { status: 'pending', message: '', tabId: null };
+    });
+
+    notifyUI({ action: 'bulkProcessUpdate', statuses: currentBulkJobStatus });
+    activeProcessingCount = 0;
+    processNextRetailer();
+}
+
+function processNextRetailer() {
+    if (activeProcessingCount >= MAX_CONCURRENT_PROCESSES) {
+        return; // Wait for an active process to finish
+    }
+
+    const nextRetailerJob = bulkProcessQueue.find(r => currentBulkJobStatus[r.id]?.status === 'pending');
+    if (!nextRetailerJob) {
+        if (activeProcessingCount === 0) {
+            console.log("Bulk process queue finished.");
+            notifyUI({ action: 'bulkProcessComplete', statuses: currentBulkJobStatus });
+        }
+        return;
+    }
+
+    activeProcessingCount++;
+    currentBulkJobStatus[nextRetailerJob.id].status = 'in_progress';
+    currentBulkJobStatus[nextRetailerJob.id].message = 'Opening tab...';
+    notifyUI({ action: 'bulkProcessUpdate', statuses: currentBulkJobStatus });
+
+    const retailerUrl = nextRetailerJob.membershipPageUrl;
+    chrome.tabs.create({ url: retailerUrl, active: false }, async (tab) => {
+        if (chrome.runtime.lastError || !tab) {
+            console.error("Error creating tab:", chrome.runtime.lastError?.message);
+            handleRetailerCompletion(nextRetailerJob.id, 'error', 'Failed to open tab.');
+            return;
+        }
+        currentBulkJobStatus[nextRetailerJob.id].tabId = tab.id;
+        currentBulkJobStatus[nextRetailerJob.id].message = 'Tab opened, waiting for page load...';
+        notifyUI({ action: 'bulkProcessUpdate', statuses: currentBulkJobStatus });
+
+        // Listen for tab update to ensure page is loaded before sending message
+        chrome.tabs.onUpdated.addListener(async function tabUpdateListener(tabId, changeInfo, updatedTab) {
+            if (tabId === tab.id && changeInfo.status === 'complete') {
+                chrome.tabs.onUpdated.removeListener(tabUpdateListener); // Clean up listener
+
+                currentBulkJobStatus[nextRetailerJob.id].message = 'Page loaded, attempting autofill...';
+                notifyUI({ action: 'bulkProcessUpdate', statuses: currentBulkJobStatus });
+
+                // Send message to content script to start autofill
+                // Ensure you have user profile data available to send
+                const userData = (await chrome.storage.local.get('userProfileData'))?.userProfileData; // Example
+                if (!userData) {
+                    handleRetailerCompletion(nextRetailerJob.id, 'error', 'User profile data not found.');
+                    return;
+                }
+
+                chrome.tabs.sendMessage(
+                    tab.id,
+                    {
+                        action: "executeAutofill",
+                        retailerInfo: nextRetailerJob, // For context, if needed by content.js
+                        userData: userData // The actual data to fill
+                    },
+                    (response) => {
+                        if (chrome.runtime.lastError) {
+                            handleRetailerCompletion(nextRetailerJob.id, 'error', `Autofill communication error: ${chrome.runtime.lastError.message}`);
+                        } else if (response) {
+                            handleRetailerCompletion(nextRetailerJob.id, response.success ? 'complete' : 'error', response.message);
+                        } else {
+                            handleRetailerCompletion(nextRetailerJob.id, 'error', 'No response from content script.');
+                        }
+                    }
+                );
+            }
+        });
+    });
+}
+
+// background.js
+function handleRetailerCompletion(retailerId, status, message) {
+    const job = currentBulkJobStatus[retailerId];
+    if (!job) return;
+
+    job.status = status;
+    job.message = message;
+
+    if (job.tabId) {
+        // Close the tab if status is complete or error, unless specified otherwise (e.g., needs attention)
+        if (status === 'complete' || (status === 'error' && message !== 'Needs Attention')) {
+            chrome.tabs.remove(job.tabId, () => {
+                if (chrome.runtime.lastError) { /* Optional: Log if tab closing fails */ }
+            });
+        }
+        job.tabId = null; // Clear tabId
+    }
+
+    activeProcessingCount--;
+    notifyUI({ action: 'bulkProcessUpdate', statuses: currentBulkJobStatus });
+    processNextRetailer(); // Attempt to process the next item in the queue
+}
+
+// Simplified retry (re-queues and starts if idle)
+async function retryRetailer(retailerId) {
+    const allRetailers = (await chrome.storage.local.get(['retailerDatabase']))?.retailerDatabase || [];
+    const retailerToRetry = allRetailers.find(r => r.id === retailerId);
+    if (retailerToRetry && currentBulkJobStatus[retailerId]) {
+        currentBulkJobStatus[retailerId] = { status: 'pending', message: '', tabId: null };
+        // If not already in queue (e.g. for a full bulk run), add it
+        if (!bulkProcessQueue.find(r => r.id === retailerId)) {
+            bulkProcessQueue.unshift(retailerToRetry); // Add to front for immediate retry
+        }
+        notifyUI({ action: 'bulkProcessUpdate', statuses: currentBulkJobStatus });
+        processNextRetailer();
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//CODE BEFORE ANY CHANGES
 // Listen for messages from popup or options page
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'startAutoSubscribe') {
@@ -12,9 +190,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
     // Add other background message listeners here if needed
 });
-
-// Listener for tab updates - used to detect when a page has finished loading
-chrome.tabs.onUpdated.addListener(handleTabUpdated);
 
 async function startAutoSubscribeProcess() {
     console.log("Background: Auto-subscribe process initiated.");

@@ -41,8 +41,9 @@
     "web_accessible_resources": [
         {
             "resources": [
-                "onboarding.html",
-                "onboarding.js"
+                "bulk_autofill.html",
+                "bulk_autofill.css",
+                "bulk_autofill.js"
             ],
             "matches": [
                 "<all_urls>"
