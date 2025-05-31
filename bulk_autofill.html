@@ -10,7 +10,7 @@
     <div class="container">
         <h1>Bulk Autofill Dashboard</h1>
 
-        <section id="profileManagementSection">
+        <section id="profileFormSection">
             <h2>Autofill Profile</h2>
             <div class="profile-selector-container">
                 <label for="profileSelect">Select Profile:</label>
@@ -26,18 +26,62 @@
                 <input type="text" id="profileName" required>
 
                 <label for="firstName">First Name:</label>
-                <input type="text" id="firstName">
+                <input type="text" id="firstName" autocomplete="given-name">
+
                 <label for="lastName">Last Name:</label>
-                <input type="text" id="lastName">
+                <input type="text" id="lastName" autocomplete="family-name">
+
                 <label for="email">Email:</label>
-                <input type="email" id="email">
-                <button type="submit" id="saveProfileBtn">Save Profile</button>
-                <button type="button" id="cancelProfileEditBtn">Cancel</button>
-                <button type="button" id="deleteProfileBtn" class="delete-btn">Delete Profile</button>
+                <input type="email" id="email" autocomplete="email">
+
+                <label for="password">Password:</label>
+                <input type="password" id="password" autocomplete="new-password">
+
+                <label for="birthday">Birthday:</label>
+                <input type="date" id="birthday" autocomplete="bday">
+
+                <label for="phoneCountryCode">Phone Country Code:</label>
+                <input type="text" id="phoneCountryCode" autocomplete="tel-country-code" placeholder="+1">
+
+                <label for="phoneNumber">Phone Number:</label>
+                <input type="tel" id="phoneNumber" autocomplete="tel-national">
+
+                <label for="address">Address Line 1:</label>
+                <input type="text" id="address" autocomplete="address-line1">
+
+                <label for="address2">Address Line 2:</label>
+                <input type="text" id="address2" autocomplete="address-line2">
+
+                <label for="city">City:</label>
+                <input type="text" id="city" autocomplete="address-level2">
+
+                <label for="state">State/Province:</label>
+                <input type="text" id="state" autocomplete="address-level1">
+
+                <label for="zip">Zip/Postal Code:</label>
+                <input type="text" id="zip" autocomplete="postal-code">
+
+                <label for="country">Country:</label>
+                <input type="text" id="country" autocomplete="country-name">
+
+                <label for="genderSelect">Gender:</label>
+                <select id="genderSelect">
+                    <option value="">Select Gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                    <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+
+                <div class="profile-form-actions">
+                    <button type="submit" id="saveProfileBtn">Save Profile</button>
+                    <button type="button" id="cancelProfileEditBtn">Cancel</button>
+                    <button type="button" id="deleteProfileBtn" class="delete-btn">Delete Profile</button>
+                </div>
             </form>
         </section>
 
-        <div class="retailer-management">
+        <section class="retailer-management">
             <h2>Manage Retailers</h2>
             <form id="addRetailerForm">
                 <input type="text" id="retailerName" placeholder="Retailer Name" required>
@@ -53,19 +97,20 @@
                 <button id="selectAllVisible">Select All Visible</button>
                 <button id="deselectAllVisible">Deselect All Visible</button>
             </div>
-        </div>
+        </section>
 
-        <div class="bulk-autofill-controls">
+        <section class="bulk-autofill-controls">
             <h2>Start Bulk Autofill</h2>
             <button id="startBulkAutofillButton">Start Autofill for Selected</button>
-        </div>
+        </section>
 
-        <div class="status-summary">
+        <section class="status-summary">
             <h2>Autofill Status</h2>
+            <div id="statusMessage" class="status-message hidden"></div>
             <div id="autofillStatusDisplay">
                 <p>Select retailers and click 'Start Autofill' to see status updates.</p>
             </div>
-        </div>
+        </section>
     </div>
 
     <script src="bulk_autofill.js"></script>

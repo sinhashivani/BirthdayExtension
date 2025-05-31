@@ -272,8 +272,7 @@
             // Example: const success = autofillMyForm(request.userData, request.retailerInfo);
             // This function should return true on success, false on failure.
             // It might need to identify if it's on the correct page first.
-            currentProfile = request.profile;
-            const success = detectAndFillForms(profile, request.retailer || request.retailerInfo);
+            const success = detectAndFillForms(profile);
 
             if (success) {
               sendResponse({
@@ -525,13 +524,13 @@
    * Does NOT automatically submit the form.
    * @returns {Object|null} An object containing the fieldType and value for fields that were filled (excluding sensitive data), or null if no fields were detected/filled.
    */
-  function detectAndFillForms(profile, retailerInfo) {
+  function detectAndFillForms(profile) {
     let fieldsFilledCount = 0;
     let filledFormData = {}; // Object to store data that was actually filled
 
     console.log("Content script: Detecting and filling forms.");
     // Ensure we have a profile to fill with
-    if (!currentProfile || Object.keys(currentProfile).length === 0) {
+    if (!profile || Object.keys(profile).length === 0) {
       console.warn("Content script: No current profile to fill forms with.");
       return null; // Cannot fill if no profile
     }
@@ -550,8 +549,8 @@
         const fieldType = identifyField(input); // Identify the field type
 
         // If a field type was identified AND we have a corresponding non-empty value in the current profile
-        if (fieldType && currentProfile && currentProfile[fieldType] !== undefined && currentProfile[fieldType] !== null && currentProfile[fieldType] !== '') {
-          const valueToFill = currentProfile[fieldType];
+        if (fieldType && profile && profile[fieldType] !== undefined && profile[fieldType] !== null && profile[fieldType] !== '') {
+          const valueToFill = profile[fieldType];
 
           // --- Attempt to fill the field ---
           // Pass the fieldType to fillField so it can handle specific types (like select)

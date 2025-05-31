@@ -63,22 +63,50 @@ async function initializeBulkProcess(selectedRetailerIds) {
 }
 
 async function loadProfilesFromStorage() {
+    console.log("Background: Loading profiles from storage...");
     const result = await chrome.storage.local.get(['userProfiles', 'activeProfileId']);
     allProfiles = result.userProfiles || {};
-    activeProfileId = result.activeProfileId || (Object.keys(allProfiles)[0] || null); // Set first as active if none
-    console.log("Profiles loaded:", allProfiles, "Active ID:", activeProfileId);
+    activeProfileId = result.activeProfileId || null;
+
+    // If no active profile set, try to set the first available one
+    if (!activeProfileId && Object.keys(allProfiles).length > 0) {
+        activeProfileId = Object.keys(allProfiles)[0];
+        await chrome.storage.local.set({ activeProfileId: activeProfileId });
+    }
+    console.log("Background: Profiles loaded:", allProfiles, "Active ID:", activeProfileId);
 }
 
 async function saveProfileToStorage(profileData) {
     let newProfileId = profileData.id;
-    if (!newProfileId || newProfileId === 'new') { // For new profiles
-        newProfileId = 'profile-' + Date.now(); // Simple unique ID
+    if (!newProfileId || newProfileId === 'new' || typeof newProfileId === 'undefined') {
+        newProfileId = 'profile-' + Date.now();
     }
-    allProfiles[newProfileId] = { ...profileData, id: newProfileId };
+
+    // Create a new object with only the fields you want to save
+    allProfiles[newProfileId] = {
+        id: newProfileId,
+        name: profileData.name || '', // Add defaults for safety
+        firstName: profileData.firstName || '',
+        lastName: profileData.lastName || '',
+        email: profileData.email || '',
+        password: profileData.password || '',
+        birthday: profileData.birthday || '',
+        phoneCountryCode: profileData.phoneCountryCode || '',
+        phone: profileData.phone || '',
+        address: profileData.address || '',
+        address2: profileData.address2 || '',
+        city: profileData.city || '',
+        state: profileData.state || '',
+        zip: profileData.zip || '',
+        country: profileData.country || '',
+        gender: profileData.gender || '' // Make sure this is also gathered from the form
+    };
+
     await chrome.storage.local.set({ userProfiles: allProfiles });
-    await setActiveProfile(newProfileId); // Make the new/saved profile active
+    console.log(`Background: Profile "${profileData.name}" saved with ID: ${newProfileId}`);
     return newProfileId;
 }
+
 
 async function deleteProfileFromStorage(profileId) {
     if (allProfiles[profileId]) {
@@ -225,19 +253,22 @@ chrome.runtime.onConnect.addListener((port) => {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'loadProfile') {
+        console.log("Background: Handling loadProfile action.");
         sendResponse({ success: true, profiles: allProfiles, activeProfileId: activeProfileId });
-        return true; // Keep the message channel open for sendResponse
+        return true;
     }
     if (request.action === 'saveProfile') {
+        console.log("Background: Handling saveProfile action. Profile:", request.profile); // This is also critical
         saveProfileToStorage(request.profile)
             .then(profileId => {
+                console.log("Background: Profile saved successfully, ID:", profileId);
                 sendResponse({ success: true, profileId: profileId });
             })
             .catch(error => {
-                console.error("Error saving profile:", error);
+                console.error("Background: Error saving profile:", error);
                 sendResponse({ success: false, error: error.message });
             });
-        return true; // Keep the message channel open for sendResponse
+        return true;
     }
     if (request.action === 'deleteProfile') {
         deleteProfileFromStorage(request.profileId)
