@@ -1,134 +1,174 @@
 const RETAILER_DB_KEY = 'retailerDatabase';
+let allRetailers = {}; // To store all retailers loaded from storage
+let activeProfile = null
+
+let retailerListDiv = null;
+let noRetailersMessage = null;
 
 async function getRetailers() {
+    console.log("Fetching retailers from storage...");
     const result = await chrome.storage.local.get([RETAILER_DB_KEY]);
     return result[RETAILER_DB_KEY] || [];
 }
 
 async function saveRetailers(retailers) {
+    console.log("Saving retailers to storage:", retailers);
     await chrome.storage.local.set({ [RETAILER_DB_KEY]: retailers });
 }
 
 async function addRetailer(name, url) {
-    const retailers = await getRetailers();
+    console.log("Adding retailer:", name, url);
+    const currentRetailers = await getRetailers(); // Get current list from storage
     const newRetailer = {
         id: self.crypto.randomUUID(),
         name: name,
-        membershipPageUrl: url,
+        signupUrl: url, // Assuming you now use signupUrl
         dateAdded: new Date().toISOString()
     };
-    retailers.push(newRetailer);
-    await saveRetailers(retailers);
-    renderRetailerList(); // Function to update the UI
+    currentRetailers.push(newRetailer);
+    console.log("Current retailers before saving:", currentRetailers);
+    await saveRetailers(currentRetailers);
+    console.log("Retailers saved successfully:", currentRetailers);
+
+    // After saving, update the `allRetailers` global variable
+    allRetailers[newRetailer.id] = newRetailer;
+    console.log("Retailer added successfully:", newRetailer);
+
+    renderRetailerList(Object.values(allRetailers)); // Re-render the UI with the updated list
+}
+
+// --- Delete Retailer Function (from your previous code) ---
+async function deleteRetailer(id) {
+    let currentRetailers = await getRetailers();
+    currentRetailers = currentRetailers.filter(r => r.id !== id);
+    await saveRetailers(currentRetailers);
+
+    // Also update the in-memory `allRetailers` object
+    delete allRetailers[id];
+
+    renderRetailerList(Object.values(allRetailers)); // Re-render the UI
 }
 
 // In bulk_autofill.js
 
-async function renderRetailerList() {
-    const retailers = await getRetailers();
-    const container = document.getElementById('retailerListContainer');
-    container.innerHTML = ''; // Clear existing list
-
-    const noRetailersMessage = document.getElementById('noRetailersMessage');
-
-    if (retailers.length === 0) {
-        noRetailersMessage.style.display = 'block'; // Show the "no retailers" message
-        return;
-    } else {
-        noRetailersMessage.style.display = 'none'; // Hide it if there are retailers
+function renderRetailerList(retailersToDisplay) {
+    // Ensure retailerListDiv is correctly assigned before using it
+    if (!retailerListDiv) {
+        console.error("Bulk Autofill UI: Target element 'retailerList' not found. Cannot render retailers.");
+        return; // Exit if the element isn't found
     }
 
-    // Create a dedicated wrapper for retailer items to better manage layout and prevent
-    // direct child manipulation issues if other elements are added to retailerListContainer
-    const listWrapper = document.createElement('div');
-    listWrapper.id = 'retailers-wrapper';
-    container.appendChild(listWrapper);
+    retailerListDiv.innerHTML = ''; // Clear previous content
 
-    retailers.forEach(retailer => {
-        const retailerDiv = document.createElement('div');
-        retailerDiv.className = 'retailer-item';
-        // Crucial for linking UI elements to backend data and status updates
-        retailerDiv.setAttribute('data-retailer-id', retailer.id);
+    // Check if the retailersToDisplay array is empty
+    if (!retailersToDisplay || retailersToDisplay.length === 0) {
+        retailerListDiv.innerHTML = '<p id="noRetailersMessage">No retailers configured for bulk autofill.</p>'; // Use <p> instead of <li> if it's a general div
+        return;
+    }
 
-        retailerDiv.innerHTML = `
+    retailersToDisplay.forEach(retailer => {
+        const listItem = document.createElement('div'); // Using div as you used 'retailer-item' before, but <li> is also fine if retailerListDiv is a <ul>/<ol>
+        listItem.className = 'retailer-item'; // Use 'retailer-item' for consistency with CSS
+        listItem.setAttribute('data-retailer-id', retailer.id); // Important for status updates
+
+        console.log("Rendering retailer:", retailer); // Debug log to see what is being rendered
+        listItem.innerHTML = `
             <div class="retailer-info">
-                <input type="checkbox" class="retailer-checkbox" value="${retailer.id}">
-                <span>${retailer.name} (<a href="${retailer.membershipPageUrl}" target="_blank" rel="noopener noreferrer">${retailer.membershipPageUrl}</a>)</span>
+                <input type="checkbox" class="retailer-checkbox" name="retailerCheckbox" value="${retailer.id}">
+                <span>${retailer.name} (<a href="${retailer.signupUrl}" target="_blank" rel="noopener noreferrer">${retailer.signupUrl}</a>)</span>
             </div>
             <div class="retailer-actions">
                 <button class="edit-retailer" data-id="${retailer.id}">Edit</button>
                 <button class="delete-retailer" data-id="${retailer.id}">Delete</button>
             </div>
-            <span class="status-display status-pending">Status: In Queue</span> `;
-        listWrapper.appendChild(retailerDiv);
+            <span class="status-display status-pending">Status: In Queue</span>
+        `;
+        retailerListDiv.appendChild(listItem);
     });
 
-    // Add event listeners for Delete buttons
-    listWrapper.querySelectorAll('.delete-retailer').forEach(button => {
+    // Add event listeners for Delete buttons (MUST BE ADDED AFTER ELEMENTS ARE CREATED)
+    retailerListDiv.querySelectorAll('.delete-retailer').forEach(button => {
         button.addEventListener('click', async (event) => {
             const idToDelete = event.target.dataset.id;
-            if (confirm(`Are you sure you want to delete "${retailers.find(r => r.id === idToDelete)?.name || 'this retailer'}"?`)) {
-                await deleteRetailer(idToDelete); // Call the delete function
-                renderRetailerList(); // Re-render the list to update UI
+            if (confirm(`Are you sure you want to delete "${retailersToDisplay.find(r => r.id === idToDelete)?.name || 'this retailer'}"?`)) {
+                await deleteRetailer(idToDelete);
             }
         });
     });
 
-    // Add event listeners for Edit buttons (implementation for editRetailer is needed)
-    listWrapper.querySelectorAll('.edit-retailer').forEach(button => {
+    // Add event listeners for Edit buttons (implementation needed)
+    retailerListDiv.querySelectorAll('.edit-retailer').forEach(button => {
         button.addEventListener('click', async (event) => {
             const idToEdit = event.target.dataset.id;
-            // You would typically open a modal or inline form here
             console.log("Edit functionality to be implemented for retailer ID:", idToEdit);
-            // Example:
-            // const retailerToEdit = retailers.find(r => r.id === idToEdit);
-            // openEditModal(retailerToEdit);
         });
     });
 }
 
-// You will also need the implementation for deleteRetailer and potentially editRetailer
-// Example deleteRetailer function (add this to bulk_autofill.js)
-async function deleteRetailer(id) {
-    let retailers = await getRetailers();
-    retailers = retailers.filter(r => r.id !== id);
-    await saveRetailers(retailers);
-}
-
-
-// ... functions for rendering, deleting, editing retailers ...
-// ... function to get selected retailer IDs for bulk processing ...
-
-// Example: Event listener for adding a new retailer
-async function addRetailer(name, url) {
-    const retailers = await getRetailers();
-    const newRetailer = {
-        id: self.crypto.randomUUID(),
-        name: name,
-        membershipPageUrl: url,
-        dateAdded: new Date().toISOString()
-    };
-    retailers.push(newRetailer);
-    await saveRetailers(retailers);
-    renderRetailerList(); // <-- This is the crucial call!
-}
-
-document.getElementById('addRetailerForm').addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const name = event.target.retailerName.value;
-    const url = event.target.retailerUrl.value;
-    if (name && url) {
-        await addRetailer(name, url); // This calls addRetailer, which then calls renderRetailerList()
-        event.target.reset();
+// --- showStatusMessage (helper for UI feedback) ---
+function showStatusMessage(message, type = "info") {
+    const statusDisplay = document.getElementById('autofillStatusDisplay'); // Assuming you have this ID in HTML
+    if (statusDisplay) {
+        statusDisplay.innerHTML = `<p class="status-${type}">${message}</p>`;
     } else {
-        alert('Please provide both name and URL.');
+        console.warn("Status display element not found:", message);
     }
-});
+}
+
+async function loadAndDisplayRetailers() {
+    console.log("Bulk Autofill UI: Loading and displaying retailers...");
+    try {
+        // Assume you're sending a message to background.js to get the database
+        const response = await chrome.runtime.sendMessage({ action: 'getRetailerDatabase' });
+        console.log("Bulk Autofill UI: Retailers loaded (full response object):", response);
+
+        // Check if response and retailers array are valid
+        if (response && Array.isArray(response.retailers) && response.retailers.length > 0) {
+            // Convert the array back to an object keyed by ID
+            allRetailers = response.retailers.reduce((obj, retailer) => {
+                obj[retailer.id] = retailer;
+                return obj;
+            }, {});
+            console.log("Bulk Autofill UI: Successfully loaded allRetailers:", allRetailers);
+            renderRetailerList(Object.values(allRetailers)); // Pass the array of retailer objects
+        } else {
+            allRetailers = {}; // Ensure allRetailers is empty if no data
+            renderRetailerList([]); // Pass an empty array to render function
+            showStatusMessage("No retailers found for bulk autofill.", "info");
+        }
+    } catch (error) {
+        console.error("Bulk Autofill UI: Error loading retailers:", error);
+        showStatusMessage("Error loading retailers for bulk autofill. See console for details.", "error");
+    }
+}
 
 // bulk_autofill.js (continued)
 document.addEventListener('DOMContentLoaded', () => {
     // (Retailer management setup code from earlier)
-    renderRetailerList(); // initial render
+    retailerListDiv = document.getElementById('retailerList'); // Ensure your HTML has <div id="retailerList">
+
+    document.getElementById('addRetailerForm').addEventListener('submit', async (event) => {
+        console.log("Add Retailer Form submitted");
+        event.preventDefault();
+        const name = event.target.retailerName.value;
+        const url = event.target.retailerUrl.value; // Assuming your input ID is 'retailerUrl'
+
+        if (name && url) {
+            await addRetailer(name, url);
+            event.target.reset(); // Clear the form
+        } else {
+            alert('Please provide both name and URL.');
+        }
+    });
+
+    document.getElementById('clearAllRetailers').addEventListener('click', async () => {
+        if (confirm("Are you sure you want to clear all retailers? This cannot be undone.")) {
+            await saveRetailers([]); // Save an empty array
+            allRetailers = {}; // Clear in-memory object
+            renderRetailerList([]); // Re-render the list to update UI
+            showStatusMessage("All retailers cleared.", "info");
+        }
+    });
 
     const port = chrome.runtime.connect({ name: "bulkAutofillUI" });
 
@@ -154,19 +194,13 @@ document.addEventListener('DOMContentLoaded', () => {
         port.postMessage({ action: "startBulkAutofill", selectedRetailerIds: selectedRetailers });
     });
 
-    document.getElementById('clearAllRetailers').addEventListener('click', async () => {
-        if (confirm("Are you sure you want to clear all retailers? This cannot be undone.")) {
-            await saveRetailers([]); // Save an empty array
-            renderRetailerList(); // Re-render the list
-        }
-    });
-
-
-    // Function to render/update the status list in the HTML
+    // Function to render/update the status list in the HTML (existing, just placing it in context)
     function updateRetailerStatusesInUI(statuses) {
-        const retailerListElement = document.getElementById('retailerListContainer'); // Assuming you have this
+        // Ensure retailerListDiv is available for finding elements
+        if (!retailerListDiv) return;
+
         Object.keys(statuses).forEach(retailerId => {
-            const retailerDiv = retailerListElement.querySelector(`[data-retailer-id="${retailerId}"]`);
+            const retailerDiv = retailerListDiv.querySelector(`[data-retailer-id="${retailerId}"]`);
             if (retailerDiv) {
                 let statusText = `Status: ${statuses[retailerId].status}`;
                 if (statuses[retailerId].message) {
@@ -175,7 +209,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const statusEl = retailerDiv.querySelector('.status-display') || document.createElement('span');
                 statusEl.className = 'status-display';
                 statusEl.textContent = statusText;
-                // Add appropriate CSS classes for styling based on status (e.g., .status-complete, .status-error)
                 statusEl.classList.remove('status-pending', 'status-in_progress', 'status-complete', 'status-error');
                 statusEl.classList.add(`status-${statuses[retailerId].status}`);
 
@@ -183,7 +216,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     retailerDiv.appendChild(statusEl);
                 }
 
-                // Add retry button if status is 'error'
                 let retryButton = retailerDiv.querySelector('.retry-button');
                 if (statuses[retailerId].status === 'error' && !retryButton) {
                     retryButton = document.createElement('button');
@@ -191,10 +223,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     retryButton.className = 'retry-button';
                     retryButton.onclick = () => {
                         port.postMessage({ action: 'retryRetailer', retailerId: retailerId });
-                        // Visually update status to pending/retrying immediately
                         statusEl.textContent = 'Status: pending - Retrying...';
                         statusEl.className = 'status-display status-pending';
-                        retryButton.remove(); // Remove button after clicking
+                        retryButton.remove();
                     };
                     retailerDiv.appendChild(retryButton);
                 } else if (statuses[retailerId].status !== 'error' && retryButton) {
@@ -204,6 +235,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    renderRetailerList();
+    // --- Initial load and display of retailers ---
+    loadAndDisplayRetailers();
+    renderRetailerList(); // initial render
 });
 
