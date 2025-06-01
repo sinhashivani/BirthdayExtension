@@ -27,7 +27,9 @@ const profileFirstNameInput = document.getElementById('profile-firstName');
 const profileLastNameInput = document.getElementById('profile-lastName');
 const profileEmailInput = document.getElementById('profile-email');
 const profilePasswordInput = document.getElementById('profile-password');
+
 console.log("Popup: Found profilePasswordInput:", profilePasswordInput); // <-- Add this line
+
 const profileBirthdayInput = document.getElementById('profile-birthday');
 const profileCountryCode = document.getElementById('profile-country-code');
 const profilePhoneInput = document.getElementById('profile-phone');
@@ -87,6 +89,15 @@ const DEFAULT_PROFILE = {
 let activeProfile = null; // Stores the single primary profile data
 let formPreviewData = null;
 
+// --- HELPER FUNCTION FOR GETTING ELEMENTS (Keep this from before) ---
+// This is still useful if you have dynamic elements or other parts of your script
+function getElement(id) {
+    const element = document.getElementById(id);
+    if (!element) {
+        console.error(`Popup: Element with ID '${id}' not found.`);
+    }
+    return element;
+}
 
 // --- Initialization ---
 // Wait for the DOM to be fully loaded before initializing the popup
@@ -96,30 +107,74 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners(); // Set up all button/element listeners
 });
 
+
+function generateUniqueId() {
+    return 'profile-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+}
+
 /**
  * Initialize popup with stored data and settings.
  * This runs when the popup is opened.
  */
-function initPopup() {
+async function initPopup() {
     console.log("Popup: Initializing popup.");
 
-    // Load settings and the single profile data concurrently
-    chrome.storage.sync.get(['settings', 'profile'], (data) => {
-        console.log("Popup: Loaded data from storage:", data);
+    // Load settings concurrently (still from sync, as they are separate)
+    const settingsData = await chrome.storage.sync.get('settings');
+    const settings = settingsData.settings || DEFAULT_SETTINGS;
+    applySettings(settings); // Ensure applySettings function exists
+    console.log("Popup: Settings loaded and applied.");
 
-        // Load and apply settings
-        const settings = data.settings || DEFAULT_SETTINGS;
-        applySettings(settings);
+    // --- Load the active profile from the background script ---
+    try {
+        const response = await sendMessageToBackground({ action: 'getActiveProfile' });
+        if (response && response.success && response.profile) {
+            activeProfile = response.profile;
+            // Ensure the profile loaded from background has an ID.
+            // This is a safeguard if the very first default profile didn't have one initially.
+            if (!activeProfile.id) {
+                activeProfile.id = generateUniqueId();
+                console.warn("Popup: Assigned new ID to loaded active profile (for consistency):", activeProfile.id);
+                // Optionally, immediately send this back to background to update its record
+                sendMessageToBackground({ action: 'saveProfileFromPopup', profile: activeProfile })
+                    .catch(e => console.error("Error updating profile with new ID in background:", e));
+            }
+            console.log("Popup: Active profile loaded from background:", activeProfile);
+        } else {
+            console.log("Popup: No active profile found or loaded from background, initializing with default.");
+            activeProfile = { ...DEFAULT_PROFILE, id: generateUniqueId(), name: "My Profile" }; // Ensure default has ID and name
+            // If this is a completely new default, save it to background immediately
+            sendMessageToBackground({ action: 'saveProfileFromPopup', profile: activeProfile })
+                .catch(e => console.error("Error saving initial default profile to background:", e));
+        }
+    } catch (error) {
+        console.error("Popup: Communication error when getting active profile:", error);
+        showStatus('Error loading profile from background.', 'error');
+        activeProfile = { ...DEFAULT_PROFILE, id: generateUniqueId(), name: "My Profile" }; // Fallback to default
+        // If communication failed, we likely can't save this default either, but keep it in memory
+    }
 
-        // Load the single profile data
-        activeProfile = data.profile || DEFAULT_PROFILE;
-        console.log("Popup: Active profile loaded:", activeProfile);
-        // Load profile data into the form fields in the Profile view
-        loadProfileDataIntoForm(activeProfile);
+    // Load profile data into the form fields in the Profile view
+    loadProfileDataIntoForm(activeProfile);
 
-        // After loading data and setting up UI, get status from the current tab
-        // This will update the status message and enable/disable the Autofill button
-        getCurrentTabStatus();
+    // After loading data and setting up UI, get status from the current tab
+    getCurrentTabStatus(); // Ensure this function exists
+
+    // Show the profile view initially
+    showProfileView();
+}
+
+
+async function sendMessageToBackground(message) {
+    return new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage(message, (response) => {
+            if (chrome.runtime.lastError) {
+                console.error("Popup: Error sending message to background:", chrome.runtime.lastError.message);
+                showStatus(`Error communicating: ${chrome.runtime.lastError.message}`, 'error', 5000);
+                return reject(chrome.runtime.lastError.message);
+            }
+            resolve(response);
+        });
     });
 }
 
@@ -277,7 +332,6 @@ function showProfileView() {
     // Reset status when changing views
     // --- USE showStatus ---
     showStatus('Ready.', 'info'); // Use general status area
-    // --- END USE showStatus ---
 }
 
 /** Shows the Autofill view. */
@@ -321,58 +375,83 @@ function loadProfileDataIntoForm(profileData) {
  * Saves the data from the Profile form fields into the activeProfile variable
  * and persists it in Chrome Storage.
  */
-function saveProfileFromForm() {
+async function saveProfileFromForm() {
     console.log("Popup: Saving profile data from form.");
     if (!profileForm) {
-        console.error("Popup: Profile form element not found.");
-        // --- USE showStatus ---
+        console.error("Popup: Profile form element not found during save.");
         showStatus('Error: Profile form missing.', 'error');
-        // --- END USE showStatus ---
         return;
     }
 
-    // Create a new profile object from the current form values
+    // Create the updated profile object.
+    // Crucially, ensure it has an 'id'. If 'activeProfile' somehow doesn't have one, generate it.
     const updatedProfile = {
+        id: activeProfile?.id || generateUniqueId(), // Preserve existing ID or generate a new one
+        name: activeProfile?.name || "My Profile", // Preserve name or set a default
         firstName: profileFirstNameInput ? profileFirstNameInput.value.trim() : '',
         lastName: profileLastNameInput ? profileLastNameInput.value.trim() : '',
         email: profileEmailInput ? profileEmailInput.value.trim() : '',
         password: profilePasswordInput ? profilePasswordInput.value.trim() : '',
-        birthday: profileBirthdayInput ? profileBirthdayInput.value : '', // Date input value isYYYY-MM-DD
+        birthday: profileBirthdayInput ? profileBirthdayInput.value : '',
         countryCode: profileCountryCode ? profileCountryCode.value.trim() : '',
         phone: profilePhoneInput ? profilePhoneInput.value.trim() : '',
         address: profileAddressInput ? profileAddressInput.value.trim() : '',
         city: profileCityInput ? profileCityInput.value.trim() : '',
         state: profileStateInput ? profileStateInput.value.trim() : '',
         zip: profileZipInput ? profileZipInput.value.trim() : '',
-        // Add other fields here
+        // Add other fields from your form here
     };
 
-    const validationResult = validateFormData(updatedProfile); // Call the validation function
+    // Assuming validateFormData exists
+    const validationResult = validateFormData(updatedProfile);
     if (!validationResult.valid) {
         console.warn("Popup: Profile validation failed:", validationResult.errors);
-        // Display validation errors to the user
         let errorMessage = 'Validation errors:';
         for (const field in validationResult.errors) {
             errorMessage += ` ${field.replace(/([A-Z])/g, ' $1').trim().toLowerCase()} - ${validationResult.errors[field]};`;
         }
-        // Use showStatus or update specific error elements
-        showStatus(errorMessage, 'warning', 8000); // Show validation errors as warnings for longer
-        // Consider adding specific error messages next to each field input
-        return; // Stop the save process if validation fails
+        showStatus(errorMessage, 'warning', 8000);
+        return;
     }
-    // --- End Add Validation Call ---
 
-
-    // If validation passed:
+    // Update the in-memory activeProfile immediately after validation
     activeProfile = updatedProfile;
     console.log("Popup: Active profile updated in memory:", activeProfile);
 
-    chrome.storage.sync.set({ profile: activeProfile }, () => {
-        console.log("Popup: Profile saved to storage.");
-        showStatus('Profile saved successfully!', 'success', 3000);
-    });
+    // --- Send updated profile to background.js for persistence ---
+    try {
+        const response = await sendMessageToBackground({
+            action: 'saveProfileFromPopup', // New action to distinguish from background's internal save
+            profile: activeProfile
+        });
 
+        if (response && response.success) {
+            console.log("Popup: Profile saved successfully by background script. Profile ID:", response.profileId);
+            // If background generated a new ID, update our in-memory object
+            activeProfile.id = response.profileId;
+            showStatus('Profile saved successfully!', 'success', 3000);
+        } else {
+            console.error("Popup: Error saving profile via background:", response ? response.error : 'Unknown error');
+            showStatus(`Error saving profile: ${response ? response.error : 'Unknown error'}`, 'error');
+        }
+    } catch (error) {
+        console.error("Popup: Communication error during profile save:", error);
+        showStatus('Error communicating with background script during save.', 'error');
+    }
 }
+
+// async function sendMessageToBackground(message) {
+//     return new Promise((resolve, reject) => {
+//         chrome.runtime.sendMessage(message, (response) => {
+//             if (chrome.runtime.lastError) {
+//                 console.error("Popup: Error sending message to background:", chrome.runtime.lastError.message);
+//                 showStatus(`Error communicating: ${chrome.runtime.lastError.message}`, 'error', 5000);
+//                 return reject(chrome.runtime.lastError.message);
+//             }
+//             resolve(response);
+//         });
+//     });
+// }
 
 // --- Settings Management ---
 

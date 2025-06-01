@@ -19,104 +19,205 @@ function getElement(id) {
 
 
 
-
-
-
 //PROFILES SECTION
 function clearProfileForm() {
-    profileIdField.value = '';
-    profileNameField.value = '';
-    firstNameField.value = '';
-    lastNameField.value = '';
-    emailField.value = '';
-    passwordField.value = ''; // Clear password field
-    birthdayField.value = ''; // Clear birthday
-    phoneCountryCodeField.value = ''; // Clear phone fields
-    phoneNumberField.value = '';
-    addressField.value = ''; // Clear address fields
-    address2Field.value = '';
-    cityField.value = '';
-    stateField.value = '';
-    zipField.value = '';
-    countryField.value = '';
-    // if (genderSelectField) genderSelectField.value = ''; // Clear gender if applicable
+    console.log("Bulk Autofill Page: Clearing profile form for new profile.");
+    getElement('profileId').value = '';
+    getElement('profileName').value = '';
+    getElement('firstName').value = '';
+    getElement('lastName').value = '';
+    getElement('email').value = '';
+    getElement('password').value = '';
+    getElement('birthday').value = '';
+    getElement('phoneCountryCode').value = '';
+    getElement('phoneNumber').value = '';
+    getElement('address').value = '';
+    getElement('address2').value = '';
+    getElement('city').value = '';
+    getElement('state').value = '';
+    getElement('zip').value = '';
+    getElement('country').value = '';
+    if (getElement('genderSelect')) getElement('genderSelect').value = 'prefer-not-to-say';
 
-    deleteProfileBtn.classList.add('hidden');
-    document.getElementById('saveProfileBtn').textContent = 'Create Profile';
-    deleteProfileBtn.disabled = true; // Always disable delete when creating new
+    const profileFormTitle = getElement('profileFormTitle');
+    if (profileFormTitle) {
+        profileFormTitle.textContent = 'Add New Profile'; // Set title for new profile mode
+    }
+
+    const deleteProfileBtn = getElement('deleteProfileBtn');
+    if (deleteProfileBtn) deleteProfileBtn.classList.add('hidden'); // Hide delete button for new profile
 }
 
-// Function to fill the profile form with data
 function fillProfileForm(profile) {
-    if (profile) {
-        profileIdField.value = profile.id || '';
-        profileNameField.value = profile.name || '';
-        firstNameField.value = profile.firstName || '';
-        lastNameField.value = profile.lastName || '';
-        emailField.value = profile.email || '';
-        passwordField.value = profile.password || ''; // Fill password field
-        birthdayField.value = profile.birthday || ''; // Fill birthday
-        phoneCountryCodeField.value = profile.phoneCountryCode || ''; // Fill phone fields
-        phoneNumberField.value = profile.phone || '';
-        addressField.value = profile.address || ''; // Fill address fields
-        address2Field.value = profile.address2 || '';
-        cityField.value = profile.city || '';
-        stateField.value = profile.state || '';
-        zipField.value = profile.zip || '';
-        countryField.value = profile.country || '';
-        // if (genderSelectField) genderSelectField.value = profile.gender || ''; // Fill gender if applicable
+    console.log("fillProfileForm: Function called.");
+    console.log("fillProfileForm: Profile object received:", profile);
 
-
-        deleteProfileBtn.classList.remove('hidden');
-        // Prevent deleting the very last profile
-        if (Object.keys(allProfiles).length <= 1) {
-            deleteProfileBtn.disabled = true;
-        } else {
-            deleteProfileBtn.disabled = false;
-        }
-        document.getElementById('saveProfileBtn').textContent = 'Update Profile';
-    } else {
+    if (!profile) {
+        console.warn("fillProfileForm: No profile object received, clearing form.");
         clearProfileForm();
-        deleteProfileBtn.disabled = true; // No profile selected, disable delete
+        return;
+    }
+
+    const profileIdElement = getElement('profileId');
+    if (profileIdElement) profileIdElement.value = profile.id || '';
+    else console.error("fillProfileForm: Element 'profileId' not found.");
+
+    const profileNameElement = getElement('profileName');
+    if (profileNameElement) profileNameElement.value = profile.name || '';
+    else console.error("fillProfileForm: Element 'profileName' not found.");
+
+    const firstNameElement = getElement('firstName');
+    if (firstNameElement) firstNameElement.value = profile.firstName || '';
+    else console.error("fillProfileForm: Element 'firstName' not found.");
+
+    const lastNameElement = getElement('lastName');
+    if (lastNameElement) lastNameElement.value = profile.lastName || '';
+    else console.error("fillProfileForm: Element 'lastName' not found.");
+
+    const emailElement = getElement('email');
+    if (emailElement) emailElement.value = profile.email || '';
+    else console.error("fillProfileForm: Element 'email' not found.");
+
+    const passwordElement = getElement('password');
+    if (passwordElement) passwordElement.value = profile.password || '';
+    else console.error("fillProfileForm: Element 'password' not found.");
+
+    const birthdayElement = getElement('birthday');
+    if (birthdayElement) birthdayElement.value = profile.birthday || '';
+    else console.error("fillProfileForm: Element 'birthday' not found.");
+
+    const phoneCountryCodeElement = getElement('phoneCountryCode');
+    if (phoneCountryCodeElement) phoneCountryCodeElement.value = profile.phoneCountryCode || '';
+    else console.error("fillProfileForm: Element 'phoneCountryCode' not found.");
+
+    const phoneNumberElement = getElement('phoneNumber');
+    // Pay close attention here: is your profile object's property named 'phone' or 'phoneNumber'?
+    if (phoneNumberElement) phoneNumberElement.value = profile.phone || ''; // Or profile.phoneNumber if that's what your profile object has
+    else console.error("fillProfileForm: Element 'phoneNumber' not found.");
+
+    const addressElement = getElement('address');
+    if (addressElement) addressElement.value = profile.address || '';
+    else console.error("fillProfileForm: Element 'address' not found.");
+
+    const address2Element = getElement('address2');
+    if (address2Element) address2Element.value = profile.address2 || '';
+    else console.error("fillProfileForm: Element 'address2' not found.");
+
+    const cityElement = getElement('city');
+    if (cityElement) cityElement.value = profile.city || '';
+    else console.error("fillProfileForm: Element 'city' not found.");
+
+    const stateElement = getElement('state');
+    if (stateElement) stateElement.value = profile.state || '';
+    else console.error("fillProfileForm: Element 'state' not found.");
+
+    const zipElement = getElement('zip');
+    if (zipElement) zipElement.value = profile.zip || '';
+    else console.error("fillProfileForm: Element 'zip' not found.");
+
+    const countryElement = getElement('country');
+    if (countryElement) countryElement.value = profile.country || '';
+    else console.error("fillProfileForm: Element 'country' not found.");
+
+    const genderSelectElement = getElement('genderSelect');
+    if (genderSelectElement) genderSelectElement.value = profile.gender || 'prefer-not-to-say';
+    else console.error("fillProfileForm: Element 'genderSelect' not found.");
+
+
+    // Update UI title
+    const profileFormTitle = getElement('profileFormTitle');
+    if (profileFormTitle) {
+        profileFormTitle.textContent = `Edit Profile: ${profile.name || 'Unnamed'}`;
+    } else {
+        console.error("fillProfileForm: Element 'profileFormTitle' not found.");
+    }
+
+    // Show delete button
+    const deleteProfileBtn = getElement('deleteProfileBtn');
+    if (deleteProfileBtn) deleteProfileBtn.classList.remove('hidden');
+    else console.error("fillProfileForm: Element 'deleteProfileBtn' not found.");
+
+    // Ensure the profile form section is visible
+    const profileFormSection = getElement('profileFormSection');
+    if (profileFormSection) {
+        profileFormSection.classList.remove('hidden');
+    } else {
+        console.error("fillProfileForm: Element 'profileFormSection' not found.");
     }
 }
+
+// Your renderProfileSelect function (ensure it populates the dropdown correctly)
+function renderProfileSelect(profiles, activeProfileId) {
+    const profileSelect = getElement('profileSelect');
+    if (!profileSelect) return;
+
+    profileSelect.innerHTML = ''; // Clear existing options
+
+    // Add a "New Profile" option if desired (optional but good UX)
+    const newProfileOption = document.createElement('option');
+    newProfileOption.value = 'new-profile'; // A special value for new profile
+    newProfileOption.textContent = 'Add New Profile...';
+    profileSelect.appendChild(newProfileOption);
+
+    // Populate with actual profiles
+    for (const id in profiles) {
+        const profile = profiles[id];
+        const option = document.createElement('option');
+        option.value = profile.id;
+        option.textContent = profile.name;
+        profileSelect.appendChild(option);
+    }
+
+    // Set the selected value in the dropdown
+    if (activeProfileId && profiles[activeProfileId]) {
+        profileSelect.value = activeProfileId;
+    } else {
+        profileSelect.value = 'new-profile'; // Select 'Add New Profile' if no active profile
+        clearProfileForm(); // Clear form when 'Add New Profile' is selected initially
+    }
+    console.log("Bulk Autofill Page: Dropdown updated. Selected:", profileSelect.value);
+}
+
 
 /**
  * Loads profiles and the active profile ID from the background script.
  * Updates global variables and refreshes the UI.
  */
 async function loadProfiles() {
-    console.log("Bulk Autofill Page: Loading profiles...");
-    try {
-        const response = await chrome.runtime.sendMessage({ action: 'loadProfile' });
+    console.log("loadProfiles: Sending message to background script...");
+    chrome.runtime.sendMessage({ action: 'loadProfile' }, (response) => {
+        console.log("loadProfiles: Received response from background:", response);
         if (response && response.success) {
-            allProfiles = response.profiles || {};
-            const activeProfileId = response.activeProfileId;
-            console.log("Bulk Autofill Page: Profiles loaded:", allProfiles);
+            console.log("loadProfiles: Successfully loaded profiles:", response.profiles, "Active ID from BG:", response.activeProfileId);
+            // Store profiles globally if you need them elsewhere (e.g., for dropdown change listener)
+            window.allProfiles = response.profiles; // Assign to a global variable if needed
 
-            if (activeProfileId && allProfiles[activeProfileId]) {
-                activeProfile = allProfiles[activeProfileId];
-            } else if (Object.keys(allProfiles).length > 0) {
-                // If no active profile, or it was deleted, set the first one as active
-                const firstProfileId = Object.keys(allProfiles)[0];
-                activeProfile = allProfiles[firstProfileId];
-                // Also update background script about the new active profile
-                await chrome.runtime.sendMessage({ action: 'setActiveProfile', profileId: firstProfileId });
+            // Populate the dropdown with all loaded profiles
+            renderProfileSelect(response.profiles, response.activeProfileId);
+
+            // Populate the form with the active profile's data
+            if (response.activeProfileId && response.profiles[response.activeProfileId]) {
+                fillProfileForm(response.profiles[response.activeProfileId]);
+                // --- CRUCIAL: SHOW THE FORM HERE ---
+                const profileFormSection = getElement('profileFormSection');
+                if (profileFormSection) {
+                    profileFormSection.classList.remove('hidden'); // Make sure the form is visible
+                }
             } else {
-                activeProfile = null; // No profiles available
+                // If no active profile, or active profile invalid, clear form and hide/show new profile option
+                clearProfileForm();
+                const profileFormSection = getElement('profileFormSection');
+                if (profileFormSection) {
+                    profileFormSection.classList.add('hidden'); // Hide if no profile to show
+                }
             }
-
-            populateProfileDropdown(); // Always re-populate dropdown after loading
-            console.log("Bulk Autofill Page: Profiles loaded and dropdown populated.");
-
         } else {
-            console.error("Bulk Autofill Page: Failed to load profiles:", response ? response.error : 'Unknown error');
-            showStatusMessage('Failed to load profiles.', 'error');
+            console.error("Failed to load profiles:", response ? response.error : 'Unknown error');
+            // Show an error message to the user
+            showStatusMessage('Error loading profiles.', 'error');
+            clearProfileForm(); // Clear the form on error
         }
-    } catch (error) {
-        console.error("Bulk Autofill Page: Error during profile loading:", error);
-        showStatusMessage('Error loading profiles. Please check console.', 'error');
-    }
+    });
 }
 
 // Function to update the profile form (your provided function)
@@ -423,12 +524,18 @@ async function loadAndDisplayRetailers() {
 
 
 // --- Main DOMContentLoaded Listener ---
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
     // --- Initialize global DOM element references here ---
-    retailerListDiv = getElement('retailerList');
     profileSelect = getElement('profileSelect');
-    profileSelect = getElement('profileSelect');
-    profileFormSection = getElement('profileFormSection'); // Ensure you have this ID in your HTML
+    profileFormSection = getElement('profileFormSection');
+    saveProfileBtn = getElement('saveProfileBtn');
+    newProfileBtn = getElement('newProfileBtn');
+    editProfileBtn = getElement('editProfileBtn');
+    cancelProfileEditBtn = getElement('cancelProfileBtn'); // Corrected ID from html
+    deleteProfileBtn = getElement('deleteProfileBtn');
+    activeProfileForm = getElement('activeProfileForm');
+    profileFormSection = getElement('profileFormSection');
+    statusMessageDiv = getElement('statusMessage');
 
     // Profile fields (ensure IDs match your HTML)
     profileIdField = getElement('profileId');
@@ -448,46 +555,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     countryField = getElement('country'); // Added
     genderSelectField = getElement('genderSelect');
 
+    retailerListDiv = getElement('retailerList'); // Ensure this is assigned here
 
-    await loadProfiles();
+
+    loadProfiles();
 
     // Event listener for profile selection change
     if (profileSelect) {
-        profileSelect.addEventListener('change', async (event) => {
-            const selectedProfileId = event.target.value;
-            if (selectedProfileId === 'new') {
-                activeProfile = null;
+        profileSelect.addEventListener('change', () => {
+            const selectedProfileId = profileSelect.value;
+            if (selectedProfileId === 'new-profile') {
                 clearProfileForm();
-                if (profileFormSection) profileFormSection.classList.remove('hidden');
-                const profileNameInput = getElement('profileName');
-                if (profileNameInput) profileNameInput.focus();
-                await chrome.runtime.sendMessage({ action: 'setActiveProfile', profileId: null })
-                    .catch(e => console.error("Bulk Autofill Page: Error setting active profile to null in background:", e));
-                showStatusMessage('Creating a new profile.', 'info');
-            } else if (selectedProfileId && allProfiles[selectedProfileId]) {
-                activeProfile = allProfiles[selectedProfileId];
-                fillProfileForm(activeProfile);
-                await chrome.runtime.sendMessage({ action: 'setActiveProfile', profileId: selectedProfileId })
-                    .catch(e => console.error("Bulk Autofill Page: Error setting active profile in background:", e));
-                if (profileFormSection) profileFormSection.classList.add('hidden');
-                showStatusMessage(`Profile "${activeProfile.name}" selected.`, 'info');
+                // Ensure form is visible if hidden
+                const profileFormSection = getElement('profileFormSection');
+                if (profileFormSection) {
+                    profileFormSection.classList.remove('hidden');
+                }
+            } else if (selectedProfileId && window.allProfiles && window.allProfiles[selectedProfileId]) {
+                fillProfileForm(window.allProfiles[selectedProfileId]); // Populate form
+                // Ensure form is visible
+                const profileFormSection = getElement('profileFormSection');
+                if (profileFormSection) {
+                    profileFormSection.classList.remove('hidden');
+                }
             } else {
-                activeProfile = null;
+                // If a blank option or invalid selection, clear and hide form
                 clearProfileForm();
-                if (profileFormSection) profileFormSection.classList.add('hidden');
-                showStatusMessage('No valid profile selected.', 'warning');
+                const profileFormSection = getElement('profileFormSection');
+                if (profileFormSection) {
+                    profileFormSection.classList.add('hidden');
+                }
             }
         });
     }
 
-    // `newProfileBtn` is now largely redundant since "Create New Profile" is in the dropdown.
-    // For now, let's keep it and have it explicitly select the "new" option in the dropdown.
-    // Event listener for the SAVE button (Corrected)
-    const saveProfileBtn = getElement('saveProfileBtn'); // Make sure you have this ID
+    // This button now simply triggers the form's submit event
     if (saveProfileBtn) {
-        saveProfileBtn.addEventListener('click', async (event) => {
-            // Trigger the form's submit event, which handles sending the message to background
+        saveProfileBtn.addEventListener('click', () => {
+            console.log("Bulk Autofill Page: Save button clicked, triggering form submission.");
             if (activeProfileForm) {
+                console.log("Bulk Autofill Page: activeProfileForm found, submitting form.");
                 activeProfileForm.dispatchEvent(new Event('submit'));
             } else {
                 console.error("Bulk Autofill Page: activeProfileForm not found for save button click.");
@@ -496,48 +603,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Event listener for the NEW PROFILE button (optional, as "Create New" is in dropdown)
-    const newProfileBtn = getElement('newProfileBtn');
     if (newProfileBtn) {
         newProfileBtn.addEventListener('click', () => {
             if (profileSelect) {
                 profileSelect.value = 'new';
-                profileSelect.dispatchEvent(new Event('change')); // Trigger change event
+                profileSelect.dispatchEvent(new Event('change')); // Manually trigger change event
+                showStatusMessage('Creating a new profile.', 'info');
             }
         });
     }
 
-    // Event listener for the EDIT PROFILE button
-    const editProfileBtn = getElement('editProfileBtn');
     if (editProfileBtn) {
-        editProfileBtn.addEventListener('click', () => {
-            if (activeProfile) {
-                fillProfileForm(activeProfile); // Populate form for editing
-                if (profileFormSection) profileFormSection.classList.remove('hidden'); // Show form
-                showStatusMessage(`Editing profile: "${activeProfile.name}"`, 'info');
+        editProfileBtn.addEventListener('click', () => { // Removed async here, as updateProfileForm isn't async
+            if (activeProfile && activeProfile.id) {
+                fillProfileForm(activeProfile); // Simply fill form with active profile data
+                if (profileFormSection) profileFormSection.classList.remove('hidden');
             } else {
                 showStatusMessage('Please select a profile to edit, or create a new one.', 'warning');
             }
         });
     }
 
-    // Event listener for the CANCEL button
-    const cancelProfileEditBtn = getElement('cancelProfileEditBtn');
     if (cancelProfileEditBtn) {
         cancelProfileEditBtn.addEventListener('click', async () => {
             if (profileFormSection) profileFormSection.classList.add('hidden');
-            await loadProfiles(); // Reload to ensure dropdown state is consistent
+            await loadProfiles(); // Reload profiles to ensure the selection reflects the actual active profile
             showStatusMessage('Profile edit cancelled.', 'info');
         });
     }
 
-    // Event listener for the Profile Form submission
-    const activeProfileForm = getElement('activeProfileForm');
     if (activeProfileForm) {
         activeProfileForm.addEventListener('submit', async (event) => {
             event.preventDefault(); // Prevent default form submission
             console.log("Bulk Autofill Page: Profile Form submitted");
 
+            // Use getElement for consistency and error checking
             const profileData = {
                 id: getElement('profileId').value || undefined,
                 name: getElement('profileName').value.trim(),
@@ -554,67 +654,70 @@ document.addEventListener('DOMContentLoaded', async () => {
                 state: getElement('state').value.trim(),
                 zip: getElement('zip').value.trim(),
                 country: getElement('country').value.trim(),
-                gender: getElement('genderSelect') ? getElement('genderSelect').value.trim() : '' // Added gender safely
+                gender: getElement('genderSelect') ? getElement('genderSelect').value.trim() : ''
             };
+            console.log("Bulk Autofill Page: Profile data to save:", profileData);
 
             if (!profileData.name) {
                 showStatusMessage('Profile Name is required.', 'error');
                 return;
             }
 
-            chrome.runtime.sendMessage({ action: 'saveProfile', profile: profileData }, (response) => {
+            try {
+                // Send message to background script to save the profile
+                const response = await chrome.runtime.sendMessage({
+                    action: 'saveProfile',
+                    profile: profileData
+                });
+
+                console.log("Bulk Autofill Page: Response from saveProfile message:", response);
+
                 if (response && response.success) {
-                    console.log('Bulk Autofill Page: Profile saved successfully:', response.profileId);
                     showStatusMessage('Profile saved successfully!', 'success');
-                    // Reload profiles to update dropdown and active profile
-                    loadProfiles().then(() => {
-                        // After profiles are loaded, select the newly saved/updated one
-                        if (response.profileId) {
-                            profileSelect.value = response.profileId;
-                            // Manually trigger change event to update the activeProfile and form
-                            profileSelect.dispatchEvent(new Event('change'));
-                        }
-                    });
-
-                    if (profileFormSection) {
-                        profileFormSection.classList.add('hidden');
-                    }
-
+                    // --- THIS IS THE KEY CHANGE ---
+                    // After a successful save, reload all profiles and update the UI.
+                    // This will automatically select the newly saved profile as active,
+                    // because your background script's save logic sets it as active.
+                    await loadProfiles();
                 } else {
-                    console.error('Bulk Autofill Page: Failed to save profile:', response ? response.error : 'Unknown error');
-                    showStatusMessage('Failed to save profile: ' + (response ? response.error : 'Unknown error'), 'error');
+                    showStatusMessage(`Error saving profile: ${response.error || 'Unknown error'}`, 'error');
                 }
-            });
+            } catch (error) {
+                console.error("Bulk Autofill Page: Error sending saveProfile message:", error);
+                showStatusMessage('Error communicating with background script.', 'error');
+            }
         });
     }
 
-    // Event listener for DELETE button
-    const deleteProfileBtn = getElement('deleteProfileBtn');
     if (deleteProfileBtn) {
         deleteProfileBtn.addEventListener('click', async () => {
+            // Check if there's only one profile left (prevent deleting the last one)
             if (Object.keys(allProfiles).length <= 1) {
                 showStatusMessage('Cannot delete the last remaining profile. Create a new one first if you wish to replace it.', 'warning');
                 return;
             }
 
-            if (!activeProfile || !activeProfile.id || !confirm(`Are you sure you want to delete profile "${activeProfile.name}"? This cannot be undone.`)) {
-                showStatusMessage('No profile selected or cancellation.', 'warning');
+            if (!activeProfile || !activeProfile.id || !confirm(`Are you sure you want to delete profile "${activeProfile.name || 'this profile'}"? This cannot be undone.`)) {
+                showStatusMessage('No profile selected or cancellation.', 'info');
                 return;
             }
 
-            const response = await chrome.runtime.sendMessage({ action: 'deleteProfile', profileId: activeProfile.id });
-
-            if (response && response.success) {
-                showStatusMessage(`Profile "${activeProfile.name}" deleted successfully.`, 'success');
-                activeProfile = null;
-                clearProfileForm();
-                await loadProfiles(); // Reload profiles to update dropdown and set new active one
-            } else {
-                showStatusMessage(`Failed to delete profile: ${response ? response.error : 'Unknown error'}`, 'error');
+            try {
+                const response = await chrome.runtime.sendMessage({ action: 'deleteProfile', profileId: activeProfile.id });
+                if (response && response.success) {
+                    showStatusMessage(`Profile "${activeProfile.name || 'selected profile'}" deleted successfully.`, 'success');
+                    activeProfile = null; // Clear active profile
+                    clearProfileForm(); // Clear the form
+                    await loadProfiles(); // Reload profiles to update the dropdown and set a new active one
+                } else {
+                    showStatusMessage(`Failed to delete profile: ${response ? response.error : 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                console.error("Bulk Autofill Page: Error sending delete message to background:", error);
+                showStatusMessage('Error communicating with background script to delete profile.', 'error');
             }
         });
     }
-
 
 
 
