@@ -4,6 +4,7 @@ let activeProfile = null; // Placeholder for future profile management
 
 // Global DOM element reference (assigned in DOMContentLoaded)
 let retailerListDiv = null;
+let stopBulkAutofill = null;
 
 
 function getElement(id) {
@@ -12,6 +13,25 @@ function getElement(id) {
         console.error(`Error: Element with ID '${id}' not found.`);
     }
     return element;
+}
+
+/**
+ * Sends a message to a content script in a specific tab and awaits a response.
+ * @param { number } tabId - The ID of the tab to send the message to.
+ * @param { object } message - The message object to send.
+ * @returns { Promise < any >} A promise that resolves with the response from the content script.
+ */
+function sendMessageToContentScript(tabId, message) {
+    return new Promise((resolve, reject) => {
+        chrome.tabs.sendMessage(tabId, message, (response) => {
+            if (chrome.runtime.lastError) {
+                // Handle errors during message sending (e.g., content script not ready, tab closed)
+                console.error("Error sending message to content script:", chrome.runtime.lastError.message);
+                return reject(new Error(chrome.runtime.lastError.message));
+            }
+            resolve(response);
+        });
+    });
 }
 
 
@@ -147,33 +167,86 @@ function fillProfileForm(profile) {
 }
 
 // Your renderProfileSelect function (ensure it populates the dropdown correctly)
-function renderProfileSelect(profiles, activeProfileId) {
+// function renderProfileSelect(profiles, activeProfileId) {
+//     const profileSelect = getElement('profileSelect');
+//     if (!profileSelect) return;
+
+//     profileSelect.innerHTML = ''; // Clear existing options
+
+//     // Add a "New Profile" option if desired (optional but good UX)
+//     const newProfileOption = document.createElement('option');
+//     newProfileOption.value = 'new-profile'; // A special value for new profile
+//     newProfileOption.textContent = 'Add New Profile...';
+//     profileSelect.appendChild(newProfileOption);
+
+//     // Populate with actual profiles
+//     for (const id in profiles) {
+//         const profile = profiles[id];
+//         const option = document.createElement('option');
+//         option.value = profile.id;
+//         option.textContent = profile.name;
+//         profileSelect.appendChild(option);
+//     }
+
+//     // Set the selected value in the dropdown
+//     if (activeProfileId && profiles[activeProfileId]) {
+//         profileSelect.value = activeProfileId;
+//     } else {
+//         profileSelect.value = 'new-profile'; // Select 'Add New Profile' if no active profile
+//         clearProfileForm(); // Clear form when 'Add New Profile' is selected initially
+//     }
+//     console.log("Bulk Autofill Page: Dropdown updated. Selected:", profileSelect.value);
+// }
+
+function renderProfileSelect(profiles, activeProfileIdFromStorage) { // Renamed parameter for clarity
     const profileSelect = getElement('profileSelect');
     if (!profileSelect) return;
 
     profileSelect.innerHTML = ''; // Clear existing options
 
-    // Add a "New Profile" option if desired (optional but good UX)
+    // Add a "New Profile" option
     const newProfileOption = document.createElement('option');
-    newProfileOption.value = 'new-profile'; // A special value for new profile
+    newProfileOption.value = 'new-profile';
     newProfileOption.textContent = 'Add New Profile...';
     profileSelect.appendChild(newProfileOption);
 
     // Populate with actual profiles
-    for (const id in profiles) {
-        const profile = profiles[id];
-        const option = document.createElement('option');
-        option.value = profile.id;
-        option.textContent = profile.name;
-        profileSelect.appendChild(option);
+    const profileIds = Object.keys(profiles);
+    if (profileIds.length > 0) {
+        const sortedProfileIds = profileIds.sort((a, b) => {
+            const nameA = profiles[a].name ? profiles[a].name.toLowerCase() : '';
+            const nameB = profiles[b].name ? profiles[b].name.toLowerCase() : '';
+            return nameA.localeCompare(nameB);
+        });
+
+        sortedProfileIds.forEach(id => {
+            const profile = profiles[id];
+            if (profile && profile.name) {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = profile.name;
+                profileSelect.appendChild(option);
+            }
+        });
     }
 
-    // Set the selected value in the dropdown
-    if (activeProfileId && profiles[activeProfileId]) {
-        profileSelect.value = activeProfileId;
+    // Set the selected value in the dropdown based on what was active in storage
+    if (activeProfileIdFromStorage && profiles[activeProfileIdFromStorage]) {
+        profileSelect.value = activeProfileIdFromStorage;
+        // **CRUCIAL:** When loading profiles, set the global activeProfile
+        activeProfile = profiles[activeProfileIdFromStorage];
+        console.log("Bulk Autofill Page: Initial active profile set to:", activeProfile.name);
     } else {
-        profileSelect.value = 'new-profile'; // Select 'Add New Profile' if no active profile
-        clearProfileForm(); // Clear form when 'Add New Profile' is selected initially
+        profileSelect.value = 'new-profile';
+        // **CRUCIAL:** Clear global activeProfile if no valid one is set from storage
+        activeProfile = null;
+        clearProfileForm();
+        // For new profile, ensure form is visible
+        const profileFormSection = getElement('profileFormSection');
+        if (profileFormSection) {
+            profileFormSection.classList.remove('hidden');
+        }
+        console.log("Bulk Autofill Page: No active profile found, set to 'Add New Profile'.");
     }
     console.log("Bulk Autofill Page: Dropdown updated. Selected:", profileSelect.value);
 }
@@ -322,7 +395,7 @@ function populateProfileDropdown() {
 // This provides the static, built-in list of retailers.
 function getMasterRetailerDatabase() {
     const masterRetailersArray = [
-        { id: 'amazon', name: 'Amazon', signupUrl: 'https://www.amazon.com/ap/register/ref=ap_frn_reg', isCustom: false, selectors: {} },
+        { id: 'amazon', name: 'Amazon', signupUrl: 'https://www.amazon.com/ap/register?openid.return_to=https%3A%2F%2Ftrack.amazon.com%2F&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.assoc_handle=amzn_shippingrecipientcentral_us&openid.mode=checkid_setup&language=en_US&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0', isCustom: false, selectors: {} },
         { id: 'ebay', name: 'eBay', signupUrl: 'https://reg.ebay.com/reg/PartialReg', isCustom: false, selectors: {} },
         { id: 'walmart', name: 'Walmart', signupUrl: 'https://www.walmart.com/account/signup', isCustom: false, selectors: {} },
         { id: 'target', name: 'Target', signupUrl: 'https://www.target.com/account/create', isCustom: false, selectors: {} },
@@ -474,6 +547,50 @@ function renderRetailerList(retailersToDisplay) {
     });
 }
 
+/**
+ * Updates the display area with the current autofill status for each retailer.
+ * Expects an object where keys are retailer names and values are their statuses.
+ * @param {object} results - An object containing retailer names as keys and their statuses as values.
+ */
+function updateAutofillStatusDisplay(results) {
+    // Get the HTML element where the status list will be displayed
+    const statusList = document.getElementById('autofillStatusDisplay');
+
+    // If the element doesn't exist, log an error and exit
+    if (!statusList) {
+        console.error("Element with ID 'autofillStatusDisplay' not found in the DOM. Cannot update autofill status.");
+        return;
+    }
+
+    // Clear any previous status items to show the updated list
+    statusList.innerHTML = '';
+
+    // Loop through each retailer and its status in the results object
+    for (const retailerName in results) {
+        // Create a new list item (<li>) for each retailer
+        const listItem = document.createElement('li');
+        // Set the text content of the list item
+        listItem.textContent = `${retailerName}: ${results[retailerName]}`;
+
+        // Optional: Add styling based on the status for better visual feedback
+        if (results[retailerName].includes('Success')) {
+            listItem.style.color = 'green';
+            listItem.style.fontWeight = 'bold';
+        } else if (results[retailerName].includes('Error')) {
+            listItem.style.color = 'red';
+            listItem.style.fontWeight = 'bold';
+        } else if (results[retailerName].includes('Skipped')) {
+            listItem.style.color = 'orange';
+            listItem.style.fontStyle = 'italic';
+        } else if (results[retailerName].includes('Pending')) {
+            listItem.style.color = 'gray';
+        }
+
+        // Append the new list item to the status display list
+        statusList.appendChild(listItem);
+    }
+}
+
 // --- showStatusMessage (helper for UI feedback) ---
 function showStatusMessage(message, type = "info") {
     const statusDisplay = document.getElementById('autofillStatusDisplay');
@@ -503,9 +620,6 @@ async function loadAndDisplayRetailers() {
         }, {});
 
         allRetailers = { ...masterRetailers, ...customRetailersObject };
-
-        console.log("Bulk Autofill UI: Combined allRetailers:", allRetailers);
-
         renderRetailerList(Object.values(allRetailers));
 
         if (Object.keys(allRetailers).length === 0) {
@@ -524,7 +638,7 @@ async function loadAndDisplayRetailers() {
 
 
 // --- Main DOMContentLoaded Listener ---
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // --- Initialize global DOM element references here ---
     profileSelect = getElement('profileSelect');
     profileFormSection = getElement('profileFormSection');
@@ -534,8 +648,9 @@ document.addEventListener('DOMContentLoaded', () => {
     cancelProfileEditBtn = getElement('cancelProfileBtn'); // Corrected ID from html
     deleteProfileBtn = getElement('deleteProfileBtn');
     activeProfileForm = getElement('activeProfileForm');
-    profileFormSection = getElement('profileFormSection');
     statusMessageDiv = getElement('statusMessage');
+    startBulkAutofillButton = getElement('startBulkAutofillButton'); // Ensure this is assigned here
+    stopBulkAutofillButton = getElement('stopBulkAutofillButton'); // Ensure this is assigned here
 
     // Profile fields (ensure IDs match your HTML)
     profileIdField = getElement('profileId');
@@ -557,6 +672,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     retailerListDiv = getElement('retailerList'); // Ensure this is assigned here
 
+    const storedData = await chrome.storage.local.get(['activeProfileId', 'profiles']);
+    if (storedData.activeProfileId && storedData.profiles) {
+        activeProfile = storedData.profiles[storedData.activeProfileId];
+        if (activeProfile) {
+            console.log("Bulk Autofill: Active profile loaded:", activeProfile.name);
+            fillProfileForm(activeProfile); // Assuming you have a function to display it
+        } else {
+            console.warn("Bulk Autofill: Active profile ID found, but profile data missing.");
+        }
+    } else {
+        console.log("Bulk Autofill: No active profile ID or profiles found in storage.");
+    }
 
     loadProfiles();
 
@@ -571,13 +698,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (profileFormSection) {
                     profileFormSection.classList.remove('hidden');
                 }
+                activeProfile = null; // Set active profile to 'new-profile'
             } else if (selectedProfileId && window.allProfiles && window.allProfiles[selectedProfileId]) {
-                fillProfileForm(window.allProfiles[selectedProfileId]); // Populate form
-                // Ensure form is visible
+                const selectedProfile = window.allProfiles[selectedProfileId];
+                fillProfileForm(selectedProfile); // Populate form
                 const profileFormSection = getElement('profileFormSection');
                 if (profileFormSection) {
                     profileFormSection.classList.remove('hidden');
                 }
+                // **CRUCIAL:** Set activeProfile to the selected one
+                activeProfile = selectedProfile;
+                console.log("Bulk Autofill Page: Active profile set to:", activeProfile.name);
+
+                // Persist the active profile ID to storage immediately on change
+                chrome.runtime.sendMessage({ action: 'setActiveProfileId', profileId: activeProfile.id }, (response) => {
+                    if (response && response.success) {
+                        console.log("Active profile ID saved to storage:", activeProfile.id);
+                    } else {
+                        console.error("Failed to save active profile ID to storage:", response ? response.error : 'Unknown error');
+                    }
+                });
             } else {
                 // If a blank option or invalid selection, clear and hide form
                 clearProfileForm();
@@ -585,6 +725,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (profileFormSection) {
                     profileFormSection.classList.add('hidden');
                 }
+                activeProfile = null; // Clear active profile
+                console.log("Bulk Autofill Page: Active profile cleared.");
+
             }
         });
     }
@@ -596,6 +739,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (activeProfileForm) {
                 console.log("Bulk Autofill Page: activeProfileForm found, submitting form.");
                 activeProfileForm.dispatchEvent(new Event('submit'));
+
             } else {
                 console.error("Bulk Autofill Page: activeProfileForm not found for save button click.");
                 showStatusMessage('Error: Profile form not found.', 'error');
@@ -678,6 +822,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     // After a successful save, reload all profiles and update the UI.
                     // This will automatically select the newly saved profile as active,
                     // because your background script's save logic sets it as active.
+                    activeProfile = response.profile; // Update the active profile in the UI
+                    console.log("Bulk Autofill Page: Active profile updated to:", activeProfile.name);
                     await loadProfiles();
                 } else {
                     showStatusMessage(`Error saving profile: ${response.error || 'Unknown error'}`, 'error');
@@ -780,30 +926,111 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Event listener for the "Start Autofill" button
-    document.getElementById('startBulkAutofillButton').addEventListener('click', async () => {
-        const selectedRetailerIds = Array.from(document.querySelectorAll('.retailer-checkbox:checked'))
-            .map(cb => cb.value);
-        if (selectedRetailerIds.length === 0) {
-            alert("Please select at least one retailer to start autofill.");
-            return;
-        }
-        // document.getElementById('startBulkAutofillButton').disabled = true;
-        showStatusMessage("Starting bulk autofill...", "info");
+    if (startBulkAutofillButton) {
+        startBulkAutofillButton.addEventListener('click', async () => {
+            stopBulkAutofill = false;
+            console.log("Bulk Autofill: Start Autofill for Selected button clicked.");
 
-        // When starting autofill, reset statuses to 'Ready' for selected, 'Skipped' for unselected
-        const initialStatuses = {};
-        Object.values(allRetailers).forEach(retailer => {
-            if (selectedRetailerIds.includes(retailer.id)) {
-                initialStatuses[retailer.id] = { status: 'pending', message: 'In Queue' }; // Change to 'pending' once process starts
-            } else {
-                initialStatuses[retailer.id] = { status: 'ready', message: 'Skipped' }; // Keep as 'ready' if not selected for this run
+            if (!activeProfile || !activeProfile.firstName) {
+                console.warn("Bulk Autofill: No active profile selected or profile is incomplete.");
+                showStatusMessage('Please select and save a profile first.', 'warning', 5000);
+                return;
             }
-        });
-        updateRetailerStatusesInUI(initialStatuses); // Update UI immediately
 
-        // Send selected retailer IDs to background script
-        port.postMessage({ action: "startBulkAutofill", selectedRetailerIds: selectedRetailerIds });
-    });
+            const selectedRetailers = Object.values(allRetailers);
+            if (selectedRetailers.length === 0) {
+                showStatusMessage('Please select at least one retailer to autofill.', 'warning', 5000);
+                return;
+            }
+
+            showStatusMessage(`Starting autofill for ${selectedRetailers.length} selected retailers...`, 'info', 0); // Show indefinitely
+
+            let autofillResults = {};
+
+            for (const retailer of selectedRetailers) {
+                if (stopBulkAutofill) {
+                    console.log("Bulk Autofill: Stopping process due to stop flag.");
+                    showStatusMessage('Autofill process stopped by user.', 'info', 5000);
+                    autofillResults[retailer.name] = 'Stopped by User'; // Mark remaining as stopped
+                    updateAutofillStatusDisplay(autofillResults); // Update display with stopped status
+                    break; // Exit the loop
+                }
+
+                let tab = null;
+
+                if (!retailer.signupUrl || (!retailer.signupUrl.startsWith('http://') && !retailer.signupUrl.startsWith('https://'))) {
+                    console.warn(`Bulk Autofill: Skipping invalid or non-http/https signup URL for retailer: ${retailer.name} (${retailer.signupUrl || 'No URL'})`);
+                    autofillResults[retailer.name] = 'Skipped (Invalid URL)';
+                    updateAutofillStatusDisplay(autofillResults); // Use the correct function here
+                    showStatusMessage(`Skipped ${retailer.name} due to invalid URL.`, 'warning', 3000);
+                    continue; // Skip to the next retailer in the loop
+                }
+
+                showStatusMessage(`Attempting autofill for: ${retailer.name}...`, 'info', 0);
+                autofillResults[retailer.name] = 'Pending...';
+                updateAutofillStatusDisplay(autofillResults);
+
+                try {
+                    // Open a new tab for the retailer's URL
+                    tab = await new Promise((resolve, reject) => {
+                        chrome.tabs.create({ url: retailer.signupUrl, active: false }, (newTab) => {
+                            if (chrome.runtime.lastError) {
+                                return reject(new Error(chrome.runtime.lastError.message));
+                            }
+                            resolve(newTab);
+                        });
+                    });
+
+                    // Wait for the tab to load. You might need a more robust way to detect page load completion.
+                    // For simplicity, we'll use a small delay here.
+                    // In a real scenario, you might listen to chrome.tabs.onUpdated and check status.
+                    await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds for page to load
+
+                    // Inject the content script if it's not already there (only for the first time or if it somehow got removed)
+                    await chrome.scripting.executeScript({
+                        target: { tabId: tab.id },
+                        files: ['content.js'] // Assuming your content script is named content.js
+                    });
+
+                    // Send the autofill message to the content script in the new tab
+                    const response = await sendMessageToContentScript(tab.id, { action: 'fillForm', profile: activeProfile });
+
+                    if (response && response.formData && Object.keys(response.formData).length > 0) {
+                        autofillResults[retailer.name] = 'Success (fields filled)';
+                        showStatusMessage(`Autofill successful for ${retailer.name}.`, 'success', 3000);
+                    } else {
+                        autofillResults[retailer.name] = 'No fields found/filled';
+                        showStatusMessage(`No fields filled for ${retailer.name}.`, 'warning', 3000);
+                    }
+                } catch (error) {
+                    console.error(`Bulk Autofill: Error processing ${retailer.name}:`, error);
+                    autofillResults[retailer.name] = `Error: ${error.message || 'Unknown error'}`;
+                    showStatusMessage(`Error during autofill for ${retailer.name}.`, 'error', 5000);
+                } finally {
+                    updateAutofillStatusDisplay(autofillResults);
+                    // You might want to close the tab after processing, or leave it open
+                    // if (tab && tab.id) { // Check if tab was successfully created before trying to remove
+                    //     chrome.tabs.remove(tab.id); // Uncomment if you want to close tabs automatically
+                    // }
+                }
+            }
+            showStatusMessage('Bulk autofill process completed.', 'info', 5000);
+            updateAutofillStatusDisplay(autofillResults);
+        });
+    }
+
+    if (stopBulkAutofillButton) {
+        stopBulkAutofillButton.addEventListener('click', async () => {
+            console.log("Bulk Autofill: Stop Autofill button clicked.");
+            stopBulkAutofill = true; // Set the flag to true
+            // Optionally save to storage if you want it to persist across popup closes
+            // await chrome.storage.local.set({ stopAutofillFlag: true });
+            showStatusMessage('Autofill process will stop after the current site.', 'warning', 3000);
+            stopBulkAutofillButton.style.display = 'none'; // Hide stop button
+            startBulkAutofillButton.style.display = 'block'; // Show start button again
+        });
+    }
+
 
     // Function to render/update the status list in the HTML
     function updateRetailerStatusesInUI(statuses) {

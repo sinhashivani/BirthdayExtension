@@ -100,8 +100,9 @@
         </section>
 
         <section class="bulk-autofill-controls">
-            <h2>Start Bulk Autofill</h2>
+            <h2>Bulk Autofill</h2>
             <button id="startBulkAutofillButton">Start Autofill for Selected</button>
+            <button id="stopBulkAutofillButton">Stop Autofill</button>
         </section>
 
         <section class="status-summary">
@@ -110,6 +111,13 @@
             <div id="autofillStatusDisplay">
                 <p>Select retailers and click 'Start Autofill' to see status updates.</p>
             </div>
+
+            <div id="autofillStatusContainer" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px;">
+                <h3>Autofill Progress</h3>
+                <ul id="autofillStatusDisplay">
+                </ul>
+            </div>
+
         </section>
     </div>
 
