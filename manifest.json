@@ -29,6 +29,7 @@
                 "<all_urls>"
             ],
             "js": [
+                "error_monitor.js",
                 "utils.js",
                 "content.js"
             ]
