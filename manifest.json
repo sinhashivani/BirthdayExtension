@@ -31,9 +31,6 @@
             "js": [
                 "utils.js",
                 "content.js"
-            ],
-            "css": [
-                "styles.css"
             ]
         }
     ],
@@ -43,7 +40,8 @@
             "resources": [
                 "bulk_autofill.html",
                 "bulk_autofill.css",
-                "bulk_autofill.js"
+                "bulk_autofill.js",
+                "error_monitor.js"
             ],
             "matches": [
                 "<all_urls>"

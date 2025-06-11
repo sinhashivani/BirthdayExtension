@@ -1,11 +1,30 @@
-// content.js
-
 // Use an Immediately Invoked Function Expression (IIFE) to avoid polluting the global scope of the webpage
 (function () {
   // Configuration Variables
   // These variables need to be loaded with actual data/settings, typically from the popup or background script
   let autofillActive = false; // State for autofill highlighting toggle (controlled by popup)
   let currentProfile = null; // Stores the profile data loaded from storage (sent by popup/background)
+
+  let cspErrorDetected = false;
+
+  console.log("Content script: Injecting error_monitor.js");
+  const script = document.createElement('script');
+  script.src = chrome.runtime.getURL('error_monitor.js');
+  (document.head || document.documentElement).appendChild(script);
+  script.onload = () => script.remove(); // Clean up script tag after loading
+
+  window.addEventListener('message', function (event) {
+    // We only accept messages from ourselves
+    if (event.source !== window) {
+      return;
+    }
+
+    if (event.data.type && event.data.type === 'EXTENSION_DETECTED_CSP_ERROR') {
+      console.error("Content script: Received CSP error notification from main world:", event.data.message);
+      cspErrorDetected = true; // Set the flag
+    }
+  });
+
 
   // Field Identification Mapping
   // Map our internal field types to common name/ID patterns found in HTML forms
@@ -263,6 +282,8 @@
         case 'executeAutofill':
           console.log("Content.js: Received executeAutofill command for", request.retailerInfo?.name);
           const profile = request.profile;
+          cspErrorDetected = false;
+
           if (!profile) {
             console.warn("Content.js: Autofill profile not provided or empty.");
             sendResponse({ status: 'error', message: 'Autofill profile not provided.' });
@@ -290,6 +311,16 @@
                   fieldsFilledCount: autofillResult.fieldsFilledCount,
                   formData: autofillResult.filledFormData // This should be an object of filled data
                 });
+
+                console.log("Content.js: Attempting to submit form...");
+                try {
+                  submissionSuccess = await submitForm(); // Call submitForm, ensure it's async if needed
+                  console.log(`Content.js: Form submission: ${submissionSuccess ? 'Successful' : 'Failed'}.`);
+                } catch (submitError) {
+                  console.error("Content.js: Error during form submission:", submitError);
+                  submissionSuccess = false;
+                }
+
               } else {
                 console.warn("Content.js: Autofill failed. No fields found or filled.");
                 sendResponse({
@@ -305,30 +336,61 @@
                 status: 'error', // Consistent status string
                 message: `Autofill error: ${error.message}`,
                 fieldsFilledCount: 0,
-                formData: {} // Send empty formData on error
+                formData: {}, // Send empty formData on error
+                cspErrorDetected: cspErrorDetected // Include current CSP status
+
+              });
+
+              //return; // Exit early on error
+            }
+
+            if (cspErrorDetected) {
+              console.warn("Content.js: Final check: CSP 'unsafe-eval' error was detected during this operation.");
+              sendResponse({
+                status: 'error', // Status is 'error' due to CSP violation
+                message: `Page Error: Content Security Policy violation detected.`,
+                fieldsFilledCount: autofillResult.fieldsFilledCount,
+                formData: autofillResult.filledFormData,
+                submissionSuccess: false, // Assume submission failed if CSP error occurred
+                hasBirthdayField: hasBirthdayField,
+                cspErrorDetected: true // Confirm CSP error was detected
+              });
+            } else if (autofillResult.fieldsFilledCount > 0 && submissionSuccess) {
+              // Autofill successful AND submission successful AND no CSP error
+              sendResponse({
+                status: 'success',
+                message: "Autofill and submission successful.",
+                fieldsFilledCount: autofillResult.fieldsFilledCount,
+                formData: autofillResult.filledFormData,
+                submissionSuccess: true,
+                hasBirthdayField: hasBirthdayField,
+                cspErrorDetected: false
+              });
+            } else if (autofillResult.fieldsFilledCount > 0 && !submissionSuccess) {
+              // Autofill successful BUT submission failed/not confirmed AND no CSP error
+              sendResponse({
+                status: 'warning',
+                message: "Autofill successful, but form submission failed or was not confirmed.",
+                fieldsFilledCount: autofillResult.fieldsFilledCount,
+                formData: autofillResult.filledFormData,
+                submissionSuccess: false,
+                hasBirthdayField: hasBirthdayField,
+                cspErrorDetected: false
+              });
+            } else {
+              // No fields filled AND no CSP error
+              sendResponse({
+                status: 'warning',
+                message: "Autofill failed. No fields found or filled.",
+                fieldsFilledCount: 0,
+                formData: {},
+                submissionSuccess: false,
+                hasBirthdayField: hasBirthdayField,
+                cspErrorDetected: false
               });
             }
           })(); // End of async IIFE
           return true; // IMPORTANT: Indicate that sendResponse will be called asynchronously
-
-        case 'submitForm':
-          try {
-            console.log("Content script: Received submitForm request.");
-            const submitSuccess = submitForm(); // Call your local submit function
-
-            // Determine if a birthday field was present (if submitForm needs this info or it's checked here)
-            const hasBirthday = hasBirthdayField(); // Assuming this function checks for a birthday input
-
-            sendResponse({
-              success: submitSuccess, // Was a form submission *attempted* or successful?
-              hasBirthdayField: hasBirthday,
-              captchaDetected: false // Placeholder - implement actual detection if needed
-            });
-          } catch (error) {
-            console.error("Content script: Error during submitForm:", error);
-            sendResponse({ success: false, error: error.message, action: request.action });
-          }
-          break;
 
         case 'getFormStatus':
           try {
@@ -870,76 +932,75 @@
   function submitForm() {
     console.log("Content script: Attempting to submit form.");
 
-    // Find the form that contains the fields we previously filled
-    // Select elements based on the 'loyalty-filled-field' class added by fillField
     const filledInputs = document.querySelectorAll('.loyalty-filled-field');
     if (filledInputs.length === 0) {
-      console.warn("Content script: No filled fields found to determine which form to submit.");
+      console.warn("Content script: No filled fields found to determine which form to submit. Falling back to button search.");
       // Fall through to button clicking logic if no filled fields found
     }
 
-    // Try to find a common parent form among the filled inputs
     let targetForm = null;
     if (filledInputs.length > 0) {
-      // Get the form of the first filled input as a starting point
       targetForm = filledInputs[0].closest('form');
-
-      // Verify if all other filled inputs are also within this form
       if (targetForm) {
         for (let i = 1; i < filledInputs.length; i++) {
           if (!targetForm.contains(filledInputs[i])) {
-            console.warn("Content script: Filled fields belong to different forms. Cannot confidently submit a single form.");
-            targetForm = null; // Clear targetForm if inputs are scattered
-            break; // Stop checking
+            console.warn("Content script: Filled fields belong to different forms. Cannot confidently submit a single form. Falling back to button search.");
+            targetForm = null;
+            break;
           }
         }
       }
     }
 
-
     if (targetForm) {
       console.log("Content script: Found a common form to submit:", targetForm);
-      // Trigger the form's native submit method
       try {
+        // Attempt native form submission
         targetForm.submit();
         console.log("Content script: Form submitted successfully via form.submit().");
-        return true; // Indicate submission was attempted
+        return true; // Indicate submission was attempted and likely successful
       } catch (e) {
         console.error("Content script: Error submitting form via form.submit():", e);
-        // Fall through to button clicking if form.submit() fails
+        // Fall through to button clicking if form.submit() fails (e.g., due to validation)
       }
     } else {
       console.log("Content script: No single form found or form.submit() failed. Looking for a submit button.");
     }
 
-
     // Fallback: If no single form was confidently identified or submitted, look for a likely submit button
-    // This is less reliable and might submit the wrong form or do nothing.
-    const submitButtons = [...document.querySelectorAll('button, input[type="submit"], input[type="button"], a')] // Include links that might act as buttons
+    const submitButtons = [...document.querySelectorAll('button, input[type="submit"], input[type="button"], a')]
       .filter(el => {
-        // Check if the element is visible and has text matching common submit terms
-        const text = (el.textContent || el.value || el.getAttribute('aria-label') || '').toLowerCase(); // Check textContent, value, or aria-label
+        const text = (el.textContent || el.value || el.getAttribute('aria-label') || '').toLowerCase();
         return el.offsetParent !== null && // Ensure the element is visible
           (text.includes('submit') || text.includes('join') || text.includes('sign up') ||
             text.includes('register') || text.includes('continue') || text.includes('next') ||
-            text.includes('create account') || text.includes('save') || text.includes('proceed') || text.includes('done')); // Added more keywords
+            text.includes('create account') || text.includes('save') || text.includes('proceed') || text.includes('done'));
       });
 
-    // Prioritize buttons that are actually within a form
     let buttonToClick = submitButtons.find(button => button.closest('form'));
-
-    // If no button within a form, just take the first visible button found
     if (!buttonToClick && submitButtons.length > 0) {
       buttonToClick = submitButtons[0];
     }
 
-
     if (buttonToClick) {
       console.log("Content script: Found a submit button to click:", buttonToClick);
       try {
-        // Use a standard click event
+        // Attempt to click the button
         buttonToClick.click();
-        console.log("Content script: Submit button clicked successfully.");
+
+        // --- ADDITION: Dispatch common events to mimic real user interaction ---
+        // These can sometimes be crucial for modern JS frameworks
+        buttonToClick.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        buttonToClick.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+        buttonToClick.dispatchEvent(new MouseEvent('click', { bubbles: true })); // Already called by .click() but good to explicitly dispatch if needed
+
+        // If the button is an input, it might also have a change event, though less common for buttons
+        if (buttonToClick.tagName === 'INPUT') {
+          buttonToClick.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        // --- END ADDITION ---
+
+        console.log("Content script: Submit button clicked successfully with additional events.");
         return true; // Indicate submission was attempted
       } catch (e) {
         console.error("Content script: Error clicking submit button:", e);

@@ -21,17 +21,41 @@ function getElement(id) {
  * @param { object } message - The message object to send.
  * @returns { Promise < any >} A promise that resolves with the response from the content script.
  */
-function sendMessageToContentScript(tabId, message) {
-    return new Promise((resolve, reject) => {
-        chrome.tabs.sendMessage(tabId, message, (response) => {
-            if (chrome.runtime.lastError) {
-                // Handle errors during message sending (e.g., content script not ready, tab closed)
-                console.error("Error sending message to content script:", chrome.runtime.lastError.message);
-                return reject(new Error(chrome.runtime.lastError.message));
-            }
-            resolve(response);
+// function sendMessageToContentScript(tabId, message, source = 'bulkAutofill') {
+//     return new Promise((resolve, reject) => {
+//         chrome.tabs.sendMessage(tabId, message, (response) => {
+//             if (chrome.runtime.lastError) {
+//                 // Handle errors during message sending (e.g., content script not ready, tab closed)
+//                 console.error("Error sending message to content script:", chrome.runtime.lastError.message);
+//                 return reject(new Error(chrome.runtime.lastError.message));
+//             }
+//             resolve(response);
+//         });
+//     });
+// }
+async function sendMessageToContentScriptRobust(tabId, message) {
+    try {
+        // Step 1: Attempt to inject content.js if it's not already there.
+        // This is safe to call even if already injected.
+        await chrome.scripting.executeScript({
+            target: { tabId: tabId },
+            files: ['content.js'] // Ensure this path is correct
         });
-    });
+        console.log(`Bulk Autofill: content.js ensured to be injected into tab ${tabId}.`);
+
+        // Add a small delay after injection to give content.js time to initialize
+        // This is especially important for newly created tabs or pages with heavy JS.
+        await new Promise(resolve => setTimeout(resolve, 500)); // 500ms-1000ms is often a good starting point
+
+        // Step 2: Now send the actual message.
+        const response = await chrome.tabs.sendMessage(tabId, message);
+        return response;
+
+    } catch (error) {
+        console.error(`Bulk Autofill: Error sending message to tab ${tabId}:`, error);
+        // Rethrow the error so the calling `for` loop can catch it and update status.
+        throw error;
+    }
 }
 
 
@@ -937,13 +961,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            const selectedRetailers = Object.values(allRetailers);
+            const checkedRetailerCheckboxes = document.querySelectorAll('.retailer-checkbox:checked');
+            const selectedRetailerIds = Array.from(checkedRetailerCheckboxes).map(checkbox => checkbox.value);
+            const selectedRetailers = selectedRetailerIds.map(id => allRetailers[id]).filter(retailer => retailer !== undefined);
+
             if (selectedRetailers.length === 0) {
                 showStatusMessage('Please select at least one retailer to autofill.', 'warning', 5000);
+                startBulkAutofillButton.style.display = 'block'; // Show start button again
+                if (stopAutofillButton) stopAutofillButton.style.display = 'none'; // Hide stop button
                 return;
             }
 
-            showStatusMessage(`Starting autofill for ${selectedRetailers.length} selected retailers...`, 'info', 0); // Show indefinitely
+            showStatusMessage(`Starting autofill for ${selectedRetailers.length} selected retailers...`, 'info', 0);
 
             let autofillResults = {};
 
@@ -993,15 +1022,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                     });
 
                     // Send the autofill message to the content script in the new tab
-                    const response = await sendMessageToContentScript(tab.id, { action: 'fillForm', profile: activeProfile });
+                    const response = await sendMessageToContentScript(tab.id, { action: 'fillForm', profile: activeProfile, source: 'bulkAutofill' });
 
-                    if (response && response.formData && Object.keys(response.formData).length > 0) {
-                        autofillResults[retailer.name] = 'Success (fields filled)';
-                        showStatusMessage(`Autofill successful for ${retailer.name}.`, 'success', 3000);
+                    if (response && response.status === 'success' && response.fieldsFilledCount > 0 && response.submissionSuccess) {
+                        autofillResults[retailer.name] = `Success (${response.fieldsFilledCount} fields filled, Submitted)`;
+                        showStatusMessage(`Autofill successful for ${retailer.name} and submitted.`, 'success', 3000);
+                    } else if (response && response.cspErrorDetected) {
+                        autofillResults[retailer.name] = `Failed (Page Error: CSP Violation)`;
+                        showStatusMessage(`Autofill for ${retailer.name} failed due to a page error (CSP).`, 'error', 5000);
+                    } else if (response && response.status === 'error') {
+                        autofillResults[retailer.name] = `Failed (${response.message})`;
+                        showStatusMessage(`Autofill for ${retailer.name} failed: ${response.message}.`, 'error', 5000);
+                    } else if (response && response.status === 'warning') {
+                        autofillResults[retailer.name] = `Warning: ${response.message}`;
+                        showStatusMessage(`Autofill for ${retailer.name} resulted in a warning: ${response.message}.`, 'warning', 3000);
                     } else {
-                        autofillResults[retailer.name] = 'No fields found/filled';
-                        showStatusMessage(`No fields filled for ${retailer.name}.`, 'warning', 3000);
+                        autofillResults[retailer.name] = `Failed (Unexpected response or internal error)`;
+                        showStatusMessage(`Autofill for ${retailer.name} failed due to an unexpected issue.`, 'error', 5000);
                     }
+
                 } catch (error) {
                     console.error(`Bulk Autofill: Error processing ${retailer.name}:`, error);
                     autofillResults[retailer.name] = `Error: ${error.message || 'Unknown error'}`;
@@ -1026,7 +1065,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Optionally save to storage if you want it to persist across popup closes
             // await chrome.storage.local.set({ stopAutofillFlag: true });
             showStatusMessage('Autofill process will stop after the current site.', 'warning', 3000);
-            stopBulkAutofillButton.style.display = 'none'; // Hide stop button
             startBulkAutofillButton.style.display = 'block'; // Show start button again
         });
     }
