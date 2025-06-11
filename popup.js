@@ -240,20 +240,26 @@ function setupEventListeners() {
     // --- Form Actions (Autofill View) ---
     // This button triggers the scan, fill, and preview flow
     // Check if triggerAutofillBtn exists
-    if (triggerAutofillBtn) triggerAutofillBtn.addEventListener('click', () => {
+    if (triggerAutofillBtn) triggerAutofillBtn.addEventListener('click', async () => {
         console.log("Popup: Autofill Page button clicked.");
         if (!activeProfile || !activeProfile.firstName) { // Check if profile data exists
-            // --- USE showStatus ---
             showStatus('Please save your profile information first.', 'warning', 5000); // Show for longer
-            // --- END USE showStatus ---
             return; // Stop if no profile data
+        }
+
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+        if (!tab || !tab.id) {
+            console.error("Popup: Could not get current tab information to initiate autofill.");
+            showStatus('Could not get current tab info. Please ensure you are on a valid page.', 'error', 5000);
+            return; // Stop execution if no valid tab ID
         }
 
         // --- USE showStatus ---
         showStatus('Scanning page for forms...', 'info'); // Use the general status area
         // --- END USE showStatus ---
 
-        sendMessageToContentScript({ action: 'fillForm', profile: activeProfile })
+        sendMessageToContentScript(tab.id, { action: 'fillForm', profile: activeProfile, source: 'popup' })
             .then(response => {
                 console.log("Popup: Fill form response received:", response);
                 if (response && response.formData && Object.keys(response.formData).length > 0) {
@@ -278,9 +284,6 @@ function setupEventListeners() {
                 console.error("Popup: Error sending fill message:", error);
                 formPreviewData = null;
                 hideFieldPreview();
-                // Error status is shown by sendMessageToContentScript's catch
-                // showStatus('Error attempting autofill.', 'error', 5000); // Redundant if sendMessageToContentScript handles it
-                // Ensure button is disabled if content script is unreachable
                 getCurrentTabStatus(); // Re-check status
             });
     });
@@ -533,11 +536,64 @@ function applyHighContrast(enabled) {
 // --- ADD THE CORRECT showStatus function ---
 let statusTimeoutId = null; // Define statusTimeoutId in a scope accessible by showStatus
 
+// function showStatus(message, type = 'info', duration = 3000) {
+//     console.log(`Popup Status [${type.toUpperCase()}]: ${message}`);
+//     // Check if status elements exist
+//     if (!statusTextElement || !statusContainer) {
+//         console.error("Popup status elements not found!");
+//         return;
+//     }
+
+//     // Set text and type class
+//     statusTextElement.textContent = message;
+//     statusContainer.className = 'status-container'; // Reset classes
+//     statusContainer.classList.add(type); // Add type class for styling
+
+//     // Determine and set icon (optional - requires statusIconElement)
+//     if (statusIconElement) {
+//         switch (type) {
+//             case 'success': statusIconElement.textContent = '✅'; break; // Checkmark
+//             case 'error': statusIconElement.textContent = '❌'; break;   // Cross mark
+//             case 'warning': statusIconElement.textContent = '⚠️'; break; // Warning sign
+//             case 'info': statusIconElement.textContent = 'ℹ️'; break;    // Info sign (or '💬' for message)
+//             default: statusIconElement.textContent = ''; // No icon for unknown types
+//         }
+//     } else {
+//         // Ensure icon area is cleared if no icon is applicable or element is missing
+//         const iconSpan = statusContainer.querySelector('.status-icon');
+//         if (iconSpan) iconSpan.textContent = '';
+//     }
+
+
+//     // Show message (fade-in via CSS transition on opacity)
+//     statusContainer.style.opacity = '1';
+
+//     // Clear any previous timeout
+//     if (statusTimeoutId) {
+//         clearTimeout(statusTimeoutId);
+//         statusTimeoutId = null; // Clear the ID after clearing the timeout
+//     }
+
+//     // Set timeout to hide message (fade-out via CSS transition)
+//     statusTimeoutId = setTimeout(() => {
+//         statusContainer.style.opacity = '0';
+//         // Optional: Clear text content after fading out for accessibility/cleanliness
+//         // This waits for the CSS fade-out transition to finish
+//         statusContainer.addEventListener('transitionend', function clearText(event) {
+//             if (event.propertyName === 'opacity' && statusContainer.style.opacity === '0') {
+//                 statusTextElement.textContent = '';
+//                 if (statusIconElement) statusIconElement.textContent = ''; // Clear icon as well
+//                 statusContainer.removeEventListener('transitionend', clearText);
+//             }
+//         });
+//     }, duration);
+// }
+
 function showStatus(message, type = 'info', duration = 3000) {
     console.log(`Popup Status [${type.toUpperCase()}]: ${message}`);
-    // Check if status elements exist
+    // Check if status elements exist (they should be initialized in initPopup or DOMContentLoaded)
     if (!statusTextElement || !statusContainer) {
-        console.error("Popup status elements not found!");
+        console.error("Popup status elements not found! Make sure they are initialized.");
         return;
     }
 
@@ -549,11 +605,11 @@ function showStatus(message, type = 'info', duration = 3000) {
     // Determine and set icon (optional - requires statusIconElement)
     if (statusIconElement) {
         switch (type) {
-            case 'success': statusIconElement.textContent = '✅'; break; // Checkmark
-            case 'error': statusIconElement.textContent = '❌'; break;   // Cross mark
-            case 'warning': statusIconElement.textContent = '⚠️'; break; // Warning sign
-            case 'info': statusIconElement.textContent = 'ℹ️'; break;    // Info sign (or '💬' for message)
-            default: statusIconElement.textContent = ''; // No icon for unknown types
+            case 'success': statusIconElement.textContent = '✅'; break;
+            case 'error': statusIconElement.textContent = '❌'; break;
+            case 'warning': statusIconElement.textContent = '⚠️'; break;
+            case 'info': statusIconElement.textContent = 'ℹ️'; break;
+            default: statusIconElement.textContent = '';
         }
     } else {
         // Ensure icon area is cleared if no icon is applicable or element is missing
@@ -561,124 +617,26 @@ function showStatus(message, type = 'info', duration = 3000) {
         if (iconSpan) iconSpan.textContent = '';
     }
 
-
     // Show message (fade-in via CSS transition on opacity)
     statusContainer.style.opacity = '1';
 
     // Clear any previous timeout
     if (statusTimeoutId) {
         clearTimeout(statusTimeoutId);
-        statusTimeoutId = null; // Clear the ID after clearing the timeout
+        statusTimeoutId = null;
     }
 
     // Set timeout to hide message (fade-out via CSS transition)
     statusTimeoutId = setTimeout(() => {
         statusContainer.style.opacity = '0';
-        // Optional: Clear text content after fading out for accessibility/cleanliness
-        // This waits for the CSS fade-out transition to finish
         statusContainer.addEventListener('transitionend', function clearText(event) {
             if (event.propertyName === 'opacity' && statusContainer.style.opacity === '0') {
                 statusTextElement.textContent = '';
-                if (statusIconElement) statusIconElement.textContent = ''; // Clear icon as well
+                if (statusIconElement) statusIconElement.textContent = '';
                 statusContainer.removeEventListener('transitionend', clearText);
             }
         });
     }, duration);
-}
-
-/**
- * Sends a message to the content script in the active tab.
- * Handles potential errors if the content script is not available.
- * @param {Object} message - The message payload.
- * @returns {Promise<any>} A promise that resolves with the content script's response.
- */
-async function sendMessageToContentScript(message) {
-    console.log("Popup: Sending message to content script:", message.action);
-    return new Promise((resolve, reject) => {
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            if (!tabs || tabs.length === 0 || !tabs[0]) {
-                console.warn("Popup: No active tab found to send message to.");
-                // --- USE showStatus ---
-                showStatus('No active tab available.', 'warning', 3000);
-                // --- END USE showStatus ---
-                // Disable autofill button if no tab
-                setAutofillButtonState(false);
-                reject(new Error('No active tab'));
-                return;
-            }
-            const tabId = tabs[0].id;
-
-            // Use chrome.tabs.sendMessage and check for runtime errors
-            chrome.tabs.sendMessage(tabId, message, (response) => {
-                // Check chrome.runtime.lastError to detect if content script failed to respond
-                // This happens if content script is not injected or threw an error
-                if (chrome.runtime.lastError) {
-                    const error = chrome.runtime.lastError;
-                    console.error(`Popup: Error sending message to tab ${tabId}:`, error.message);
-                    // Depending on the action, show relevant error status
-                    let statusMsg = `Error interacting with page.`;
-                    if (error.message.includes('Could not establish connection')) {
-                        statusMsg = 'Content script not loaded on this page.';
-                        // If content script is not there, disable autofill button
-                        setAutofillButtonState(false);
-                    }
-                    // --- USE showStatus ---
-                    showStatus(statusMsg, 'error', 5000); // Show errors longer
-                    // --- END USE showStatus ---
-                    reject(error); // Reject the promise
-                } else {
-                    console.log(`Popup: Response from content script (tab ${tabId}) for ${message.action}:`, response);
-                    resolve(response); // Resolve the promise with the response
-                }
-            });
-        });
-    });
-}
-
-/**
- * Gets the current form status from the content script and updates UI elements.
- */
-function getCurrentTabStatus() {
-    console.log("Popup: Getting current tab status from content script.");
-    // Reset status display while checking
-    // --- USE showStatus ---
-    showStatus('Checking page status...', 'info');
-    // --- END USE showStatus ---
-
-    // Request status from content script
-    sendMessageToContentScript({ action: 'getFormStatus' })
-        .then(response => {
-            console.log("Popup: Received form status:", response);
-            if (response && response.formDetected !== undefined) {
-                // Update UI based on response
-                if (response.formDetected) {
-                    // --- USE showStatus ---
-                    showStatus(`Form detected with ${response.fieldCount} fields.`, 'info');
-                    // --- END USE showStatus ---
-                    // Enable Autofill button IF a profile is loaded AND form is detected
-                    setAutofillButtonState(!!activeProfile && !!activeProfile.firstName);
-
-                } else {
-                    // --- USE showStatus ---
-                    showStatus('No form detected on this page.', 'info');
-                    // --- END USE showStatus ---
-                    // Disable Autofill button if no form is detected
-                    setAutofillButtonState(false);
-                }
-            } else {
-                // Handle cases where response is malformed but no chrome.runtime.lastError
-                console.warn("Popup: Received unexpected status response:", response);
-                // --- USE showStatus ---
-                showStatus('Could not determine page status.', 'warning', 5000);
-                // --- END USE showStatus ---
-                setAutofillButtonState(false); // Disable button conservatively
-            }
-        })
-        .catch(error => {
-            // sendMessageToContentScript already handles showing error status using showStatus
-            console.log("Popup: getCurrentTabStatus caught error from sendMessageToContentScript.");
-            // Button would have been disabled by sendMessageToContentScript error handling
-        });
 }
 
 /**
@@ -693,6 +651,142 @@ function setAutofillButtonState(enable) {
         console.error("Popup: Autofill button element not found!");
     }
 }
+
+/**
+ * Sends a message to the content script in the active tab.
+ * Handles potential errors if the content script is not available.
+ * @param {Object} message - The message payload.
+ * @returns {Promise<any>} A promise that resolves with the content script's response.
+ */
+// async function sendMessageToContentScript(message, source = 'popup') {
+//     console.log("Popup: Sending message to content script:", message.action);
+//     return new Promise((resolve, reject) => {
+//         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+//             if (!tabs || tabs.length === 0 || !tabs[0]) {
+//                 console.warn("Popup: No active tab found to send message to.");
+//                 // --- USE showStatus ---
+//                 showStatus('No active tab available.', 'warning', 3000);
+//                 // --- END USE showStatus ---
+//                 // Disable autofill button if no tab
+//                 setAutofillButtonState(false);
+//                 reject(new Error('No active tab'));
+//                 return;
+//             }
+//             const tabId = tabs[0].id;
+
+//             // Use chrome.tabs.sendMessage and check for runtime errors
+//             chrome.tabs.sendMessage(tabId, message, (response) => {
+//                 // Check chrome.runtime.lastError to detect if content script failed to respond
+//                 // This happens if content script is not injected or threw an error
+//                 if (chrome.runtime.lastError) {
+//                     const error = chrome.runtime.lastError;
+//                     console.error(`Popup: Error sending message to tab ${tabId}:`, error.message);
+//                     // Depending on the action, show relevant error status
+//                     let statusMsg = `Error interacting with page.`;
+//                     if (error.message.includes('Could not establish connection')) {
+//                         statusMsg = 'Content script not loaded on this page.';
+//                         // If content script is not there, disable autofill button
+//                         setAutofillButtonState(false);
+//                     }
+//                     // --- USE showStatus ---
+//                     showStatus(statusMsg, 'error', 5000); // Show errors longer
+//                     // --- END USE showStatus ---
+//                     reject(error); // Reject the promise
+//                 } else {
+//                     console.log(`Popup: Response from content script (tab ${tabId}) for ${message.action}:`, response);
+//                     resolve(response); // Resolve the promise with the response
+//                 }
+//             });
+//         });
+//     });
+// }
+
+async function sendMessageToContentScript(tabId, message) {
+    try {
+        // Step 1: Check if the content script is already loaded
+        try {
+            // Correctly passing tabId (integer)
+            await chrome.tabs.sendMessage(tabId, { action: 'ping' });
+            console.log(`Popup: Ping successful to tab ${tabId}. Content script already loaded.`);
+        } catch (error) {
+            console.warn(`Popup: Ping failed to tab ${tabId}. Content script not loaded or unresponsive. Attempting injection...`, error);
+            // If ping fails, inject it. Correctly passing tabId (integer)
+            await chrome.scripting.executeScript({
+                target: { tabId: tabId },
+                files: ['content.js'] // Ensure this path is correct
+            });
+            console.log(`Popup: content.js injected into tab ${tabId}.`);
+
+            // Add a small delay after injection to give content.js time to initialize
+            await new Promise(resolve => setTimeout(resolve, 200));
+        }
+
+        // Step 2: Now send the actual message after ensuring content.js is loaded
+        // Correctly passing tabId (integer)
+        const response = await chrome.tabs.sendMessage(tabId, message);
+        return response;
+
+    } catch (error) {
+        console.error(`Popup: Error sending message to tab ${tabId}:`, error);
+        // This is where you display the "Content script not loaded" error to the user
+        showStatus("Content script not loaded on this page. " + (error.message || ""), 'error');
+        // Re-throw or return a specific error object if needed for calling functions
+        throw error;
+    }
+}
+
+
+async function getCurrentTabStatus() { // Made async because it uses await
+    console.log("Popup: Getting current tab status from content script.");
+    showStatus('Checking page status...', 'info');
+
+    try {
+        // Get the active tab ID
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+        if (!tab || !tab.id) {
+            console.error("Popup: Could not get current tab information.");
+            showStatus('Could not get current tab info.', 'error');
+            setAutofillButtonState(false);
+            return; // Exit if no valid tab
+        }
+
+        // Request status from content script, passing the correct tab.id
+        sendMessageToContentScript(tab.id, { action: 'getFormStatus' }) // <-- FIX: Pass tab.id here
+            .then(response => {
+                console.log("Popup: Received form status:", response);
+                if (response && response.formDetected !== undefined) {
+                    if (response.formDetected) {
+                        showStatus(`Form detected with ${response.fieldCount} fields.`, 'info');
+                        // Enable Autofill button IF a profile is loaded AND form is detected
+                        // Ensure activeProfile is correctly loaded and available here.
+                        setAutofillButtonState(!!activeProfile && !!activeProfile.firstName);
+
+                    } else {
+                        showStatus('No form detected on this page.', 'info');
+                        setAutofillButtonState(false);
+                    }
+                } else {
+                    console.warn("Popup: Received unexpected status response:", response);
+                    showStatus('Could not determine page status.', 'warning', 5000);
+                    setAutofillButtonState(false); // Disable button conservatively
+                }
+            })
+            .catch(error => {
+                // sendMessageToContentScript already handles showing error status using showStatus
+                console.error("Popup: getCurrentTabStatus caught error from sendMessageToContentScript:", error);
+                // The showStatusMessage in sendMessageToContentScript will handle the UI.
+                // The button state would also be handled by sendMessageToContentScript's error branch.
+            });
+    } catch (error) {
+        console.error("Popup: Error querying for active tab:", error);
+        showStatus('Error getting active tab information.', 'error');
+        setAutofillButtonState(false);
+    }
+}
+
+
+
 
 /**
  * Gets the URL of the currently active tab.
