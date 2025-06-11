@@ -282,6 +282,7 @@
         case 'executeAutofill':
           console.log("Content.js: Received executeAutofill command for", request.retailerInfo?.name);
           const profile = request.profile;
+          const source = request.source;
           cspErrorDetected = false;
 
           if (!profile) {
@@ -313,14 +314,20 @@
                 });
 
                 console.log("Content.js: Attempting to submit form...");
-                try {
-                  submissionSuccess = await submitForm(); // Call submitForm, ensure it's async if needed
-                  console.log(`Content.js: Form submission: ${submissionSuccess ? 'Successful' : 'Failed'}.`);
-                } catch (submitError) {
-                  console.error("Content.js: Error during form submission:", submitError);
-                  submissionSuccess = false;
+                if (source === 'bulkAutofill') { // Only attempt submission if source is 'bulkAutofill'
+                  console.log("Content.js: Call originated from bulk autofill. Attempting to submit form...");
+                  try {
+                    submissionSuccess = await submitForm(); // Call submitForm, ensure it's async if needed
+                    console.log(`Content.js: Form submission: ${submissionSuccess ? 'Successful' : 'Failed'}.`);
+                  } catch (submitError) {
+                    console.error("Content.js: Error during form submission:", submitError);
+                    submissionSuccess = false;
+                  }
+                } else {
+                  // If not from 'bulkAutofill' (e.g., from 'popup'), skip submission
+                  console.log(`Content.js: Call originated from '${source}'. Skipping automatic form submission.`);
+                  submissionSuccess = false; // Ensure submissionSuccess is false if not attempted
                 }
-
               } else {
                 console.warn("Content.js: Autofill failed. No fields found or filled.");
                 sendResponse({
