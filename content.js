@@ -264,32 +264,52 @@
           console.log("Content.js: Received executeAutofill command for", request.retailerInfo?.name);
           const profile = request.profile;
           if (!profile) {
+            console.warn("Content.js: Autofill profile not provided or empty.");
             sendResponse({ status: 'error', message: 'Autofill profile not provided.' });
             return true;
           }
-          try {
-            // --- YOUR EXISTING AUTOFILL LOGIC GOES HERE ---
-            // Example: const success = autofillMyForm(request.userData, request.retailerInfo);
-            // This function should return true on success, false on failure.
-            // It might need to identify if it's on the correct page first.
-            const success = detectAndFillForms(profile);
 
-            if (success) {
+          (async () => { // Use an async IIFE to handle async operations within listener
+            try {
+              // IMPORTANT: The detectAndFillForms function MUST be implemented
+              // to return an object like { fieldsFilledCount: number, filledFormData: object }
+              // or similar structure that your `sendResponse` expects.
+              const autofillResult = detectAndFillForms(profile, request.retailerInfo?.selectors); // Pass selectors if needed
+
+              // Check if autofillResult is properly structured
+              if (typeof autofillResult !== 'object' || autofillResult === null || !('fieldsFilledCount' in autofillResult)) {
+                console.error("Content.js: detectAndFillForms did not return expected result format.");
+                autofillResult = { fieldsFilledCount: 0, filledFormData: {} }; // Default to prevent errors
+              }
+
+              if (autofillResult.fieldsFilledCount > 0) { // Check fieldsFilledCount
+                console.log(`Content.js: Autofill successful. Filled ${autofillResult.fieldsFilledCount} fields.`);
+                sendResponse({
+                  status: 'success', // Use a consistent status string
+                  message: "Autofill successful.",
+                  fieldsFilledCount: autofillResult.fieldsFilledCount,
+                  formData: autofillResult.filledFormData // This should be an object of filled data
+                });
+              } else {
+                console.warn("Content.js: Autofill failed. No fields found or filled.");
+                sendResponse({
+                  status: 'warning', // Use 'warning' for no fields filled
+                  message: "Autofill failed. No fields found/filled or page structure might have changed.",
+                  fieldsFilledCount: 0,
+                  formData: {}
+                });
+              }
+            } catch (error) {
+              console.error("Content.js: Error during autofill:", error);
               sendResponse({
-                success: true,
-                message: "Autofill successful.",
-                fieldsFilledCount: fillResult.fieldsFilledCount,
-                formData: fillResult.filledFormData
+                status: 'error', // Consistent status string
+                message: `Autofill error: ${error.message}`,
+                fieldsFilledCount: 0,
+                formData: {} // Send empty formData on error
               });
-            } else {
-              // Consider if specific elements were not found, CAPTCHA detected, etc.
-              sendResponse({ success: false, message: "Autofill failed. Page structure might have changed or CAPTCHA present." });
             }
-          } catch (error) {
-            console.error("Content.js: Error during autofill:", error);
-            sendResponse({ success: false, message: `Autofill error: ${error.message}` });
-          }
-          break;
+          })(); // End of async IIFE
+          return true; // IMPORTANT: Indicate that sendResponse will be called asynchronously
 
         case 'submitForm':
           try {
