@@ -7,21 +7,11 @@
 
   let cspErrorDetected = false;
 
-  console.log("Content script: Injecting error_monitor.js");
-  const script = document.createElement('script');
-  script.src = chrome.runtime.getURL('error_monitor.js');
-  (document.head || document.documentElement).appendChild(script);
-  script.onload = () => script.remove(); // Clean up script tag after loading
-
   window.addEventListener('message', function (event) {
-    // We only accept messages from ourselves
-    if (event.source !== window) {
-      return;
-    }
-
+    if (event.source !== window) { return; }
     if (event.data.type && event.data.type === 'EXTENSION_DETECTED_CSP_ERROR') {
       console.error("Content script: Received CSP error notification from main world:", event.data.message);
-      cspErrorDetected = true; // Set the flag
+      globalCspErrorDetected = true; // Update the global flag
     }
   });
 
@@ -229,6 +219,32 @@
     }
   }
 
+  async function saveProfile(profile) {
+    return new Promise((resolve, reject) => {
+      chrome.storage.local.get('profiles', (data) => {
+        let profiles = data.profiles || {};
+        const profileId = profile.id || generateUniqueId(); // Ensure generateUniqueId exists here too if needed
+        profiles[profileId] = { ...profile, id: profileId }; // Assign ID if new
+        chrome.storage.local.set({ profiles: profiles }, () => {
+          if (chrome.runtime.lastError) {
+            return reject(chrome.runtime.lastError);
+          }
+          // Also set this profile as the active one in sync storage if desired
+          chrome.storage.sync.set({ activeProfileId: profileId }, () => {
+            if (chrome.runtime.lastError) {
+              console.warn("Background script: Could not set activeProfileId in sync storage:", chrome.runtime.lastError.message);
+            }
+            console.log("Background script: Profile saved:", profiles[profileId].name);
+            resolve(profileId);
+          });
+        });
+      });
+    });
+  }
+
+  function generateUniqueId() {
+    return 'profile-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+  }
 
   // --- Form Filling Logic ---
   /**
@@ -285,120 +301,115 @@
           const source = request.source;
           cspErrorDetected = false;
 
+          let finalResponseData = {
+            status: 'error', // Default to error, then update as operations succeed
+            message: 'Autofill process initiated.',
+            fieldsFilledCount: 0,
+            formData: {},
+            submissionSuccess: false,
+            cspErrorDetected: window.cspErrorDetected || false // Assuming 'cspErrorDetected' is your global flag
+          };
+
           if (!profile) {
             console.warn("Content.js: Autofill profile not provided or empty.");
             sendResponse({ status: 'error', message: 'Autofill profile not provided.' });
             return true;
           }
-
-          (async () => { // Use an async IIFE to handle async operations within listener
+          (async () => {
             try {
-              // IMPORTANT: The detectAndFillForms function MUST be implemented
-              // to return an object like { fieldsFilledCount: number, filledFormData: object }
-              // or similar structure that your `sendResponse` expects.
-              const autofillResult = detectAndFillForms(profile, request.retailerInfo?.selectors); // Pass selectors if needed
+              console.log("Content.js: [Step 2] Calling detectAndFillForms.");
+              // AWAIT the result of detectAndFillForms
+              const autofillResult = await detectAndFillForms(profile); // Ensure detectAndFillForms is fixed as per last answer
 
-              // Check if autofillResult is properly structured
-              if (typeof autofillResult !== 'object' || autofillResult === null || !('fieldsFilledCount' in autofillResult)) {
-                console.error("Content.js: detectAndFillForms did not return expected result format.");
-                autofillResult = { fieldsFilledCount: 0, filledFormData: {} }; // Default to prevent errors
-              }
+              // Populate initial response data from autofillResult
+              if (typeof autofillResult === 'object' && autofillResult !== null && 'fieldsFilledCount' in autofillResult) {
+                finalResponseData.fieldsFilledCount = autofillResult.fieldsFilledCount;
+                finalResponseData.formData = autofillResult.filledFormData || {};
+                finalResponseData.hasBirthdayField = autofillResult.hasBirthdayField || false;
 
-              if (autofillResult.fieldsFilledCount > 0) { // Check fieldsFilledCount
-                console.log(`Content.js: Autofill successful. Filled ${autofillResult.fieldsFilledCount} fields.`);
-                sendResponse({
-                  status: 'success', // Use a consistent status string
-                  message: "Autofill successful.",
-                  fieldsFilledCount: autofillResult.fieldsFilledCount,
-                  formData: autofillResult.filledFormData // This should be an object of filled data
-                });
+                if (finalResponseData.fieldsFilledCount > 0) {
+                  console.log(`Content.js: [Step 3] Autofill successful. Filled ${finalResponseData.fieldsFilledCount} fields.`);
+                  finalResponseData.message = "Autofill successful.";
+                  finalResponseData.status = 'success'; // Optimistic initial status
 
-                console.log("Content.js: Attempting to submit form...");
-                if (source === 'bulkAutofill') { // Only attempt submission if source is 'bulkAutofill'
-                  console.log("Content.js: Call originated from bulk autofill. Attempting to submit form...");
-                  try {
-                    submissionSuccess = await submitForm(); // Call submitForm, ensure it's async if needed
-                    console.log(`Content.js: Form submission: ${submissionSuccess ? 'Successful' : 'Failed'}.`);
-                  } catch (submitError) {
-                    console.error("Content.js: Error during form submission:", submitError);
-                    submissionSuccess = false;
-                  }
-                } else {
-                  // If not from 'bulkAutofill' (e.g., from 'popup'), skip submission
-                  console.log(`Content.js: Call originated from '${source}'. Skipping automatic form submission.`);
-                  submissionSuccess = false; // Ensure submissionSuccess is false if not attempted
+                  // --- Step 4: Handle Conditional Form Submission ---
+                  // if (source === 'bulkAutofill') {
+                  //   console.log("Content.js: [Step 4.1] Call originated from bulk autofill. Attempting to submit form...");
+                  //   try {
+                  //     // AWAIT the submitForm result
+                  //     finalResponseData.submissionSuccess = await submitForm();
+                  //     console.log(`Content.js: [Step 4.2] Form submission: ${finalResponseData.submissionSuccess ? 'Successful' : 'Failed'}.`);
+
+                  //     if (finalResponseData.submissionSuccess) {
+                  //       finalResponseData.message += " Form submitted successfully.";
+                  //       finalResponseData.status = 'success'; // Confirm success
+                  //     } else {
+                  //       finalResponseData.message += " Form submission failed or could not be confirmed.";
+                  //       // Only downgrade status if autofill itself was good and submission failed
+                  //       if (finalResponseData.status === 'success') {
+                  //         finalResponseData.status = 'warning';
+                  //       }
+                  //     }
+                  //   } catch (submitError) {
+                  //     console.error("Content.js: [Step 4.3] Error during form submission:", submitError);
+                  //     finalResponseData.submissionSuccess = false;
+                  //     finalResponseData.message += ` Error during submission: ${submitError.message}`;
+                  //     finalResponseData.status = 'error'; // Critical error during submission
+                  //   }
+                  // } else {
+                  // console.log(`Content.js: [Step 4.4] Call originated from '${source}'. Skipping automatic form submission.`);
+                  // finalResponseData.submissionSuccess = false;
+                  //finalResponseData.message += " Automatic form submission skipped.";
+                  // if (finalResponseData.status === 'success') {
+                  //   finalResponseData.status = 'warning';
+                  // }
+                  //}
+                  console.log(`Content.js: Skipping automatic form submission as per current configuration.`);
+                  finalResponseData.submissionSuccess = false; // Confirm no submission was attempted
+
+                } else { // No fields filled
+                  console.warn("Content.js: [Step 3.1] Autofill failed. No fields found or filled.");
+                  finalResponseData.message = "Autofill failed. No fields found or filled.";
+                  finalResponseData.status = 'warning';
+                  finalResponseData.submissionSuccess = false;
                 }
-              } else {
-                console.warn("Content.js: Autofill failed. No fields found or filled.");
-                sendResponse({
-                  status: 'warning', // Use 'warning' for no fields filled
-                  message: "Autofill failed. No fields found/filled or page structure might have changed.",
-                  fieldsFilledCount: 0,
-                  formData: {}
-                });
+              } else { // detectAndFillForms returned unexpected format
+                console.error("Content.js: [Step 2.1] detectAndFillForms did not return expected result format. Defaulting to error.");
+                finalResponseData.message = "Autofill internal error: Invalid result from field detection.";
+                finalResponseData.status = 'error'; // Elevate to error
               }
-            } catch (error) {
-              console.error("Content.js: Error during autofill:", error);
-              sendResponse({
-                status: 'error', // Consistent status string
-                message: `Autofill error: ${error.message}`,
-                fieldsFilledCount: 0,
-                formData: {}, // Send empty formData on error
-                cspErrorDetected: cspErrorDetected // Include current CSP status
 
-              });
+              // --- Final Check for CSP or other external errors ---
+              if (window.globalCspErrorDetected) { // Use the global flag
+                console.warn("Content.js: [Step 5] Final check: CSP 'unsafe-eval' error was detected during this operation.");
+                if (finalResponseData.status !== 'error') { // Only change status if not already a critical error
+                  finalResponseData.status = 'error';
+                  finalResponseData.message += "(CSP violation detected)";
+                }
+                finalResponseData.cspErrorDetected = true;
+              }
 
-              //return; // Exit early on error
-            }
-
-            if (cspErrorDetected) {
-              console.warn("Content.js: Final check: CSP 'unsafe-eval' error was detected during this operation.");
-              sendResponse({
-                status: 'error', // Status is 'error' due to CSP violation
-                message: `Page Error: Content Security Policy violation detected.`,
-                fieldsFilledCount: autofillResult.fieldsFilledCount,
-                formData: autofillResult.filledFormData,
-                submissionSuccess: false, // Assume submission failed if CSP error occurred
-                hasBirthdayField: hasBirthdayField,
-                cspErrorDetected: true // Confirm CSP error was detected
-              });
-            } else if (autofillResult.fieldsFilledCount > 0 && submissionSuccess) {
-              // Autofill successful AND submission successful AND no CSP error
-              sendResponse({
-                status: 'success',
-                message: "Autofill and submission successful.",
-                fieldsFilledCount: autofillResult.fieldsFilledCount,
-                formData: autofillResult.filledFormData,
-                submissionSuccess: true,
-                hasBirthdayField: hasBirthdayField,
-                cspErrorDetected: false
-              });
-            } else if (autofillResult.fieldsFilledCount > 0 && !submissionSuccess) {
-              // Autofill successful BUT submission failed/not confirmed AND no CSP error
-              sendResponse({
-                status: 'warning',
-                message: "Autofill successful, but form submission failed or was not confirmed.",
-                fieldsFilledCount: autofillResult.fieldsFilledCount,
-                formData: autofillResult.filledFormData,
-                submissionSuccess: false,
-                hasBirthdayField: hasBirthdayField,
-                cspErrorDetected: false
-              });
-            } else {
-              // No fields filled AND no CSP error
-              sendResponse({
-                status: 'warning',
-                message: "Autofill failed. No fields found or filled.",
-                fieldsFilledCount: 0,
-                formData: {},
-                submissionSuccess: false,
-                hasBirthdayField: hasBirthdayField,
-                cspErrorDetected: false
-              });
+            } catch (error) { // Catch any unexpected errors from detectAndFillForms or submitForm
+              console.error("Content.js: [CRITICAL ERROR] during autofill process:", error);
+              finalResponseData.message = `Critical Autofill Error: ${error.message}`;
+              finalResponseData.status = 'error';
+              finalResponseData.fieldsFilledCount = 0;
+              finalResponseData.formData = {};
+              finalResponseData.submissionSuccess = false;
+              finalResponseData.cspErrorDetected = window.globalCspErrorDetected || false;
+            } finally {
+              // This block *always* executes, ensuring sendResponse is called exactly once.
+              console.log("Content.js: [Step 6] Calling sendResponse with final data:", finalResponseData);
+              sendResponse(finalResponseData); // THE ONE AND ONLY sendResponse call in the main path
             }
           })(); // End of async IIFE
-          return true; // IMPORTANT: Indicate that sendResponse will be called asynchronously
 
+          return true;
+
+        case 'ping':
+          console.log("Content script: Received ping, sending pong.");
+          sendResponse({ status: 'pong' });
+          return false;
         case 'getFormStatus':
           try {
             console.log("Content script: Received getFormStatus request.");
@@ -438,6 +449,19 @@
             sendResponse({ success: false, error: error.message, action: request.action });
           }
           break;
+
+        case 'saveProfile':
+          console.log("Background script: Received saveProfile request with profile:", message.profile);
+          // Assuming you have a function to save profiles in background.js
+          saveProfile(message.profile) // Call your function to save the profile
+            .then(savedProfileId => {
+              sendResponse({ success: true, profileId: savedProfileId });
+            })
+            .catch(error => {
+              console.error("Background script: Error saving profile:", error);
+              sendResponse({ success: false, error: error.message });
+            });
+          return true; // Indicates an asynchronous response
 
         default:
           console.warn("Content script: Unknown message action:", request.action);
@@ -621,7 +645,8 @@
     // Ensure we have a profile to fill with
     if (!profile || Object.keys(profile).length === 0) {
       console.warn("Content script: No current profile to fill forms with.");
-      return null; // Cannot fill if no profile
+      return { fieldsFilledCount: 0, filledFormData: {} };
+      //return null;
     }
 
     // Get all input, select, and textarea elements on the page
@@ -658,18 +683,20 @@
 
         if (fieldsFilledCount > 0) {
           console.log(`Content.js: Successfully filled ${fieldsFilledCount} fields.`);
-          return {
-            success: true,
-            message: "Autofill successful.",
-            fieldsFilledCount: fieldsFilledCount,
-            filledFormData: filledFormData
-          };
+          // return {
+          //   success: true,
+          message = "Autofill successful.";
+          //   fieldsFilledCount: fieldsFilledCount,
+          //   filledFormData: filledFormData
+          // };
+          success = true;
         } else {
           console.warn("Content.js: No fields were filled. Page might not be an autofill target or selectors are incorrect.");
-          return {
-            success: false,
-            message: "Autofill failed. No fields were found or filled. Page structure might have changed or CAPTCHA present."
-          };
+          // return {
+          //   success: false,
+          message = "Autofill failed. No fields were found or filled. Page structure might have changed or CAPTCHA present.";
+          // };
+          success = false;
         }
 
       } catch (inputError) {
@@ -680,10 +707,12 @@
     }); // End of inputs.forEach
 
     console.log(`Content script: Attempted to fill ${fieldsFilledCount} fields.`);
-
-    // Return the data for the fields that were actually filled (used by popup for preview)
-    // Return an object even if 0 fields were filled, so the popup can check fieldsFilledCount
-    return { filledFormData, fieldsFilledCount }; // Return object instead of null
+    return {
+      fieldsFilledCount: fieldsFilledCount,
+      filledFormData: filledFormData,
+      success: false,
+      message: "No fields were autofilled for this profile.",
+    };
   }
 
   // The identifyField function (using the one from our previous successful step)

@@ -456,6 +456,64 @@ async function saveProfileFromForm() {
 //     });
 // }
 
+
+
+// Add or modify your validateFormData function
+function validateFormData(profile) {
+    const errors = {};
+
+    // Basic validation for existing fields (keep your existing logic)
+    if (!profile.firstName) {
+        errors.firstName = 'First Name is required.';
+    }
+    if (!profile.lastName) {
+        errors.lastName = 'Last Name is required.';
+    }
+    if (!profile.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email)) {
+        errors.email = 'Valid Email is required.';
+    }
+    // Add other existing field validations here as needed.
+
+    // --- NEW PASSWORD VALIDATION LOGIC ---
+    const password = profile.password;
+
+    if (password) { // Only validate if a password is provided
+        // Length check
+        if (password.length < 8 || password.length > 25) {
+            errors.password = 'Password must be between 8 and 25 characters.';
+        }
+        // At least one number
+        if (!/\d/.test(password)) {
+            errors.password = (errors.password ? errors.password + ' ' : '') + 'Password must contain at least one number.';
+        }
+        // At least one capital letter (uppercase)
+        if (!/[A-Z]/.test(password)) {
+            errors.password = (errors.password ? errors.password + ' ' : '') + 'Password must contain at least one capital letter.';
+        }
+        // At least one lowercase letter
+        if (!/[a-z]/.test(password)) {
+            errors.password = (errors.password ? errors.password + ' ' : '') + 'Password must contain at least one lowercase letter.';
+        }
+        // At least one special character (excluding alphanumeric)
+        // This regex means "not a letter, not a number, not an underscore" - effectively a special character.
+        // Or you can define specific special characters: /[!@#$%^&*(),.?":{}|<>]/
+        if (!/[^a-zA-Z0-9]/.test(password)) {
+            errors.password = (errors.password ? errors.password + ' ' : '') + 'Password must contain at least one special character.';
+        }
+    } else {
+        // If password is an optional field, you might not add an error here.
+        // If password is required, uncomment the line below.
+        // errors.password = 'Password is required.';
+    }
+    // --- END NEW PASSWORD VALIDATION LOGIC ---
+
+
+    return {
+        valid: Object.keys(errors).length === 0,
+        errors: errors
+    };
+}
+
 // --- Settings Management ---
 
 /**
@@ -651,55 +709,6 @@ function setAutofillButtonState(enable) {
         console.error("Popup: Autofill button element not found!");
     }
 }
-
-/**
- * Sends a message to the content script in the active tab.
- * Handles potential errors if the content script is not available.
- * @param {Object} message - The message payload.
- * @returns {Promise<any>} A promise that resolves with the content script's response.
- */
-// async function sendMessageToContentScript(message, source = 'popup') {
-//     console.log("Popup: Sending message to content script:", message.action);
-//     return new Promise((resolve, reject) => {
-//         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-//             if (!tabs || tabs.length === 0 || !tabs[0]) {
-//                 console.warn("Popup: No active tab found to send message to.");
-//                 // --- USE showStatus ---
-//                 showStatus('No active tab available.', 'warning', 3000);
-//                 // --- END USE showStatus ---
-//                 // Disable autofill button if no tab
-//                 setAutofillButtonState(false);
-//                 reject(new Error('No active tab'));
-//                 return;
-//             }
-//             const tabId = tabs[0].id;
-
-//             // Use chrome.tabs.sendMessage and check for runtime errors
-//             chrome.tabs.sendMessage(tabId, message, (response) => {
-//                 // Check chrome.runtime.lastError to detect if content script failed to respond
-//                 // This happens if content script is not injected or threw an error
-//                 if (chrome.runtime.lastError) {
-//                     const error = chrome.runtime.lastError;
-//                     console.error(`Popup: Error sending message to tab ${tabId}:`, error.message);
-//                     // Depending on the action, show relevant error status
-//                     let statusMsg = `Error interacting with page.`;
-//                     if (error.message.includes('Could not establish connection')) {
-//                         statusMsg = 'Content script not loaded on this page.';
-//                         // If content script is not there, disable autofill button
-//                         setAutofillButtonState(false);
-//                     }
-//                     // --- USE showStatus ---
-//                     showStatus(statusMsg, 'error', 5000); // Show errors longer
-//                     // --- END USE showStatus ---
-//                     reject(error); // Reject the promise
-//                 } else {
-//                     console.log(`Popup: Response from content script (tab ${tabId}) for ${message.action}:`, response);
-//                     resolve(response); // Resolve the promise with the response
-//                 }
-//             });
-//         });
-//     });
-// }
 
 async function sendMessageToContentScript(tabId, message) {
     try {

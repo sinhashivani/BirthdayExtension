@@ -1,0 +1,2578 @@
+[
+  {
+    "id": "aw",
+    "name": "A&W",
+    "signupUrl": "https://awrestaurants.com/deals/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "abuelos",
+    "name": "Abuelo's",
+    "signupUrl": "https://www.abuelos.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "acapulco",
+    "name": "Acapulco",
+    "signupUrl": "https://www.acapulcorestaurants.com/loyalty-program/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "aceHardware",
+    "name": "Ace Hardware",
+    "signupUrl": "https://acehardware.dttq.net/oDgqO",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "adidas",
+    "name": "adidas",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.adidas.com%2Fus%2Fcreatorsclubrewards&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "aerie",
+    "name": "Aerie",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.ae.com%2Fus%2Fen%2Fmyaccount%2Freal-rewards&xcust=bday-aerie",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "alamoDrafthouseCinema",
+    "name": "Alamo Drafthouse Cinema",
+    "signupUrl": "https://drafthouse.com/victory",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "amcTheatres",
+    "name": "AMC Theatres",
+    "signupUrl": "https://www.amctheatres.com/amcstubs",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "americanEagle",
+    "name": "American Eagle",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.ae.com%2Fus%2Fen%2Fmyaccount%2Freal-rewards&xcust=bday-ae",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "andysFrozenCustard",
+    "name": "Andy's Frozen Custard",
+    "signupUrl": "https://eatandys.myguestaccount.com/en-us/guest/enroll?card-template=gz6U71JdL9Y",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "anthonysCoalFiredPizza",
+    "name": "Anthony's Coal Fired Pizza",
+    "signupUrl": "https://acfp.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "applebees",
+    "name": "Applebee's",
+    "signupUrl": "https://www.applebees.com/en/sign-up",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "arbys",
+    "name": "Arby's",
+    "signupUrl": "https://www.arbys.com/deals/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "athleta",
+    "name": "Athleta",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fathleta.gap.com%2Fbrowse%2Finfo.do%3Fcid%3D1098761&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "atlantaBread",
+    "name": "Atlanta Bread",
+    "signupUrl": "https://atlantabread.com/rewards-and-gifting/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "auBonPain",
+    "name": "Au Bon Pain",
+    "signupUrl": "https://www.aubonpain.com/bon-rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "auntieAnnesPretzels",
+    "name": "Auntie Anne's Pretzels",
+    "signupUrl": "https://www.auntieannes.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "aveda",
+    "name": "Aveda",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.aveda.com%2Fav-loyalty-page%23tier1&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "backYardBurgers",
+    "name": "Back Yard Burgers",
+    "signupUrl": "https://www.backyardburgers.com/clubhouse/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "bahamaBreeze",
+    "name": "Bahama Breeze",
+    "signupUrl": "https://www.anrdoezrs.net/click-2745940-13032584?sid=bday&url=https%3A%2F%2Fwww.bahamabreeze.com",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "bajaFresh",
+    "name": "Baja Fresh",
+    "signupUrl": "https://www.bajafresh.com/clubbaja/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "bakersSquare",
+    "name": "Bakers Square",
+    "signupUrl": "https://www.bakerssquare.com/promotions/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "bananaRepublic",
+    "name": "Banana Republic",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fbananarepublic.gap.com%2FcustomerService%2Finfo.do%3Fcid%3D1098875&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "bareminerals",
+    "name": "bareMinerals",
+    "signupUrl": "https://click.linksynergy.com/deeplink?id=96nyqW322pM&mid=42594&murl=https%3A%2F%2Fwww.bareminerals.com%2Fpages%2Frewards&u1=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "barkbox",
+    "name": "BarkBox",
+    "signupUrl": "https://www.dpbolvw.net/click-2745940-15736531?sid=bday&url=https%3A%2F%2Fwww.barkbox.com%2Fjoin%2Ffextgeneric",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "barnesNoble",
+    "name": "Barnes & Noble",
+    "signupUrl": "https://www.anrdoezrs.net/click-2745940-12354093?sid=bday&url=https%3A%2F%2Fwww.barnesandnoble.com%2Fmembership%2F",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "baskinrobbins",
+    "name": "Baskin-Robbins",
+    "signupUrl": "https://www.baskinrobbins.com/en/sign-up",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "bassProShop",
+    "name": "Bass Pro Shop",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.basspro.com%2Fshop%2FOutdoorRewardsApplication&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "bdsMongolianGrill",
+    "name": "BD's Mongolian Grill",
+    "signupUrl": "https://www.bdsgrill.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "bebe",
+    "name": "Bebe",
+    "signupUrl": "https://www.anrdoezrs.net/click-2745940-15735597?sid=bday&url=https%3A%2F%2Fwww.bebe.com%2Faccount%2Flogin",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "beefOBradys",
+    "name": "Beef 'O' Brady's",
+    "signupUrl": "https://beefobradys.myguestaccount.com/guest/enroll?card-template=1DLP0KWE8FA&template=2&referral_code=gNmrAeDHjmMPrnCaFJNcdJDBJJAjCPPja",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "belk",
+    "name": "Belk",
+    "signupUrl": "https://www.jdoqocy.com/click-2745940-11602493?sid=bday&url=https%3A%2F%2Fwww.belk.com%2Femail-signup%2F",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "benJerrysIceCream",
+    "name": "Ben & Jerry's Ice Cream",
+    "signupUrl": "https://www.benjerry.com/scoop-shops/flavor-fanatics",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "benihana",
+    "name": "Benihana",
+    "signupUrl": "https://www.benihana.com/the-chefs-table/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "bennigans",
+    "name": "Bennigans",
+    "signupUrl": "https://bennigans.fbmta.com/members/UpdateProfile.aspx?Action=Subscribe&_Theme=23622320311&InputSource=W",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "bertuccis",
+    "name": "Bertucci's",
+    "signupUrl": "https://www.bertuccis.com/eclub/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "biaggis",
+    "name": "Biaggi's",
+    "signupUrl": "https://biaggis.com/club-biaggis/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "bibibop",
+    "name": "Bibibop",
+    "signupUrl": "https://www.bibibop.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "bigBoy",
+    "name": "Big Boy",
+    "signupUrl": "https://www.bigboy.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "biggbyCoffee",
+    "name": "Biggby Coffee",
+    "signupUrl": "https://www.biggby.com/e-wards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "bjsRestaurant",
+    "name": "BJ's Restaurant",
+    "signupUrl": "https://www.bjsrestaurants.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "blackAngusSteakhouse",
+    "name": "Black Angus Steakhouse",
+    "signupUrl": "https://blackangus.myguestaccount.com/guest/enroll?card-template=a4veuMKLoS4&template=19&referral_code=jmQGgiNeGkjanFdmGfGKerhdPmPJhQpka",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "blackBearDiner",
+    "name": "Black Bear Diner",
+    "signupUrl": "https://blackbeardiner.com/clubs/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "bojangles",
+    "name": "Bojangles'",
+    "signupUrl": "https://www.bojangles.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "bonanzaSteakhouse",
+    "name": "Bonanza Steakhouse",
+    "signupUrl": "https://pon-bon.com/e-club#bonanza",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "bonefishGrill",
+    "name": "Bonefish Grill",
+    "signupUrl": "https://www.bonefishgrill.com/insider",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "booksamillion",
+    "name": "Books-A-Million",
+    "signupUrl": "https://www.tkqlhce.com/click-2745940-15734439?sid=bday&url=https%3A%2F%2Fwww.booksamillion.com%2Femail_preferences%2Findex.html",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "bostonsPizza",
+    "name": "Boston's Pizza",
+    "signupUrl": "https://www.bostons.com/my-rewards/index.html",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "bricktownBrewery",
+    "name": "Bricktown Brewery",
+    "signupUrl": "https://bricktownbrewery.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "brioItalianGrille",
+    "name": "Brio Italian Grille",
+    "signupUrl": "https://www.brioitalian.com/eclub/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "brueggersBagels",
+    "name": "Bruegger's Bagels",
+    "signupUrl": "https://www.brueggers.com/rewards-program/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "brusters",
+    "name": "Bruster's",
+    "signupUrl": "https://brusters.myguestaccount.com/guest/enroll?card-template=gz6U71JdL9Y&template=0&referral_code=AJjHACBKEkEDHrDpkLrKQNkGfDGDgNCEa",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "bubbaGumpShrimp",
+    "name": "Bubba Gump Shrimp",
+    "signupUrl": "http://assets.fbmta.com/clt/bbsgmp/lp/join/3/join.asp",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "bucaDiBeppo",
+    "name": "Buca di Beppo",
+    "signupUrl": "https://dineatbuca.com/eclub/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "buffaloWildWings",
+    "name": "Buffalo Wild Wings",
+    "signupUrl": "https://www.buffalowildwings.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "buildabear",
+    "name": "Build-A-Bear",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.buildabear.com%2Fbrand-account-bonus-club.html&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "burgerKing",
+    "name": "Burger King",
+    "signupUrl": "https://www.bk.com/royalperks",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "burgerfi",
+    "name": "BurgerFi",
+    "signupUrl": "https://www.thelevelup.com/c/EM-T27PUNKVE9",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "burgerville",
+    "name": "Burgerville",
+    "signupUrl": "https://www.burgerville.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "cafeRio",
+    "name": "Cafe Rio",
+    "signupUrl": "https://www.caferio.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "cafeZupas",
+    "name": "Cafe Zupas",
+    "signupUrl": "https://cafezupas.com/loyalty-faq",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "californiaPizzaKitchen",
+    "name": "California Pizza Kitchen",
+    "signupUrl": "https://cpkrewards.myguestaccount.com/guest/enroll?card-template=ktYylJhNj2k",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "californiaTortilla",
+    "name": "California Tortilla",
+    "signupUrl": "https://californiatortilla.com/burrito-elito/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "capriottisSandwichShop",
+    "name": "Capriotti's Sandwich Shop",
+    "signupUrl": "https://capriottis.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "captainDs",
+    "name": "Captain D's",
+    "signupUrl": "https://www.captainds.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "caribouCoffee",
+    "name": "Caribou Coffee",
+    "signupUrl": "https://www.cariboucoffee.com/caribou-perks/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "carlJrs",
+    "name": "Carl Jr's",
+    "signupUrl": "https://order.carlsjr.com/account/signup",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "carrabbasItalianGrill",
+    "name": "Carrabba's Italian Grill",
+    "signupUrl": "https://www.carrabbas.com/offers",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "carvel",
+    "name": "Carvel",
+    "signupUrl": "https://www.carvel.com/join-fudgie-fanatics",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "caseys",
+    "name": "Casey's",
+    "signupUrl": "https://www.caseys.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "cava",
+    "name": "CAVA",
+    "signupUrl": "https://cava.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "champpsKitchenBar",
+    "name": "Champps Kitchen + Bar",
+    "signupUrl": "https://www.champps.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "champsSports",
+    "name": "Champs Sports",
+    "signupUrl": "https://champssports.4xc4ep.net/NnbqV",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "charleysCheesesteaks",
+    "name": "Charleys Cheesesteaks",
+    "signupUrl": "https://www.charleys.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "checkers",
+    "name": "Checkers",
+    "signupUrl": "https://checkersrallys.myguestaccount.com/guest/enroll?card-template=gz6U71JdL9Y&template=0&referral_code=AbkPpjLGhaLCPNbdPQbBReAiQMhRApFGa",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "checkout51",
+    "name": "Checkout 51",
+    "signupUrl": "https://checkout51.app.link/wEDzrxIwrR",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "cheddars",
+    "name": "Cheddar's",
+    "signupUrl": "https://www.cheddars.com/customer-service/join-eclub",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "cheesecakeFactory",
+    "name": "Cheesecake Factory",
+    "signupUrl": "https://www.thecheesecakefactory.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "chevys",
+    "name": "Chevys",
+    "signupUrl": "https://www.chevys.com/loyalty-program/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "chewy",
+    "name": "Chewy",
+    "signupUrl": "https://www.chewy.com",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "chickfila",
+    "name": "Chick-fil-A",
+    "signupUrl": "https://www.chick-fil-a.com/one",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "chickenSaladChick",
+    "name": "Chicken Salad Chick",
+    "signupUrl": "https://www.chickensaladchick.com/download-our-app/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "chilis",
+    "name": "Chili's",
+    "signupUrl": "https://www.chilis.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "chipotle",
+    "name": "Chipotle",
+    "signupUrl": "https://www.chipotle.com/order/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "chuckECheeses",
+    "name": "Chuck E. Cheese's",
+    "signupUrl": "https://www.chuckecheese.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "chucksHotChicken",
+    "name": "Chuck's Hot Chicken",
+    "signupUrl": "https://www.chuckshotchicken.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "churchsChicken",
+    "name": "Church's Chicken",
+    "signupUrl": "https://www.churchs.com/email-club/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "chuys",
+    "name": "Chuy's",
+    "signupUrl": "https://www.chuys.com/newsletter-signup",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "cicis",
+    "name": "Cicis",
+    "signupUrl": "https://www.cicis.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "cinnabon",
+    "name": "Cinnabon",
+    "signupUrl": "https://www.cinnabon.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "cleanJuice",
+    "name": "Clean Juice",
+    "signupUrl": "https://www.cleanjuice.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "cocosBakeryRestaurant",
+    "name": "Coco's Bakery Restaurant",
+    "signupUrl": "https://cocosbakery.com/e-club/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "coldStoneCreamery",
+    "name": "Cold Stone Creamery",
+    "signupUrl": "https://www.coldstonecreamery.com/mycsc/index.html",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "columbiaSportswear",
+    "name": "Columbia Sportswear",
+    "signupUrl": "https://www.dpbolvw.net/click-2745940-15733629?sid=bday&url=https%3A%2F%2Fwww.columbia.com%2Frewardsprogram",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "cornerBakeryCafe",
+    "name": "Corner Bakery Cafe",
+    "signupUrl": "https://cornerbakery.myguestaccount.com/guest/enroll?card-template=gz6U71JdL9Y%3d&template=0&referral_code=RDjcrLCKcNQrQPrahfbPhiLCDekqQeeda",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "costPlusWorldMarket",
+    "name": "Cost Plus World Market",
+    "signupUrl": "https://www.anrdoezrs.net/click-2745940-15734307?sid=bday&url=https%3A%2F%2Fwww.worldmarket.com%2Frewards-landing-page.html",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "costaVida",
+    "name": "Costa Vida",
+    "signupUrl": "https://www.costavida.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "countryKitchen",
+    "name": "Country Kitchen",
+    "signupUrl": "https://countrykitchenrestaurants.com/eclub/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "crackerBarrel",
+    "name": "Cracker Barrel",
+    "signupUrl": "https://www.crackerbarrel.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "crumblCookies",
+    "name": "Crumbl Cookies",
+    "signupUrl": "https://cmbl.co/9ORIATH7QQHK",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "culvers",
+    "name": "Culver's",
+    "signupUrl": "https://www.culvers.com/myculvers",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "cvs",
+    "name": "CVS",
+    "signupUrl": "https://www.jdoqocy.com/click-2745940-15734910?sid=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "dairyQueen",
+    "name": "Dairy Queen",
+    "signupUrl": "https://www.dairyqueen.com/en-us/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "daphnes",
+    "name": "Daphne's",
+    "signupUrl": "https://daphnes.biz/pitapoints-restaurant-discounts-rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "delTaco",
+    "name": "Del Taco",
+    "signupUrl": "https://deltaco.com/delyeahrewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "dennys",
+    "name": "Denny's",
+    "signupUrl": "https://www.dennys.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "dickeysBarbecuePit",
+    "name": "Dickey's Barbecue Pit",
+    "signupUrl": "https://www.dickeys.com/promos/check-the-app",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "dippinDots",
+    "name": "Dippin' Dots",
+    "signupUrl": "https://www.dippindots.com/dotcrazy/signup/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "dogHaus",
+    "name": "Dog Haus",
+    "signupUrl": "https://doghaus.com/haus-rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "draftkings",
+    "name": "DraftKings",
+    "signupUrl": "https://sportsbook.draftkings.com/r/sb/rebanks01/US-NY-SB",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "dsw",
+    "name": "DSW",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.dsw.com%2Fen%2Fus%2Fvip&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "duckDonuts",
+    "name": "Duck Donuts",
+    "signupUrl": "https://www.duckdonuts.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "dunkin",
+    "name": "Dunkin'",
+    "signupUrl": "https://www.dunkindonuts.com/en/dunkinrewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "dutchBrosCoffee",
+    "name": "Dutch Bros Coffee",
+    "signupUrl": "https://www.dutchbros.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "earlOfSandwich",
+    "name": "Earl of Sandwich",
+    "signupUrl": "https://earlofsandwichusa.com/eclub/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "eatnPark",
+    "name": "Eat'n Park",
+    "signupUrl": "https://www.eatnpark.com/join-our-club",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "eddieBauer",
+    "name": "Eddie Bauer",
+    "signupUrl": "https://eddiebauerus.ygwk.net/3e3rYk",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "edibleArrangements",
+    "name": "Edible Arrangements",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.ediblearrangements.com%2Frewards%2F&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "einsteinBrosBagels",
+    "name": "Einstein Bros Bagels",
+    "signupUrl": "https://www.einsteinbros.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "elChico",
+    "name": "El Chico",
+    "signupUrl": "https://www.elchico.com/join/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "elPolloLoco",
+    "name": "El Pollo Loco",
+    "signupUrl": "https://www.elpolloloco.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "elTorito",
+    "name": "El Torito",
+    "signupUrl": "https://www.eltorito.com/loyalty-program/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "elfCosmetics",
+    "name": "elf Cosmetics",
+    "signupUrl": "https://click.linksynergy.com/deeplink?id=96nyqW322pM&mid=39724&murl=https%3A%2F%2Fwww.elfcosmetics.com%2Fe.l.f.-beauty-squad&u1=bday&LSNSUBSITE=LSNSUBSITE",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "famousDavesBbq",
+    "name": "Famous Dave's BBQ",
+    "signupUrl": "https://www.famousdaves.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "famousFootwear",
+    "name": "Famous Footwear",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.famousfootwear.com%2Frewards&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "fandango",
+    "name": "Fandango",
+    "signupUrl": "https://www.kqzyfj.com/click-2745940-15735311?sid=bday&url=https%3A%2F%2Fwww.fandango.com%2Faccounts%2Fjoin-now",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "fazolis",
+    "name": "Fazoli's",
+    "signupUrl": "https://fazolis.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "finishLine",
+    "name": "Finish Line",
+    "signupUrl": "https://click.linksynergy.com/deeplink?id=96nyqW322pM&mid=37731&murl=https%3A%2F%2Fwww.finishline.com%2Fstore%2Fstatus&u1=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "firehouseSubs",
+    "name": "Firehouse Subs",
+    "signupUrl": "https://www.firehousesubs.com/firehouse-rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "firstWatch",
+    "name": "First Watch",
+    "signupUrl": "https://firstwatch.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "flatTopGrill",
+    "name": "Flat Top Grill",
+    "signupUrl": "https://www.flattopgrill.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "fogoDeChao",
+    "name": "Fogo de Chao",
+    "signupUrl": "https://fogodechao.com/qr-fogorewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "footLocker",
+    "name": "Foot Locker",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.footlocker.com%2Fflx.html&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "freddys",
+    "name": "Freddy's",
+    "signupUrl": "https://www.freddys.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "friendlys",
+    "name": "Friendly's",
+    "signupUrl": "https://friendlys.myguestaccount.com/guest/enroll?card-template=gz6U71JdL9Y&template=0&referral_code=APFcGpCpQBciKaEggRAncCELQajKAFeBa",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "fuddruckers",
+    "name": "Fuddruckers",
+    "signupUrl": "https://www.fuddruckers.com/eclub",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "fuzzysTacoShop",
+    "name": "Fuzzy's Taco Shop",
+    "signupUrl": "https://fuzzystacoshop.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "gamestop",
+    "name": "GameStop",
+    "signupUrl": "https://go.skimresources.com/?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.gamestop.com%2Fpro%2F&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "gap",
+    "name": "Gap",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.gap.com%2Fcustomer-service%2Fgap-good-rewards%3Fcid%3D1099008&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "genghisGrill",
+    "name": "Genghis Grill",
+    "signupUrl": "https://www.genghisgrill.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "gigisCupcakes",
+    "name": "Gigi's Cupcakes",
+    "signupUrl": "https://gigiscupcakesusa.com/pages/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "gloryDaysGrill",
+    "name": "Glory Days Grill",
+    "signupUrl": "https://www.glorydaysgrill.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "godfathersPizza",
+    "name": "Godfather's Pizza",
+    "signupUrl": "https://shop.godfathers.com/eclub/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "goldenCorral",
+    "name": "Golden Corral",
+    "signupUrl": "https://www.goldencorral.com/rewards/sign-in/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "greatAmericanCookies",
+    "name": "Great American Cookies",
+    "signupUrl": "https://www.greatamericancookies.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "grimaldisPizzeria",
+    "name": "Grimaldi's Pizzeria",
+    "signupUrl": "https://grimaldis.myguestaccount.com/guest/enroll?card-template=gz6U71JdL9Y%3d&template=0&referral_code=anBJnbGQCMPkCkDrdJLnQDGhGgkeNgnJa",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "gymboree",
+    "name": "Gymboree",
+    "signupUrl": "https://gymboree.fhsxpf.net/KeJRye",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "hm",
+    "name": "H&M",
+    "signupUrl": "https://www2.hm.com/en_us/member/info.html",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "hallmark",
+    "name": "Hallmark",
+    "signupUrl": "https://www.hallmark.com/crown-rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "hardRockCafe",
+    "name": "Hard Rock Cafe",
+    "signupUrl": "https://unity.hardrock.com/how-unity-works",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "hardees",
+    "name": "Hardee's",
+    "signupUrl": "https://www.hardees.com/myrewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "honeybakedHam",
+    "name": "HoneyBaked Ham",
+    "signupUrl": "https://www.honeybaked.com/honey-baked-ham-rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "hooters",
+    "name": "Hooters",
+    "signupUrl": "https://www.hooters.com/hootclub/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "hotDogOnAStick",
+    "name": "Hot Dog on a Stick",
+    "signupUrl": "https://hotdogonastick.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "hotTopic",
+    "name": "Hot Topic",
+    "signupUrl": "https://www.kqzyfj.com/click-2745940-15734323?sid=bday&url=https%3A%2F%2Fwww.hottopic.com%2Fcustomer-service%2Fhot-topic-rewards%2F",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "houlihans",
+    "name": "Houlihan's",
+    "signupUrl": "https://www.houlihans.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "hucks",
+    "name": "Huck's",
+    "signupUrl": "https://hucks.com/hucks-bucks-bigg-rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "huddleHouse",
+    "name": "Huddle House",
+    "signupUrl": "https://huddleuprewards.myguestaccount.com/guest/enroll?card-template=HQnpQ690V4o&template=4&referral_code=ALQjNegnNdANbhhLemKaagHphhLgBEdqa",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "huhotMongolianGrill",
+    "name": "HuHot Mongolian Grill",
+    "signupUrl": "https://huhot.myguestaccount.com/guest/enroll?card-template=gz6U71JdL9Y&template=0&referral_code=ALJNNbdfjRgLfeLaNmiGiRLBdAAPadmRa",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "hungryHowies",
+    "name": "Hungry Howie's",
+    "signupUrl": "https://www.hungryhowies.com/sign-up",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "ihop",
+    "name": "IHOP",
+    "signupUrl": "https://www.ihop.com/en/myhop",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "ikes",
+    "name": "Ike's",
+    "signupUrl": "https://www.ikessandwich.com/ikes-rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "ikea",
+    "name": "IKEA",
+    "signupUrl": "https://www.ikea.com/us/en/ikea-family/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "imosPizza",
+    "name": "Imo's Pizza",
+    "signupUrl": "https://www.imospizza.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "jcrew",
+    "name": "J.Crew",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.jcrew.com%2Fs%2Frewards&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "jackInTheBox",
+    "name": "Jack in the Box",
+    "signupUrl": "https://www.jackinthebox.com/account/signup",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "jacks",
+    "name": "Jack's",
+    "signupUrl": "https://www.eatatjacks.com/pages/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "jambaJuice",
+    "name": "Jamba Juice",
+    "signupUrl": "https://www.jamba.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "jasonsDeli",
+    "name": "Jason's Deli",
+    "signupUrl": "https://www.jasonsdeli.com/deli-dollars",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "jcpenney",
+    "name": "JCPenney",
+    "signupUrl": "https://www.anrdoezrs.net/click-2745940-15734888?sid=bday&url=https%3A%2F%2Fwww.jcpenney.com%2Frewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "jerseyMikes",
+    "name": "Jersey Mike's",
+    "signupUrl": "https://www.jerseymikes.com/account",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "jetsPizza",
+    "name": "Jet's Pizza",
+    "signupUrl": "https://www.jetspizza.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "jimmyJohns",
+    "name": "Jimmy John's",
+    "signupUrl": "https://www.jimmyjohns.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "joesCrabShack",
+    "name": "Joe's Crab Shack",
+    "signupUrl": "http://joescrabshack.fbmta.com/members/UpdateProfile.aspx?Action=Subscribe&InputSource=W",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "johnnyRockets",
+    "name": "Johnny Rockets",
+    "signupUrl": "https://www.johnnyrockets.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "jollibee",
+    "name": "Jollibee",
+    "signupUrl": "https://www.jollibeefoods.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "journeys",
+    "name": "Journeys",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.journeys.com%2Fpromotions&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "juiceItUp",
+    "name": "Juice It Up",
+    "signupUrl": "https://juiceitup.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "kfc",
+    "name": "KFC",
+    "signupUrl": "https://www.kfc.com/dashboard/enroll",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "khols",
+    "name": "Khol's",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.kohls.com%2Ffeature%2Frewards.jsp&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "kiehls",
+    "name": "Kiehl's",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.kiehls.com%2Fmy-kiehls-rewards.html&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "konaGrill",
+    "name": "Kona Grill",
+    "signupUrl": "https://konagrill.com/konavore-rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "krispyKreme",
+    "name": "Krispy Kreme",
+    "signupUrl": "https://www.krispykreme.com/more-smiles/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "kumGo",
+    "name": "Kum & Go",
+    "signupUrl": "https://kumandgo.com/rewards-perks/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "laMadeleine",
+    "name": "la Madeleine",
+    "signupUrl": "https://www.thelevelup.com/c/EM-CH7QFZLP2Y",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "lacoste",
+    "name": "Lacoste",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.lacoste.com%2Fus%2Fleclublacoste.html&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "lancome",
+    "name": "Lancome",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.lancome-usa.com%2Floyalty-landing.html&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "landsEnd",
+    "name": "Lands' End",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.landsend.com%2Fco%2FNewsletter&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "laneBryant",
+    "name": "Lane Bryant",
+    "signupUrl": "https://www.lanebryant.com/content/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "lazyDog",
+    "name": "Lazy Dog",
+    "signupUrl": "https://www.lazydogrestaurants.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "ledoPizza",
+    "name": "Ledo Pizza",
+    "signupUrl": "https://ledopizza.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "leesFamousRecipeChicken",
+    "name": "Lee's Famous Recipe Chicken",
+    "signupUrl": "https://leesfamousrecipe.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "logansRoadhouse",
+    "name": "Logan's Roadhouse",
+    "signupUrl": "https://logansroadhouse.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "longhornSteakhouse",
+    "name": "LongHorn Steakhouse",
+    "signupUrl": "https://www.anrdoezrs.net/click-2745940-13032584?sid=bday&url=https%3A%2F%2Fwww.longhornsteakhouse.com%2Fhome",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "lordTaylor",
+    "name": "Lord + Taylor",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.lordandtaylor.com%2Fpages%2Frewards&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "lubys",
+    "name": "Luby's",
+    "signupUrl": "https://www.lubys.com/eclub/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "lucillesSmokehouseBbq",
+    "name": "Lucille's Smokehouse BBQ",
+    "signupUrl": "https://lucillesbbq.com/#",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "lunaGrill",
+    "name": "Luna Grill",
+    "signupUrl": "https://lunagrill.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "macaroniGrill",
+    "name": "Macaroni Grill",
+    "signupUrl": "http://macaronigrill.fbmta.com/members/UpdateProfile.aspx?Action=Subscribe",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "macys",
+    "name": "Macy's",
+    "signupUrl": "https://www.tkqlhce.com/click-2745940-15736843?sid=bday&url=https%3A%2F%2Fwww.macys.com%2F",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "maggianosLittleItaly",
+    "name": "Maggiano's Little Italy",
+    "signupUrl": "https://www.maggianos.com/e-club/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "manchuwok",
+    "name": "ManchuWok",
+    "signupUrl": "https://manchuwok.com/wok-rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "marbleSlabCreamery",
+    "name": "Marble Slab Creamery",
+    "signupUrl": "https://www.marbleslab.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "marcosPizza",
+    "name": "Marco's Pizza",
+    "signupUrl": "https://www.marcos.com/email-club/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "marieCallenders",
+    "name": "Marie Callender's",
+    "signupUrl": "https://mariecallender.fbmta.com/members/UpdateProfile.aspx?Action=Subscribe&InputSource=W",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "maxErmas",
+    "name": "Max & Erma's",
+    "signupUrl": "https://www.maxandermas.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "mcalistersDeli",
+    "name": "McAlister's Deli",
+    "signupUrl": "https://www.mcalistersdeli.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "mcdonalds",
+    "name": "McDonald's",
+    "signupUrl": "https://www.mcdonalds.com/us/en-us/deals.html",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "meddys",
+    "name": "Meddys",
+    "signupUrl": "https://www.meddys.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "medievalTimes",
+    "name": "Medieval Times",
+    "signupUrl": "https://www.medievaltimes.com/birthday-code",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "mellowMushroom",
+    "name": "Mellow Mushroom",
+    "signupUrl": "https://www.mellowmushroom.com/account/signup/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "menchies",
+    "name": "Menchies",
+    "signupUrl": "https://registrationinfo.net/menchies",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "michaels",
+    "name": "Michaels",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.michaels.com%2Frewards&sref=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "mimisCaf",
+    "name": "Mimi's Caf\u00e9",
+    "signupUrl": "https://assets.fbmta.com/clt/mimis/lp/join/2019/5/mimis.asp",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "modPizza",
+    "name": "MOD Pizza",
+    "signupUrl": "https://modpizza.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "moesSouthwestGrill",
+    "name": "Moe's Southwest Grill",
+    "signupUrl": "https://www.moes.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "mooyah",
+    "name": "Mooyah",
+    "signupUrl": "https://www.mooyah.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "mountainMikesPizza",
+    "name": "Mountain Mike's Pizza",
+    "signupUrl": "https://www.mountainmikespizza.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "nandos",
+    "name": "Nando's",
+    "signupUrl": "https://www.nandosperiperi.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "nickelodeon",
+    "name": "Nickelodeon",
+    "signupUrl": "https://www.nickelodeonbirthdayclub.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "ninetyNine",
+    "name": "Ninety Nine",
+    "signupUrl": "https://www.99restaurants.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "noodlesCompany",
+    "name": "Noodles & Company",
+    "signupUrl": "https://www.noodles.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "notYourAverageJoes",
+    "name": "Not Your Average Joe's",
+    "signupUrl": "https://www.notyouraveragejoes.com/email-club/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "nothingBundtCakes",
+    "name": "Nothing Bundt Cakes",
+    "signupUrl": "https://www.nothingbundtcakes.com/eclub/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "ocharleys",
+    "name": "O'Charley's",
+    "signupUrl": "https://www.ocharleys.com/oclub",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "officeDepotOfficemax",
+    "name": "Office Depot & OfficeMax",
+    "signupUrl": "https://www.tkqlhce.com/click-2745940-15735526?sid=bday&url=https%3A%2F%2Fwww.officedepot.com%2Fl%2Frewards%2Foffice-depot-rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "oldChicago",
+    "name": "Old Chicago",
+    "signupUrl": "https://oldchicago.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "oldNavy",
+    "name": "Old Navy",
+    "signupUrl": "https://gap.igs4ds.net/eKGPaD",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "oldOrchard",
+    "name": "Old Orchard",
+    "signupUrl": "https://oldorchard.com/club/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "olgasKitchen",
+    "name": "Olga's Kitchen",
+    "signupUrl": "https://www.olgas.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "oliveGarden",
+    "name": "Olive Garden",
+    "signupUrl": "https://www.anrdoezrs.net/click-2745940-13032584?sid=bday&url=https%3A%2F%2Fwww.olivegarden.com%2Fspecials%2Ffree-birthday-appetizer-or-dessert-with-your-meal",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "onTheBorder",
+    "name": "On The Border",
+    "signupUrl": "https://ontheborder.myguestaccount.com/guest/enroll?card-template=ktYylJhNj2k&template=1&referral_code=JjdjfDdMJEhAQnKripfgKfrfHFgEaLrda",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "orangeJulius",
+    "name": "Orange Julius",
+    "signupUrl": "https://orangejulius.com/en-us/julius-league/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "oreganos",
+    "name": "Oregano's",
+    "signupUrl": "https://oreganos.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "outbackSteakhouse",
+    "name": "Outback Steakhouse",
+    "signupUrl": "https://www.outback.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "pfChangs",
+    "name": "P.F. Chang's",
+    "signupUrl": "https://www.pfchangs.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "pandaExpress",
+    "name": "Panda Express",
+    "signupUrl": "https://www.pandaexpress.com/myrewards/earn",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "paneraBread",
+    "name": "Panera Bread",
+    "signupUrl": "https://www.panerabread.com/en-us/home.html",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "papaJohns",
+    "name": "Papa Johns",
+    "signupUrl": "https://www.papajohns.com/papa-rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "papaMurphys",
+    "name": "Papa Murphy's",
+    "signupUrl": "https://www.papamurphys.com/myslice-rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "parisBaguette",
+    "name": "Paris Baguette",
+    "signupUrl": "https://parisbaguette.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "pdq",
+    "name": "PDQ",
+    "signupUrl": "https://mypdq.myguestaccount.com/guest/enroll?card-template=1DLP0KWE8FA&template=2&referral_code=JifnnCdfQDfLrEHDkKdBnbrJPgcibGada",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "peetsCoffee",
+    "name": "Peet's Coffee",
+    "signupUrl": "https://www.kqzyfj.com/click-2745940-15734720?sid=bday&url=https%3A%2F%2Fwww.peets.com%2Fpages%2Fpeetnik-rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "peiWei",
+    "name": "Pei Wei",
+    "signupUrl": "https://www.peiwei.com/pei-wei-rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "perkins",
+    "name": "Perkins",
+    "signupUrl": "http://prkmc.fbmta.com/members/UpdateProfile.aspx?Action=Subscribe&_Theme=45097156841&InputSource=W",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "petco",
+    "name": "Petco",
+    "signupUrl": "https://petco.9zpg.net/y56VW",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "petsmart",
+    "name": "PetSmart",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.petsmart.com%2Faccount%2F&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "phillyPretzelFactory",
+    "name": "Philly Pretzel Factory",
+    "signupUrl": "https://phillypretzelfactory.com/rewards-benefits/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "pickUpStix",
+    "name": "Pick Up Stix",
+    "signupUrl": "https://www.pickupstix.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "pieology",
+    "name": "Pieology",
+    "signupUrl": "https://pieology.com/pie-life-rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "pilotFlyingJ",
+    "name": "Pilot Flying J",
+    "signupUrl": "https://pilotflyingj.app.link/YydfoO7ah0?referralCode=ryans5294",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "pinkberry",
+    "name": "Pinkberry",
+    "signupUrl": "https://pinkcard.myguestaccount.com/guest/enroll?card-template=gz6U71JdL9Y%3d&template=0&referral_code=pmNPChBpHbaiEgNNRHkfbmNepNaNrkhAa",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "pitaPit",
+    "name": "Pita Pit",
+    "signupUrl": "https://www.thelevelup.com/c/EM-DJMUQAH721",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "pizzaHut",
+    "name": "Pizza Hut",
+    "signupUrl": "https://www.pizzahut.com/account/create-account",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "pizzaRanch",
+    "name": "Pizza Ranch",
+    "signupUrl": "https://pizzaranch.com/ranch-rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "planetSmoothie",
+    "name": "Planet Smoothie",
+    "signupUrl": "https://www.planetsmoothie.com/vip/index.php",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "planetSub",
+    "name": "Planet Sub",
+    "signupUrl": "https://planetsub.com/about/psub-club/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "pluckers",
+    "name": "Pluckers",
+    "signupUrl": "https://www.pluckers.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "polloTropical",
+    "name": "Pollo Tropical",
+    "signupUrl": "https://www.pollotropical.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "ponderosa",
+    "name": "Ponderosa",
+    "signupUrl": "https://pon-bon.com/e-club#ponderosa",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "popeyes",
+    "name": "Popeyes",
+    "signupUrl": "https://www.popeyes.com/rewards/details",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "potbellySandwichShop",
+    "name": "Potbelly Sandwich Shop",
+    "signupUrl": "https://www.thelevelup.com/c/EM-E86DTRUMBQ",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "pretzelmaker",
+    "name": "Pretzelmaker",
+    "signupUrl": "https://www.pretzelmaker.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "publix",
+    "name": "Publix",
+    "signupUrl": "https://www.publix.com/myaccount/register?nav=header",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "qdoba",
+    "name": "Qdoba",
+    "signupUrl": "https://qdoba.myguestaccount.com/guest/enroll?card-template=gz6U71JdL9Y%3d&template=0&referral_code=hEGcGiHQBgBcPHNKDdFeNKNAGNnpMjBfa",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "quickQuackCarWash",
+    "name": "Quick Quack Car Wash",
+    "signupUrl": "https://www.dontdrivedirty.com/birthday/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "quiznos",
+    "name": "Quiznos",
+    "signupUrl": "https://www.quiznos.com/loyalty/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "rackRoomShoes",
+    "name": "Rack Room Shoes",
+    "signupUrl": "https://www.kqzyfj.com/click-2745940-15734975?sid=bday&url=https%3A%2F%2Fwww.rackroomshoes.com%2Frewards-info",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "raisingCanes",
+    "name": "Raising Cane's",
+    "signupUrl": "https://www.raisingcanes.com/caniac-club",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "rallys",
+    "name": "Rally's",
+    "signupUrl": "https://checkersrallys.myguestaccount.com/guest/enroll?card-template=gz6U71JdL9Y%3d&template=0&referral_code=beFmpABAcCgHcaHEKEimjPhDhFCDiedha",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "redLobster",
+    "name": "Red Lobster",
+    "signupUrl": "https://www.redlobster.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "redMango",
+    "name": "Red Mango",
+    "signupUrl": "https://redmangousa.com/e-club-signup/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "redRobin",
+    "name": "Red Robin",
+    "signupUrl": "https://www.redrobin.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "reebok",
+    "name": "Reebok",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.reebok.com%2Faccount-register&sref=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "regalCinemas",
+    "name": "Regal Cinemas",
+    "signupUrl": "https://www.regmovies.com/regal-crown-club",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "ritasItalianIce",
+    "name": "Rita's Italian Ice",
+    "signupUrl": "https://www.ritasice.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "rockBottom",
+    "name": "Rock Bottom",
+    "signupUrl": "https://www.rockbottom.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "roundTablePizza",
+    "name": "Round Table Pizza",
+    "signupUrl": "https://ordering.roundtablepizza.com/Site/rtp/Rewards#",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "royRogers",
+    "name": "Roy Rogers",
+    "signupUrl": "https://www.royrogersrestaurants.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "rubios",
+    "name": "Rubio's",
+    "signupUrl": "https://rubios.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "rubyTuesday",
+    "name": "Ruby Tuesday",
+    "signupUrl": "https://www.rubytuesday.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "rubysDiner",
+    "name": "Ruby's Diner",
+    "signupUrl": "https://www.rubys.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "saladworks",
+    "name": "Saladworks",
+    "signupUrl": "https://saladworks.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "sbarro",
+    "name": "Sbarro",
+    "signupUrl": "https://sbarro.com/sbarro-rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "schlotzskys",
+    "name": "Schlotzsky's",
+    "signupUrl": "https://www.schlotzskys.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "scootersCoffee",
+    "name": "Scooter's Coffee",
+    "signupUrl": "https://www.thelevelup.com/c/EM-ALTD8QCXPV",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "seasons52",
+    "name": "Seasons 52",
+    "signupUrl": "https://www.anrdoezrs.net/click-2745940-13032584?sid=bday&url=https%3A%2F%2Fwww.seasons52.com%2Fhome",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "sephora",
+    "name": "Sephora",
+    "signupUrl": "https://click.linksynergy.com/deeplink?id=96nyqW322pM&mid=2417&murl=https%3A%2F%2Fwww.sephora.com%2Fbeauty%2Fbirthday-gift&u1=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "shakeShack",
+    "name": "Shake Shack",
+    "signupUrl": "https://shakeshack.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "sharis",
+    "name": "Shari's",
+    "signupUrl": "https://sharis.com/rewards-2/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "sheetz",
+    "name": "Sheetz",
+    "signupUrl": "https://www.sheetz.com/loyalty-program",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "shipleyDonuts",
+    "name": "Shipley Do-Nuts",
+    "signupUrl": "https://shipleydonuts.myguestaccount.com/guest/enroll?card-template=JTIldXJsLXBhcmFtLWFlcy1rZXklcldSb2JTazdITEhlQSt1OCVBZlVxbTNrUHlUOWw0bVFnNWk4YWsyOD0%3D&template=0&referral_code=rMNRmqMhbGEerLFEeaKfeNMrhjGqedFLa",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "shoeCarnival",
+    "name": "Shoe Carnival",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.shoecarnival.com%2Fcontent%2Fshoeperksrewards&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "shoneys",
+    "name": "Shoney's",
+    "signupUrl": "https://shoneys.myguestaccount.com/guest/enroll?card-template=1DLP0KWE8FA&template=2&referral_code=jBiMGHrFPaCAdfebihiMNkcaiNmrJGpra",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "shrimpBasket",
+    "name": "Shrimp Basket",
+    "signupUrl": "https://shrimpbasket.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "sizzler",
+    "name": "Sizzler",
+    "signupUrl": "https://sizzler.com/join-the-club/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "slimChickens",
+    "name": "Slim Chickens",
+    "signupUrl": "https://slimchickens.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "smashburger",
+    "name": "Smashburger",
+    "signupUrl": "https://smashburger.com/create-account?referral_code=CgndgFPBnpqkkKDCfJRnJGngAQHKEBrba",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "smokeyBones",
+    "name": "Smokey Bones",
+    "signupUrl": "https://smokeybones.com/bones-club/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "smoothieKing",
+    "name": "Smoothie King",
+    "signupUrl": "https://www.thelevelup.com/c/EM-RG0BDL7N3E",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "soma",
+    "name": "Soma",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.soma.com%2Fstore%2Fpage%2Fsoma%2Brewards%2F100809372%2F&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "sonic",
+    "name": "Sonic",
+    "signupUrl": "https://www.sonicdrivein.com/deals/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "sonnysBbq",
+    "name": "Sonny's BBQ",
+    "signupUrl": "https://www.sonnysbbq.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "souperSalad",
+    "name": "Souper Salad",
+    "signupUrl": "https://soupersalad.com/e-club-signup/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "spaghettiWarehouse",
+    "name": "Spaghetti Warehouse",
+    "signupUrl": "https://www.meatballs.com/join-our-club/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "speedway",
+    "name": "Speedway",
+    "signupUrl": "https://www.speedway.com/speedy-rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "sprinkles",
+    "name": "Sprinkles",
+    "signupUrl": "https://sprinkles.myguestaccount.com/guest/enroll?card-template=gz6U71JdL9Y%3d&template=0&referral_code=APHBkhmEjRqqMFBrKbLGpKCRjARkmPBpa",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "starbucks",
+    "name": "Starbucks",
+    "signupUrl": "https://www.starbucks.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "steakNShake",
+    "name": "Steak 'n Shake",
+    "signupUrl": "https://www.steaknshake.com/rewards/?id=1",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "stickyFingers",
+    "name": "Sticky Fingers",
+    "signupUrl": "https://stickyfingers.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "subway",
+    "name": "Subway",
+    "signupUrl": "https://www.subway.com/en-us/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "swagbucks",
+    "name": "Swagbucks",
+    "signupUrl": "https://www.kqzyfj.com/click-2745940-10872190?sid=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "sweetfrog",
+    "name": "sweetFrog",
+    "signupUrl": "https://www.sweetfrog.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "sweetgreen",
+    "name": "sweetgreen",
+    "signupUrl": "https://www.thelevelup.com/c/EM-HU7SVJQZL2",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "tacoBell",
+    "name": "Taco Bell",
+    "signupUrl": "https://www.tacobell.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "tacoBueno",
+    "name": "Taco Bueno",
+    "signupUrl": "https://www.tacobueno.com/loyalty/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "tacoCabana",
+    "name": "Taco Cabana",
+    "signupUrl": "https://www.tacocabana.com/loyalty-login/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "tacoJohns",
+    "name": "Taco John's",
+    "signupUrl": "https://tacojohns.com/biggerbolderrewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "talbots",
+    "name": "Talbots",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.talbots.com%2Fclothing%2Fclassic-awards%2Fclassic-awards&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "target",
+    "name": "Target",
+    "signupUrl": "https://goto.target.com/3Pj5mn",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "tcby",
+    "name": "TCBY",
+    "signupUrl": "https://www.thelevelup.com/c/EM-MG6S3CIE5W",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "tedsMontanaGrill",
+    "name": "Ted's Montana Grill",
+    "signupUrl": "https://www.tedsmontanagrill.com/join.html",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "teriyakiMadness",
+    "name": "Teriyaki Madness",
+    "signupUrl": "https://teriyakimadness.com/app/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "texasDeBrazil",
+    "name": "Texas De Brazil",
+    "signupUrl": "https://texasdebrazil.com/eclub/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "texasRoadhouse",
+    "name": "Texas Roadhouse",
+    "signupUrl": "https://www.texasroadhouse.com/vip-club",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "tgiFridays",
+    "name": "TGI Fridays",
+    "signupUrl": "https://tgifridays.com/loyalty-3/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "theChildrensPlace",
+    "name": "The Children's Place",
+    "signupUrl": "https://thechildrensplace.ay6u.net/k0XQ1z",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "theContainerStore",
+    "name": "The Container Store",
+    "signupUrl": "https://thecontainerstore.sjv.io/c/12526/2049578/24840?subId1=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "theHabitBurgerGrill",
+    "name": "The Habit Burger Grill",
+    "signupUrl": "https://order.habitburger.com/register",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "theHomeDepot",
+    "name": "The Home Depot",
+    "signupUrl": "https://homedepot.sjv.io/b3GZqb",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "theHumanBean",
+    "name": "The Human Bean",
+    "signupUrl": "https://thehumanbean.com/pages/rewards-app",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "theKeg",
+    "name": "The Keg",
+    "signupUrl": "https://thekeg.com/en/newsletter",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "theMeltingPot",
+    "name": "The Melting Pot",
+    "signupUrl": "https://www.meltingpot.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "theOldSpaghettiFactory",
+    "name": "The Old Spaghetti Factory",
+    "signupUrl": "https://www.osf.com/join-osf-rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "tijuanaFlats",
+    "name": "Tijuana Flats",
+    "signupUrl": "https://www.tijuanaflats.com/promotions/flathead-rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "timHortons",
+    "name": "Tim Hortons",
+    "signupUrl": "https://www.timhortons.com/timsrewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "tjMaxx",
+    "name": "TJ Maxx",
+    "signupUrl": "https://www.jdoqocy.com/click-2745940-15734332?sid=bday&url=https%3A%2F%2Ftjmaxx.tjx.com%2Fstore%2Findex.jsp",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "togos",
+    "name": "Togo's",
+    "signupUrl": "https://online.togos.com/togos/order/menu?enrollInLoyalty&referredBy=CM6K6NKC&utm_source=referral-link",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "tonyRomas",
+    "name": "Tony Roma's",
+    "signupUrl": "http://assets.fbmta.com/clt/tnyrms/join/1/join.asp",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "torchysTacos",
+    "name": "Torchy's Tacos",
+    "signupUrl": "https://torchystacos.com/torchys-rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "tropicalSmoothieCafe",
+    "name": "Tropical Smoothie Cafe",
+    "signupUrl": "https://www.tropicalsmoothiecafe.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "twinPeaks",
+    "name": "Twin Peaks",
+    "signupUrl": "https://twinpeaksrestaurant.com/peaks-club",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "ultaBeauty",
+    "name": "ULTA Beauty",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.ulta.com%2Frewards%2Fall&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "unoPizza",
+    "name": "Uno Pizza",
+    "signupUrl": "https://www.unos.com/eclub.php",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "urbanDecay",
+    "name": "Urban Decay",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.urbandecay.com%2Fon%2Fdemandware.store%2FSites-urbandecay-us-Site%2Fen_US%2FLoyalty-Content%3Ffdid%3Dloyalty-landing-page&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "variousStripClubs",
+    "name": "Various Strip Clubs",
+    "signupUrl": "https://www.google.com/search?q=strip+clubs+near+me",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "veraBradley",
+    "name": "Vera Bradley",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fverabradley.com%2Fpages%2Fvb-email-sign-up&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "victoriasSecret",
+    "name": "Victoria's Secret",
+    "signupUrl": "https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.victoriassecret.com%2Fus%2Frewards&xcust=bday",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "villageInn",
+    "name": "Village Inn",
+    "signupUrl": "https://www.villageinn.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "vitalityBowls",
+    "name": "Vitality Bowls",
+    "signupUrl": "https://vitalitybowls.com/loyalty-program/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "waffleHouse",
+    "name": "Waffle House",
+    "signupUrl": "https://www.wafflehouse.com/regulars-club/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "walmart",
+    "name": "Walmart",
+    "signupUrl": "https://goto.walmart.com/c/12526/565706/9383?subId1=bday&veh=aff&sourceid=imp_000011112222333344&u=https%3A%2F%2Fwww.walmart.com%2Fm%2Fsavings-spotlight",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "wawa",
+    "name": "Wawa",
+    "signupUrl": "https://www.wawarewards.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "waybackBurgers",
+    "name": "Wayback Burgers",
+    "signupUrl": "https://waybackburgers.com/rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "wendys",
+    "name": "Wendy's",
+    "signupUrl": "https://www.wendys.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "wetzelsPretzels",
+    "name": "Wetzel's Pretzels",
+    "signupUrl": "https://www.wetzels.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "whataburger",
+    "name": "Whataburger",
+    "signupUrl": "https://whataburger.com/home",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "whichWich",
+    "name": "Which Wich",
+    "signupUrl": "https://whichwich.com/vibe-club-rewards/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "whiteCastle",
+    "name": "White Castle",
+    "signupUrl": "https://www.whitecastle.com/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "wienerschnitzel",
+    "name": "Wienerschnitzel",
+    "signupUrl": "https://www.wienerschnitzel.com/join/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "williesGrillIcehouse",
+    "name": "Willie's Grill & Icehouse",
+    "signupUrl": "https://williesgrillandicehouse.com/williesrewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "wingstop",
+    "name": "Wingstop",
+    "signupUrl": "https://www.wingstop.com/the-club/",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "winndixie",
+    "name": "Winn-Dixie",
+    "signupUrl": "https://www.winndixie.com/Rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "yankeeCandle",
+    "name": "Yankee Candle",
+    "signupUrl": "https://www.yankeecandle.com/rewards.html",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "yardHouse",
+    "name": "Yard House",
+    "signupUrl": "https://www.anrdoezrs.net/click-2745940-13032584?sid=bday&url=https%3A%2F%2Fwww.yardhouse.com%2Fhome",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "yoshinoya",
+    "name": "Yoshinoya",
+    "signupUrl": "https://www.yoshinoyaamerica.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "zaxbys",
+    "name": "Zaxby's",
+    "signupUrl": "https://www.zaxbys.com/rewards",
+    "isCustom": false,
+    "selectors": {}
+  },
+  {
+    "id": "ziggisCoffee",
+    "name": "Ziggi's Coffee",
+    "signupUrl": "https://ziggiscoffee.myguestaccount.com/guest/enroll?card-template=gz6U71JdL9Y&template=0&referral_code=HiKHFAhiegqLjqjnpdaqFcMpQgDbrqqka",
+    "isCustom": false,
+    "selectors": {}
+  }
+]

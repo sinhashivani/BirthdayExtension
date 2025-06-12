@@ -34,8 +34,20 @@
                 <label for="email">Email:</label>
                 <input type="email" id="email" autocomplete="email">
 
-                <label for="password">Password:</label>
-                <input type="password" id="password" autocomplete="new-password">
+                <input type="password" id="password" class="form-control" placeholder="Enter password"
+                    autocomplete="new-password">
+                <button type="button" id="togglePasswordVisibility" class="btn btn-secondary btn-icon"
+                    title="Toggle password visibility">
+                    <img src="icons/icon128.png" alt="Show Password" id="passwordToggleIcon" width="16" height="16">
+                </button>
+
+                <div id="passwordRequirements" class="password-requirements">
+                    <p><span id="reqLength" class="req-status"></span> 8 to 25 characters</p>
+                    <p><span id="reqNumber" class="req-status"></span> At least one number</p>
+                    <p><span id="reqCapital" class="req-status"></span> At least one capital letter</p>
+                    <p><span id="reqLowercase" class="req-status"></span> At least one lowercase letter</p>
+                    <p><span id="reqSpecial" class="req-status"></span> At least one special character</p>
+                </div>
 
                 <label for="birthday">Birthday:</label>
                 <input type="date" id="birthday" autocomplete="bday">
@@ -110,12 +122,6 @@
             <div id="statusMessage" class="status-message hidden"></div>
             <div id="autofillStatusDisplay">
                 <p>Select retailers and click 'Start Autofill' to see status updates.</p>
-            </div>
-
-            <div id="autofillStatusContainer" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px;">
-                <h3>Autofill Progress</h3>
-                <ul id="autofillStatusDisplay">
-                </ul>
             </div>
 
         </section>

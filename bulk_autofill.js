@@ -5,6 +5,7 @@ let activeProfile = null; // Placeholder for future profile management
 // Global DOM element reference (assigned in DOMContentLoaded)
 let retailerListDiv = null;
 let stopBulkAutofill = null;
+const WEBSCRAPED_RETAILERS_KEY = 'webscrapedRetailersDb'; // Choose a distinct key
 
 
 function getElement(id) {
@@ -15,46 +16,46 @@ function getElement(id) {
     return element;
 }
 
-/**
- * Sends a message to a content script in a specific tab and awaits a response.
- * @param { number } tabId - The ID of the tab to send the message to.
- * @param { object } message - The message object to send.
- * @returns { Promise < any >} A promise that resolves with the response from the content script.
- */
-// function sendMessageToContentScript(tabId, message, source = 'bulkAutofill') {
-//     return new Promise((resolve, reject) => {
-//         chrome.tabs.sendMessage(tabId, message, (response) => {
-//             if (chrome.runtime.lastError) {
-//                 // Handle errors during message sending (e.g., content script not ready, tab closed)
-//                 console.error("Error sending message to content script:", chrome.runtime.lastError.message);
-//                 return reject(new Error(chrome.runtime.lastError.message));
-//             }
-//             resolve(response);
-//         });
-//     });
-// }
-async function sendMessageToContentScriptRobust(tabId, message) {
+// This function needs to be in your background script (bulk_autofill.js or background.js)
+async function sendMessageToContentScript(tabId, message) {
+    const maxPingRetries = 20; // Allow more time for slow pages
+    const pingRetryDelayMs = 250; // Increased delay
+    let attempts = 0;
+    let contentScriptReady = false;
+
+    // First, ensure the content script is ready to receive messages
+    while (!contentScriptReady && attempts < maxPingRetries) {
+        attempts++;
+        try {
+            const pingResponse = await chrome.tabs.sendMessage(tabId, { action: 'ping' });
+            if (pingResponse && pingResponse.status === 'pong') {
+                contentScriptReady = true;
+                console.log(`Bulk Autofill: Content script in tab ${tabId} is ready after ${attempts} attempts.`);
+            } else {
+                console.warn(`Bulk Autofill: Ping received unexpected response from tab ${tabId}:`, pingResponse, `(Attempt ${attempts})`);
+            }
+        } catch (e) {
+            // Error here often means content script isn't loaded yet. Suppress frequent logs.
+            // console.warn(`Bulk Autofill: Ping failed for tab ${tabId} (attempt ${attempts}):`, e.message);
+        }
+
+        if (!contentScriptReady) {
+            await new Promise(resolve => setTimeout(resolve, pingRetryDelayMs));
+        }
+    }
+
+    if (!contentScriptReady) {
+        throw new Error(`Content script in tab ${tabId} did not become ready after ${maxPingRetries} attempts.`);
+    }
+
+    // Now that we know content.js is ready, send the actual command message
     try {
-        // Step 1: Attempt to inject content.js if it's not already there.
-        // This is safe to call even if already injected.
-        await chrome.scripting.executeScript({
-            target: { tabId: tabId },
-            files: ['content.js'] // Ensure this path is correct
-        });
-        console.log(`Bulk Autofill: content.js ensured to be injected into tab ${tabId}.`);
-
-        // Add a small delay after injection to give content.js time to initialize
-        // This is especially important for newly created tabs or pages with heavy JS.
-        await new Promise(resolve => setTimeout(resolve, 500)); // 500ms-1000ms is often a good starting point
-
-        // Step 2: Now send the actual message.
         const response = await chrome.tabs.sendMessage(tabId, message);
+        console.log(`Bulk Autofill: Message sent to tab ${tabId}, response received for action '${message.action}':`, response);
         return response;
-
     } catch (error) {
-        console.error(`Bulk Autofill: Error sending message to tab ${tabId}:`, error);
-        // Rethrow the error so the calling `for` loop can catch it and update status.
-        throw error;
+        console.error(`Bulk Autofill: Error sending command message to tab ${tabId} for action '${message.action}':`, error);
+        throw error; // Re-throw to be caught by the bulk processing loop
     }
 }
 
@@ -191,37 +192,6 @@ function fillProfileForm(profile) {
 }
 
 // Your renderProfileSelect function (ensure it populates the dropdown correctly)
-// function renderProfileSelect(profiles, activeProfileId) {
-//     const profileSelect = getElement('profileSelect');
-//     if (!profileSelect) return;
-
-//     profileSelect.innerHTML = ''; // Clear existing options
-
-//     // Add a "New Profile" option if desired (optional but good UX)
-//     const newProfileOption = document.createElement('option');
-//     newProfileOption.value = 'new-profile'; // A special value for new profile
-//     newProfileOption.textContent = 'Add New Profile...';
-//     profileSelect.appendChild(newProfileOption);
-
-//     // Populate with actual profiles
-//     for (const id in profiles) {
-//         const profile = profiles[id];
-//         const option = document.createElement('option');
-//         option.value = profile.id;
-//         option.textContent = profile.name;
-//         profileSelect.appendChild(option);
-//     }
-
-//     // Set the selected value in the dropdown
-//     if (activeProfileId && profiles[activeProfileId]) {
-//         profileSelect.value = activeProfileId;
-//     } else {
-//         profileSelect.value = 'new-profile'; // Select 'Add New Profile' if no active profile
-//         clearProfileForm(); // Clear form when 'Add New Profile' is selected initially
-//     }
-//     console.log("Bulk Autofill Page: Dropdown updated. Selected:", profileSelect.value);
-// }
-
 function renderProfileSelect(profiles, activeProfileIdFromStorage) { // Renamed parameter for clarity
     const profileSelect = getElement('profileSelect');
     if (!profileSelect) return;
@@ -273,6 +243,144 @@ function renderProfileSelect(profiles, activeProfileIdFromStorage) { // Renamed 
         console.log("Bulk Autofill Page: No active profile found, set to 'Add New Profile'.");
     }
     console.log("Bulk Autofill Page: Dropdown updated. Selected:", profileSelect.value);
+}
+
+// Add or copy the validateFormData function here from popup.js
+// Make sure it includes the password validation logic we just added.
+function validateFormData(profile) {
+    const errors = {};
+
+    if (!profile.firstName) {
+        errors.firstName = 'First Name is required.';
+    }
+    if (!profile.lastName) {
+        errors.lastName = 'Last Name is required.';
+    }
+    if (!profile.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email)) {
+        errors.email = 'Valid Email is required.';
+    }
+
+    const password = profile.password;
+    if (password) {
+        if (password.length < 8 || password.length > 25) {
+            errors.password = (errors.password ? errors.password + ' ' : '') + 'Password must be between 8 and 25 characters.';
+        }
+        if (!/\d/.test(password)) {
+            errors.password = (errors.password ? errors.password + ' ' : '') + 'Password must contain at least one number.';
+        }
+        if (!/[A-Z]/.test(password)) {
+            errors.password = (errors.password ? errors.password + ' ' : '') + 'Password must contain at least one capital letter.';
+        }
+        if (!/[a-z]/.test(password)) {
+            errors.password = (errors.password ? errors.password + ' ' : '') + 'Password must contain at least one lowercase letter.';
+        }
+        if (!/[^a-zA-Z0-9]/.test(password)) {
+            errors.password = (errors.password ? errors.password + ' ' : '') + 'Password must contain at least one special character (e.g., !@#$).';
+        }
+    }
+    // If password is required even when empty, uncomment:
+    // else {
+    //     errors.password = 'Password is required.';
+    // }
+
+    return {
+        valid: Object.keys(errors).length === 0,
+        errors: errors
+    };
+}
+
+async function sendMessageToBackground(message) {
+    return new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage(message, response => {
+            if (chrome.runtime.lastError) {
+                console.error("sendMessageToBackground error:", chrome.runtime.lastError.message);
+                return reject(chrome.runtime.lastError);
+            }
+            resolve(response);
+        });
+    });
+}
+
+// Modify the saveProfileFromForm function (from your popup.js)
+// Assuming this function is now also present in bulk_autofill.js or imported.
+async function saveProfileFromForm() {
+    console.log("Bulk Autofill Page: Saving profile data from form.");
+    const profileFormSection = getElement('profileFormSection'); // Get the profile form element
+    if (!profileFormSection) {
+        console.error("Bulk Autofill Page: Profile form element not found during save.");
+        showStatusMessage('Error: Profile form missing.', 'error');
+        return;
+    }
+
+    // Get input elements by their IDs (assuming these match your HTML)
+    const profileIdField = getElement('profileId');
+    const profileNameField = getElement('profileName');
+    const firstNameField = getElement('firstName');
+    const lastNameField = getElement('lastName');
+    const emailField = getElement('email');
+    const passwordField = getElement('password'); // Added
+    const birthdayField = getElement('birthday'); // Added
+    const phoneCountryCodeField = getElement('phoneCountryCode'); // Added
+    const phoneNumberField = getElement('phoneNumber'); // Added
+    const addressField = getElement('address'); // Added
+    const address2Field = getElement('address2'); // Added
+    const cityField = getElement('city'); // Added
+    const stateField = getElement('state'); // Added
+    const zipField = getElement('zip'); // Added
+    const countryField = getElement('country'); // Added
+    const genderSelectField = getElement('genderSelect');
+
+    const updatedProfile = {
+        id: profileIdField ? profileIdField.value.trim() : (activeProfile?.id || generateUniqueId()),
+        name: profileNameField ? profileNameField.value.trim() : (activeProfile?.name || "My Profile"),
+        firstName: firstNameField ? firstNameField.value.trim() : '',
+        lastName: lastNameField ? lastNameField.value.trim() : '',
+        email: emailField ? emailField.value.trim() : '',
+        password: passwordField ? passwordField.value.trim() : '', // Get password value
+        birthday: birthdayField ? birthdayField.value : '',
+        countryCode: phoneCountryCodeField ? phoneCountryCodeField.value.trim() : '',
+        phone: phoneNumberField ? phoneNumberField.value.trim() : '',
+        address: addressField ? addressField.value.trim() : '',
+        city: cityField ? cityField.value.trim() : '',
+        state: stateField ? stateField.value.trim() : '',
+        zip: zipField ? zipField.value.trim() : '',
+    };
+
+    const validationResult = validateFormData(updatedProfile);
+    if (!validationResult.valid) {
+        console.warn("Bulk Autofill Page: Profile validation failed:", validationResult.errors);
+        let errorMessage = 'Validation errors:';
+        // Build a more readable error message for the user
+        for (const field in validationResult.errors) {
+            errorMessage += ` ${field.replace(/([A-Z])/g, ' $1').trim().toLowerCase()}: ${validationResult.errors[field]};`;
+        }
+        showStatusMessage(errorMessage, 'warning', 8000); // Display the detailed error
+        return; // STOP execution if validation fails
+    }
+
+    activeProfile = updatedProfile;
+    console.log("Bulk Autofill Page: Active profile updated in memory:", activeProfile);
+
+    try {
+        const response = await sendMessageToBackground({
+            action: 'saveProfileFromPopup', // Action to background script
+            profile: activeProfile
+        });
+
+        if (response && response.success) {
+            console.log("Bulk Autofill Page: Profile saved successfully by background script. Profile ID:", response.profileId);
+            activeProfile.id = response.profileId; // Update ID if new profile
+            showStatusMessage('Profile saved successfully!', 'success', 3000);
+            // Re-render the select to update profile names/IDs if necessary
+            await loadProfilesAndRender(); // Assuming this function reloads profiles and updates the dropdown
+        } else {
+            console.error("Bulk Autofill Page: Error saving profile via background:", response ? response.error : 'Unknown error');
+            showStatusMessage(`Error saving profile: ${response ? response.error : 'Unknown error'}`, 'error');
+        }
+    } catch (error) {
+        console.error("Bulk Autofill Page: Communication error during profile save:", error);
+        showStatusMessage('Error communicating with background script during save.', 'error');
+    }
 }
 
 
@@ -419,26 +527,61 @@ function populateProfileDropdown() {
 // This provides the static, built-in list of retailers.
 function getMasterRetailerDatabase() {
     const masterRetailersArray = [
-        { id: 'amazon', name: 'Amazon', signupUrl: 'https://www.amazon.com/ap/register?openid.return_to=https%3A%2F%2Ftrack.amazon.com%2F&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.assoc_handle=amzn_shippingrecipientcentral_us&openid.mode=checkid_setup&language=en_US&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0', isCustom: false, selectors: {} },
-        { id: 'ebay', name: 'eBay', signupUrl: 'https://reg.ebay.com/reg/PartialReg', isCustom: false, selectors: {} },
-        { id: 'walmart', name: 'Walmart', signupUrl: 'https://www.walmart.com/account/signup', isCustom: false, selectors: {} },
-        { id: 'target', name: 'Target', signupUrl: 'https://www.target.com/account/create', isCustom: false, selectors: {} },
-        { id: 'bestbuy', name: 'Best Buy', signupUrl: 'https://www.bestbuy.com/identity/createAccount', isCustom: false, selectors: {} },
-        { id: 'homedepot', name: 'Home Depot', signupUrl: 'https://www.homedepot.com/account/create', isCustom: false, selectors: {} },
-        { id: 'lowes', name: 'Lowe\'s', signupUrl: 'https://www.lowes.com/login/createAccount', isCustom: false, selectors: {} },
-        { id: 'costco', name: 'Costco', signupUrl: 'https://www.costco.com/join-costco.html', isCustom: false, selectors: {} },
-        { id: 'kroger', name: 'Kroger', signupUrl: 'https://www.kroger.com/account/create', isCustom: false, selectors: {} },
-        { id: 'walgreens', name: 'Walgreens', signupUrl: 'https://www.walgreens.com/register/new-user', isCustom: false, selectors: {} },
-        { id: 'cvspharmacy', name: 'CVS Pharmacy', signupUrl: 'https://www.cvs.com/account/create-account', isCustom: false, selectors: {} },
-        { id: 'starbucks', name: 'Starbucks', signupUrl: 'https://www.starbucks.com/account/create', isCustom: false, selectors: {} },
-        { id: 'dominos', name: 'Domino\'s Pizza', signupUrl: 'https://www.dominos.com/en/pages/customer/#!/customer/login/register/', isCustom: false, selectors: {} },
-        { id: 'papajohns', name: 'Papa John\'s', signupUrl: 'https://www.papajohns.com/create-account.html', isCustom: false, selectors: {} },
-        { id: 'mcdonalds', name: 'McDonald\'s', signupUrl: 'https://www.mcdonalds.com/us/en-us/mymcdonalds-rewards/register', isCustom: false, selectors: {} },
-        { id: 'burgerking', name: 'Burger King', signupUrl: 'https://www.bk.com/rewards/enroll', isCustom: false, selectors: {} },
-        { id: 'subway', name: 'Subway', signupUrl: 'https://www.subway.com/en-US/Rewards', isCustom: false, selectors: {} },
-        { id: 'chipotle', name: 'Chipotle', signupUrl: 'https://www.chipotle.com/order/create-account', isCustom: false, selectors: {} },
-        { id: 'panerabread', name: 'Panera Bread', signupUrl: 'https://www.panerabread.com/en-us/mypanera/join.html', isCustom: false, selectors: {} },
-        { id: 'chickfila', name: 'Chick-fil-A', signupUrl: 'https://www.chick-fil-a.com/myaccount/signup', isCustom: false, selectors: {} }
+        { id: 'aw', name: 'A&W', signupUrl: 'https://awrestaurants.com/deals/', isCustom: false, selectors: {} },
+        { id: 'abuelos', name: 'Abuelo\'s', signupUrl: 'https://www.abuelos.com/rewards/', isCustom: false, selectors: {} },
+        { id: 'acapulco', name: 'Acapulco', signupUrl: 'https://www.acapulcorestaurants.com/loyalty-program/', isCustom: false, selectors: {} },
+        { id: 'aceHardware', name: 'Ace Hardware', signupUrl: 'https://acehardware.dttq.net/oDgqO', isCustom: false, selectors: {} },
+        { id: 'adidas', name: 'adidas', signupUrl: 'https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.adidas.com%2Fus%2Fcreatorsclubrewards&xcust=bday', isCustom: false, selectors: {} },
+        { id: 'aerie', name: 'Aerie', signupUrl: 'https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.ae.com%2Fus%2Fen%2Fmyaccount%2Freal-rewards&xcust=bday-aerie', isCustom: false, selectors: {} },
+        { id: 'alamoDrafthouseCinema', name: 'Alamo Drafthouse Cinema', signupUrl: 'https://drafthouse.com/victory', isCustom: false, selectors: {} },
+        { id: 'amcTheatres', name: 'AMC Theatres', signupUrl: 'https://www.amctheatres.com/amcstubs', isCustom: false, selectors: {} },
+        { id: 'americanEagle', name: 'American Eagle', signupUrl: 'https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.ae.com%2Fus%2Fen%2Fmyaccount%2Freal-rewards&xcust=bday-ae', isCustom: false, selectors: {} },
+        { id: 'andysFrozenCustard', name: 'Andy\'s Frozen Custard', signupUrl: 'https://eatandys.myguestaccount.com/en-us/guest/enroll?card-template=gz6U71JdL9Y', isCustom: false, selectors: {} },
+        { id: 'anthonysCoalFiredPizza', name: 'Anthony\'s Coal Fired Pizza', signupUrl: 'https://acfp.com/rewards/', isCustom: false, selectors: {} },
+        { id: 'applebees', name: 'Applebee\'s', signupUrl: 'https://www.applebees.com/en/sign-up', isCustom: false, selectors: {} },
+        { id: 'arbys', name: 'Arby\'s', signupUrl: 'https://www.arbys.com/deals/', isCustom: false, selectors: {} },
+        { id: 'athleta', name: 'Athleta', signupUrl: 'https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fathleta.gap.com%2Fbrowse%2Finfo.do%3Fcid%3D1098761&xcust=bday', isCustom: false, selectors: {} },
+        { id: 'atlantaBread', name: 'Atlanta Bread', signupUrl: 'https://atlantabread.com/rewards-and-gifting/', isCustom: false, selectors: {} },
+        { id: 'auBonPain', name: 'Au Bon Pain', signupUrl: 'https://www.aubonpain.com/bon-rewards', isCustom: false, selectors: {} },
+        { id: 'auntieAnnesPretzels', name: 'Auntie Anne\'s Pretzels', signupUrl: 'https://www.auntieannes.com/rewards/', isCustom: false, selectors: {} },
+        { id: 'aveda', name: 'Aveda', signupUrl: 'https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.aveda.com%2Fav-loyalty-page%23tier1&xcust=bday', isCustom: false, selectors: {} },
+        { id: 'backYardBurgers', name: 'Back Yard Burgers', signupUrl: 'https://www.backyardburgers.com/clubhouse/', isCustom: false, selectors: {} },
+        { id: 'bahamaBreeze', name: 'Bahama Breeze', signupUrl: 'https://www.anrdoezrs.net/click-2745940-13032584?sid=bday&url=https%3A%2F%2Fwww.bahamabreeze.com', isCustom: false, selectors: {} },
+        { id: 'bajaFresh', name: 'Baja Fresh', signupUrl: 'https://www.bajafresh.com/clubbaja/', isCustom: false, selectors: {} },
+        { id: 'bakersSquare', name: 'Bakers Square', signupUrl: 'https://www.bakerssquare.com/promotions/', isCustom: false, selectors: {} },
+        { id: 'bananaRepublic', name: 'Banana Republic', signupUrl: 'https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fbananarepublic.gap.com%2FcustomerService%2Finfo.do%3Fcid%3D1098875&xcust=bday', isCustom: false, selectors: {} },
+        { id: 'bareminerals', name: 'bareMinerals', signupUrl: 'https://click.linksynergy.com/deeplink?id=96nyqW322pM&mid=42594&murl=https%3A%2F%2Fwww.bareminerals.com%2Fpages%2Frewards&u1=bday', isCustom: false, selectors: {} },
+        { id: 'barkbox', name: 'BarkBox', signupUrl: 'https://www.dpbolvw.net/click-2745940-15736531?sid=bday&url=https%3A%2F%2Fwww.barkbox.com%2Fjoin%2Ffextgeneric', isCustom: false, selectors: {} },
+        { id: 'barnesNoble', name: 'Barnes & Noble', signupUrl: 'https://www.anrdoezrs.net/click-2745940-12354093?sid=bday&url=https%3A%2F%2Fwww.barnesandnoble.com%2Fmembership%2F', isCustom: false, selectors: {} },
+        { id: 'baskinRobbins', name: 'Baskin-Robbins', signupUrl: 'https://www.baskinrobbins.com/en/sign-up', isCustom: false, selectors: {} },
+        { id: 'bassProShop', name: 'Bass Pro Shop', signupUrl: 'https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.basspro.com%2Fshop%2FOutdoorRewardsApplication&xcust=bday', isCustom: false, selectors: {} },
+        { id: 'bdsMongolianGrill', name: 'BD\'s Mongolian Grill', signupUrl: 'https://www.bdsgrill.com/rewards', isCustom: false, selectors: {} },
+        { id: 'bebe', name: 'Bebe', signupUrl: 'https://www.anrdoezrs.net/click-2745940-15735597?sid=bday&url=https%3A%2F%2Fwww.bebe.com%2Faccount%2Flogin', isCustom: false, selectors: {} },
+        { id: 'beefObradys', name: 'Beef \'O\' Brady\'s', signupUrl: 'https://beefobradys.myguestaccount.com/guest/enroll?card-template=1DLP0KWE8FA&template=2&referral_code=gNmrAeDHjmMPrnCaFJNcdJDBJJAjCPPja', isCustom: false, selectors: {} },
+        { id: 'belk', name: 'Belk', signupUrl: 'https://www.jdoqocy.com/click-2745940-11602493?sid=bday&url=https%3A%2F%2Fwww.belk.com%2Femail-signup%2F', isCustom: false, selectors: {} },
+        { id: 'benJerrysIceCream', name: 'Ben & Jerry\'s Ice Cream', signupUrl: 'https://www.benjerry.com/scoop-shops/flavor-fanatics', isCustom: false, selectors: {} },
+        { id: 'benihana', name: 'Benihana', signupUrl: 'https://www.benihana.com/the-chefs-table/', isCustom: false, selectors: {} },
+        { id: 'bennigans', name: 'Bennigans', signupUrl: 'https://bennigans.fbmta.com/members/UpdateProfile.aspx?Action=Subscribe&_Theme=23622320311&InputSource=W', isCustom: false, selectors: {} },
+        { id: 'bertuccis', name: 'Bertucci\'s', signupUrl: 'https://www.bertuccis.com/eclub/', isCustom: false, selectors: {} },
+        { id: 'biaggis', name: 'Biaggi\'s', signupUrl: 'https://biaggis.com/club-biaggis/', isCustom: false, selectors: {} },
+        { id: 'bibibop', name: 'Bibibop', signupUrl: 'https://www.bibibop.com/rewards/', isCustom: false, selectors: {} },
+        { id: 'bigBoy', name: 'Big Boy', signupUrl: 'https://www.bigboy.com/', isCustom: false, selectors: {} },
+        { id: 'biggbyCoffee', name: 'Biggby Coffee', signupUrl: 'https://www.biggby.com/e-wards', isCustom: false, selectors: {} },
+        { id: 'bjsRestaurant', name: 'BJ\'s Restaurant', signupUrl: 'https://www.bjsrestaurants.com/rewards', isCustom: false, selectors: {} },
+        { id: 'blackAngusSteakhouse', name: 'Black Angus Steakhouse', signupUrl: 'https://blackangus.myguestaccount.com/guest/enroll?card-template=a4veuMKLoS4&template=19&referral_code=jmQGgiNeGkjanFdmGfGKerhdPmPJhQpka', isCustom: false, selectors: {} },
+        { id: 'blackBearDiner', name: 'Black Bear Diner', signupUrl: 'https://blackbeardiner.com/clubs/', isCustom: false, selectors: {} },
+        { id: 'bojangles', name: 'Bojangles\'', signupUrl: 'https://www.bojangles.com/', isCustom: false, selectors: {} },
+        { id: 'bonanzaSteakhouse', name: 'Bonanza Steakhouse', signupUrl: 'https://pon-bon.com/e-club#bonanza', isCustom: false, selectors: {} },
+        { id: 'bonefishGrill', name: 'Bonefish Grill', signupUrl: 'https://www.bonefishgrill.com/insider', isCustom: false, selectors: {} },
+        { id: 'booksAMillion', name: 'Books-A-Million', signupUrl: 'https://www.tkqlhce.com/click-2745940-15734439?sid=bday&url=https%3A%2F%2Fwww.booksamillion.com%2Femail_preferences%2Findex.html', isCustom: false, selectors: {} },
+        { id: 'bostonsPizza', name: 'Boston\'s Pizza', signupUrl: 'https://www.bostons.com/my-rewards/index.html', isCustom: false, selectors: {} },
+        { id: 'bricktownBrewery', name: 'Bricktown Brewery', signupUrl: 'https://bricktownbrewery.com/rewards/', isCustom: false, selectors: {} },
+        { id: 'brioItalianGrille', name: 'Brio Italian Grille', signupUrl: 'https://www.brioitalian.com/eclub/', isCustom: false, selectors: {} },
+        { id: 'brueggersBagels', name: 'Bruegger\'s Bagels', signupUrl: 'https://www.brueggers.com/rewards-program/', isCustom: false, selectors: {} },
+        { id: 'brusters', name: 'Bruster\'s', signupUrl: 'https://brusters.myguestaccount.com/guest/enroll?card-template=gz6U71JdL9Y&template=0&referral_code=AJjHACBKEkEDHrDpkLrKQNkGfDGDgNCEa', isCustom: false, selectors: {} },
+        { id: 'bubbaGumpShrimp', name: 'Bubba Gump Shrimp', signupUrl: 'http://assets.fbmta.com/clt/bbsgmp/lp/join/3/join.asp', isCustom: false, selectors: {} },
+        { id: 'bucaDiBeppo', name: 'Buca di Beppo', signupUrl: 'https://dineatbuca.com/eclub/', isCustom: false, selectors: {} },
+        { id: 'buffaloWildWings', name: 'Buffalo Wild Wings', signupUrl: 'https://www.buffalowildwings.com/rewards/', isCustom: false, selectors: {} }
     ];
 
     return masterRetailersArray.reduce((acc, retailer) => {
@@ -447,7 +590,45 @@ function getMasterRetailerDatabase() {
     }, {});
 }
 
+
 // --- Functions to manage CUSTOM retailers in chrome.storage.local ---
+async function getWebscrapedRetailersFromFile() { // Renamed for clarity
+    console.log("Fetching web scraped retailers from local JSON file...");
+    try {
+        // Ensure webscrapedRetailers.json is in your manifest.json's web_accessible_resources
+        // as explained in the previous answer.
+        const response = await fetch(chrome.runtime.getURL('data/webscrapedRetailers.json'));
+        if (!response.ok) { // Check if the fetch was successful (e.g., 404, 500)
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const scrapedRetailers = await response.json();
+        return scrapedRetailers; // This will be an array
+    } catch (error) {
+        console.error("Failed to fetch webscraped retailers from file:", error);
+        return []; // Return empty array on error
+    }
+}
+
+chrome.runtime.onInstalled.addListener(async () => {
+    console.log("Extension installed or updated. Initializing webscraped retailers in storage...");
+    try {
+        const scrapedRetailers = await getWebscrapedRetailersFromFile(); // Use the dedicated function
+        // Store the webscraped retailers using their own distinct key
+        await chrome.storage.local.set({ [WEBSCRAPED_RETAILERS_KEY]: scrapedRetailers });
+        console.log("Webscraped retailers initialized in storage.");
+    } catch (error) {
+        console.error("Error initializing webscraped retailers on install:", error);
+    }
+});
+
+async function getWebscrapedRetailersFromStorage() { // New function to read from storage
+    console.log("Fetching web scraped retailers from local storage...");
+    const result = await chrome.storage.local.get([WEBSCRAPED_RETAILERS_KEY]);
+    return result[WEBSCRAPED_RETAILERS_KEY] || [];
+}
+
+
+
 async function getCustomRetailers() {
     console.log("Fetching custom retailers from storage...");
     const result = await chrome.storage.local.get([RETAILER_DB_KEY]);
@@ -635,19 +816,53 @@ function showStatusMessage(message, type = "info") {
 async function loadAndDisplayRetailers() {
     console.log("Bulk Autofill UI: Loading and displaying retailers...");
     try {
+        // Assuming getMasterRetailerDatabase is defined elsewhere and returns an object
+        // If it also reads from storage, ensure it uses a unique key too.
         const masterRetailers = getMasterRetailerDatabase();
-        const customRetailersArray = await getCustomRetailers();
+        console.log("DEBUG: masterRetailers:", masterRetailers);
 
-        const customRetailersObject = customRetailersArray.reduce((obj, retailer) => {
-            obj[retailer.id] = retailer;
+        // Fetch webscraped retailers from STORAGE, not directly from file here.
+        const webscrapedRetailersArray = await getWebscrapedRetailersFromStorage();
+        console.log("DEBUG: webscrapedRetailers (raw array from storage):", webscrapedRetailersArray);
+        if (webscrapedRetailersArray.length === 0) {
+            console.warn("DEBUG: webscrapedRetailers from storage is empty! Check onInstalled listener and manifest.json.");
+        }
+
+        const customRetailersArray = await getCustomRetailers();
+        console.log("DEBUG: customRetailersArray (raw array from storage):", customRetailersArray);
+        if (customRetailersArray.length === 0) {
+            console.warn("DEBUG: customRetailersArray from storage is empty!");
+        }
+
+        // Convert arrays to objects for merging
+        const webscrapedRetailersObject = webscrapedRetailersArray.reduce((obj, retailer) => {
+            if (retailer && retailer.id) { // Ensure retailer and id exist
+                obj[retailer.id] = retailer;
+            }
             return obj;
         }, {});
+        console.log("DEBUG: webscrapedRetailersObject:", webscrapedRetailersObject);
 
-        allRetailers = { ...masterRetailers, ...customRetailersObject };
+        const customRetailersObject = customRetailersArray.reduce((obj, retailer) => {
+            if (retailer && retailer.id) { // Ensure retailer and id exist
+                obj[retailer.id] = retailer;
+            }
+            return obj;
+        }, {});
+        console.log("DEBUG: customRetailersObject:", customRetailersObject);
+
+        // Combine all retailers. Custom retailers will overwrite webscraped if IDs conflict.
+        allRetailers = { ...masterRetailers, ...webscrapedRetailersObject, ...customRetailersObject };
+        console.log("DEBUG: allRetailers (combined object):", allRetailers);
+        console.log("DEBUG: Number of combined retailers:", Object.keys(allRetailers).length);
+
+
         renderRetailerList(Object.values(allRetailers));
+        console.log("DEBUG: renderRetailerList called with:", Object.values(allRetailers));
 
         if (Object.keys(allRetailers).length === 0) {
             showStatusMessage("No retailers found. Add one above!", "info");
+            console.log("DEBUG: showStatusMessage 'No retailers found' called.");
         }
 
     } catch (error) {
@@ -658,7 +873,74 @@ async function loadAndDisplayRetailers() {
 
 //END RETAILER SECTION
 
+//MISC
+function setupPasswordToggle() {
+    const passwordInput = getElement('password');
+    const toggleButton = getElement('togglePasswordVisibility');
+    const toggleIcon = getElement('passwordToggleIcon'); // The <img> tag for the icon
 
+    if (passwordInput && toggleButton && toggleIcon) {
+        toggleButton.addEventListener('click', () => {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+
+            // Change the icon based on the new type
+            if (type === 'password') {
+                toggleIcon.src = 'icons/eye-slash.svg'; // Path to your hidden icon
+                toggleButton.title = 'Show password';
+            } else {
+                toggleIcon.src = 'icons/eye.svg'; // Path to your visible icon
+                toggleButton.title = 'Hide password';
+            }
+        });
+    } else {
+        console.warn("Password input or toggle elements not found. Password toggle not set up.");
+    }
+}
+
+function updatePasswordRequirementsDisplay() {
+    const passwordInput = getElement('password');
+    if (!passwordInput) return;
+
+    const password = passwordInput.value;
+
+    const reqLength = getElement('reqLength');
+    const reqNumber = getElement('reqNumber');
+    const reqCapital = getElement('reqCapital');
+    const reqLowercase = getElement('reqLowercase');
+    const reqSpecial = getElement('reqSpecial');
+
+    // Helper to update status class
+    const setStatus = (element, isSatisfied) => {
+        if (element) {
+            element.classList.remove('satisfied', 'not-satisfied');
+            element.classList.add(isSatisfied ? 'satisfied' : 'not-satisfied');
+        }
+    };
+
+    // 1. Length (8 to 25 characters)
+    const isLengthSatisfied = password.length >= 8 && password.length <= 25;
+    setStatus(reqLength, isLengthSatisfied);
+
+    // 2. At least one number
+    const hasNumber = /\d/.test(password);
+    setStatus(reqNumber, hasNumber);
+
+    // 3. At least one capital letter
+    const hasCapital = /[A-Z]/.test(password);
+    setStatus(reqCapital, hasCapital);
+
+    // 4. At least one lowercase letter
+    const hasLowercase = /[a-z]/.test(password);
+    setStatus(reqLowercase, hasLowercase);
+
+    // 5. At least one special character
+    const hasSpecial = /[^a-zA-Z0-9]/.test(password);
+    setStatus(reqSpecial, hasSpecial);
+}
+
+
+//END MISC
 
 
 // --- Main DOMContentLoaded Listener ---
@@ -709,7 +991,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log("Bulk Autofill: No active profile ID or profiles found in storage.");
     }
 
+
     loadProfiles();
+    setupPasswordToggle();
+
+
+    if (passwordField) {
+        passwordField.addEventListener('input', updatePasswordRequirementsDisplay);
+        // Also call it once on load if a password is pre-filled (e.g., when editing an existing profile)
+        updatePasswordRequirementsDisplay();
+    }
+
+    // Event listener for the Save Profile button
+    if (saveProfileBtn) {
+        saveProfileBtn.addEventListener('click', saveProfileFromForm);
+    } else {
+        console.error("Save Profile button (ID: 'saveProfileBtn') not found.");
+    }
 
     // Event listener for profile selection change
     if (profileSelect) {
@@ -847,7 +1145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     // This will automatically select the newly saved profile as active,
                     // because your background script's save logic sets it as active.
                     activeProfile = response.profile; // Update the active profile in the UI
-                    console.log("Bulk Autofill Page: Active profile updated to:", activeProfile.name);
+                    console.log("Bulk Autofill Page: Active profile updated to:", activeProfile);
                     await loadProfiles();
                 } else {
                     showStatusMessage(`Error saving profile: ${response.error || 'Unknown error'}`, 'error');
@@ -968,7 +1266,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (selectedRetailers.length === 0) {
                 showStatusMessage('Please select at least one retailer to autofill.', 'warning', 5000);
                 startBulkAutofillButton.style.display = 'block'; // Show start button again
-                if (stopAutofillButton) stopAutofillButton.style.display = 'none'; // Hide stop button
                 return;
             }
 
@@ -1013,7 +1310,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     // Wait for the tab to load. You might need a more robust way to detect page load completion.
                     // For simplicity, we'll use a small delay here.
                     // In a real scenario, you might listen to chrome.tabs.onUpdated and check status.
-                    await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds for page to load
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 3 seconds for page to load
 
                     // Inject the content script if it's not already there (only for the first time or if it somehow got removed)
                     await chrome.scripting.executeScript({
@@ -1024,8 +1321,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     // Send the autofill message to the content script in the new tab
                     const response = await sendMessageToContentScript(tab.id, { action: 'fillForm', profile: activeProfile, source: 'bulkAutofill' });
 
-                    if (response && response.status === 'success' && response.fieldsFilledCount > 0 && response.submissionSuccess) {
-                        autofillResults[retailer.name] = `Success (${response.fieldsFilledCount} fields filled, Submitted)`;
+                    if (response && response.status === 'success' && response.fieldsFilledCount > 0) {
+                        autofillResults[retailer.name] = `Success (${response.fieldsFilledCount} fields filled, awaiting submission)`;
                         showStatusMessage(`Autofill successful for ${retailer.name} and submitted.`, 'success', 3000);
                     } else if (response && response.cspErrorDetected) {
                         autofillResults[retailer.name] = `Failed (Page Error: CSP Violation)`;
