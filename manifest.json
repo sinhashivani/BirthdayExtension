@@ -43,7 +43,8 @@
                 "bulk_autofill.html",
                 "bulk_autofill.css",
                 "bulk_autofill.js",
-                "error_monitor.js"
+                "error_monitor.js",
+                "data/webscrapedRetailers.json"
             ],
             "matches": [
                 "<all_urls>"

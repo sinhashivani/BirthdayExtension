@@ -14,13 +14,6 @@
     "selectors": {}
   },
   {
-    "id": "acapulco",
-    "name": "Acapulco",
-    "signupUrl": "https://www.acapulcorestaurants.com/loyalty-program/",
-    "isCustom": false,
-    "selectors": {}
-  },
-  {
     "id": "aceHardware",
     "name": "Ace Hardware",
     "signupUrl": "https://acehardware.dttq.net/oDgqO",

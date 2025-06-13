@@ -6,6 +6,7 @@ let activeProfile = null; // Placeholder for future profile management
 let retailerListDiv = null;
 let stopBulkAutofill = null;
 const WEBSCRAPED_RETAILERS_KEY = 'webscrapedRetailersDb'; // Choose a distinct key
+const FAILED_RETAILER_IDS_KEY = 'failedRetailerIds';
 
 
 function getElement(id) {
@@ -525,70 +526,94 @@ function populateProfileDropdown() {
 
 // --- Master Retailer Database Function ---
 // This provides the static, built-in list of retailers.
-function getMasterRetailerDatabase() {
-    const masterRetailersArray = [
-        { id: 'aw', name: 'A&W', signupUrl: 'https://awrestaurants.com/deals/', isCustom: false, selectors: {} },
-        { id: 'abuelos', name: 'Abuelo\'s', signupUrl: 'https://www.abuelos.com/rewards/', isCustom: false, selectors: {} },
-        { id: 'acapulco', name: 'Acapulco', signupUrl: 'https://www.acapulcorestaurants.com/loyalty-program/', isCustom: false, selectors: {} },
-        { id: 'aceHardware', name: 'Ace Hardware', signupUrl: 'https://acehardware.dttq.net/oDgqO', isCustom: false, selectors: {} },
-        { id: 'adidas', name: 'adidas', signupUrl: 'https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.adidas.com%2Fus%2Fcreatorsclubrewards&xcust=bday', isCustom: false, selectors: {} },
-        { id: 'aerie', name: 'Aerie', signupUrl: 'https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.ae.com%2Fus%2Fen%2Fmyaccount%2Freal-rewards&xcust=bday-aerie', isCustom: false, selectors: {} },
-        { id: 'alamoDrafthouseCinema', name: 'Alamo Drafthouse Cinema', signupUrl: 'https://drafthouse.com/victory', isCustom: false, selectors: {} },
-        { id: 'amcTheatres', name: 'AMC Theatres', signupUrl: 'https://www.amctheatres.com/amcstubs', isCustom: false, selectors: {} },
-        { id: 'americanEagle', name: 'American Eagle', signupUrl: 'https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.ae.com%2Fus%2Fen%2Fmyaccount%2Freal-rewards&xcust=bday-ae', isCustom: false, selectors: {} },
-        { id: 'andysFrozenCustard', name: 'Andy\'s Frozen Custard', signupUrl: 'https://eatandys.myguestaccount.com/en-us/guest/enroll?card-template=gz6U71JdL9Y', isCustom: false, selectors: {} },
-        { id: 'anthonysCoalFiredPizza', name: 'Anthony\'s Coal Fired Pizza', signupUrl: 'https://acfp.com/rewards/', isCustom: false, selectors: {} },
-        { id: 'applebees', name: 'Applebee\'s', signupUrl: 'https://www.applebees.com/en/sign-up', isCustom: false, selectors: {} },
-        { id: 'arbys', name: 'Arby\'s', signupUrl: 'https://www.arbys.com/deals/', isCustom: false, selectors: {} },
-        { id: 'athleta', name: 'Athleta', signupUrl: 'https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fathleta.gap.com%2Fbrowse%2Finfo.do%3Fcid%3D1098761&xcust=bday', isCustom: false, selectors: {} },
-        { id: 'atlantaBread', name: 'Atlanta Bread', signupUrl: 'https://atlantabread.com/rewards-and-gifting/', isCustom: false, selectors: {} },
-        { id: 'auBonPain', name: 'Au Bon Pain', signupUrl: 'https://www.aubonpain.com/bon-rewards', isCustom: false, selectors: {} },
-        { id: 'auntieAnnesPretzels', name: 'Auntie Anne\'s Pretzels', signupUrl: 'https://www.auntieannes.com/rewards/', isCustom: false, selectors: {} },
-        { id: 'aveda', name: 'Aveda', signupUrl: 'https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.aveda.com%2Fav-loyalty-page%23tier1&xcust=bday', isCustom: false, selectors: {} },
-        { id: 'backYardBurgers', name: 'Back Yard Burgers', signupUrl: 'https://www.backyardburgers.com/clubhouse/', isCustom: false, selectors: {} },
-        { id: 'bahamaBreeze', name: 'Bahama Breeze', signupUrl: 'https://www.anrdoezrs.net/click-2745940-13032584?sid=bday&url=https%3A%2F%2Fwww.bahamabreeze.com', isCustom: false, selectors: {} },
-        { id: 'bajaFresh', name: 'Baja Fresh', signupUrl: 'https://www.bajafresh.com/clubbaja/', isCustom: false, selectors: {} },
-        { id: 'bakersSquare', name: 'Bakers Square', signupUrl: 'https://www.bakerssquare.com/promotions/', isCustom: false, selectors: {} },
-        { id: 'bananaRepublic', name: 'Banana Republic', signupUrl: 'https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fbananarepublic.gap.com%2FcustomerService%2Finfo.do%3Fcid%3D1098875&xcust=bday', isCustom: false, selectors: {} },
-        { id: 'bareminerals', name: 'bareMinerals', signupUrl: 'https://click.linksynergy.com/deeplink?id=96nyqW322pM&mid=42594&murl=https%3A%2F%2Fwww.bareminerals.com%2Fpages%2Frewards&u1=bday', isCustom: false, selectors: {} },
-        { id: 'barkbox', name: 'BarkBox', signupUrl: 'https://www.dpbolvw.net/click-2745940-15736531?sid=bday&url=https%3A%2F%2Fwww.barkbox.com%2Fjoin%2Ffextgeneric', isCustom: false, selectors: {} },
-        { id: 'barnesNoble', name: 'Barnes & Noble', signupUrl: 'https://www.anrdoezrs.net/click-2745940-12354093?sid=bday&url=https%3A%2F%2Fwww.barnesandnoble.com%2Fmembership%2F', isCustom: false, selectors: {} },
-        { id: 'baskinRobbins', name: 'Baskin-Robbins', signupUrl: 'https://www.baskinrobbins.com/en/sign-up', isCustom: false, selectors: {} },
-        { id: 'bassProShop', name: 'Bass Pro Shop', signupUrl: 'https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.basspro.com%2Fshop%2FOutdoorRewardsApplication&xcust=bday', isCustom: false, selectors: {} },
-        { id: 'bdsMongolianGrill', name: 'BD\'s Mongolian Grill', signupUrl: 'https://www.bdsgrill.com/rewards', isCustom: false, selectors: {} },
-        { id: 'bebe', name: 'Bebe', signupUrl: 'https://www.anrdoezrs.net/click-2745940-15735597?sid=bday&url=https%3A%2F%2Fwww.bebe.com%2Faccount%2Flogin', isCustom: false, selectors: {} },
-        { id: 'beefObradys', name: 'Beef \'O\' Brady\'s', signupUrl: 'https://beefobradys.myguestaccount.com/guest/enroll?card-template=1DLP0KWE8FA&template=2&referral_code=gNmrAeDHjmMPrnCaFJNcdJDBJJAjCPPja', isCustom: false, selectors: {} },
-        { id: 'belk', name: 'Belk', signupUrl: 'https://www.jdoqocy.com/click-2745940-11602493?sid=bday&url=https%3A%2F%2Fwww.belk.com%2Femail-signup%2F', isCustom: false, selectors: {} },
-        { id: 'benJerrysIceCream', name: 'Ben & Jerry\'s Ice Cream', signupUrl: 'https://www.benjerry.com/scoop-shops/flavor-fanatics', isCustom: false, selectors: {} },
-        { id: 'benihana', name: 'Benihana', signupUrl: 'https://www.benihana.com/the-chefs-table/', isCustom: false, selectors: {} },
-        { id: 'bennigans', name: 'Bennigans', signupUrl: 'https://bennigans.fbmta.com/members/UpdateProfile.aspx?Action=Subscribe&_Theme=23622320311&InputSource=W', isCustom: false, selectors: {} },
-        { id: 'bertuccis', name: 'Bertucci\'s', signupUrl: 'https://www.bertuccis.com/eclub/', isCustom: false, selectors: {} },
-        { id: 'biaggis', name: 'Biaggi\'s', signupUrl: 'https://biaggis.com/club-biaggis/', isCustom: false, selectors: {} },
-        { id: 'bibibop', name: 'Bibibop', signupUrl: 'https://www.bibibop.com/rewards/', isCustom: false, selectors: {} },
-        { id: 'bigBoy', name: 'Big Boy', signupUrl: 'https://www.bigboy.com/', isCustom: false, selectors: {} },
-        { id: 'biggbyCoffee', name: 'Biggby Coffee', signupUrl: 'https://www.biggby.com/e-wards', isCustom: false, selectors: {} },
-        { id: 'bjsRestaurant', name: 'BJ\'s Restaurant', signupUrl: 'https://www.bjsrestaurants.com/rewards', isCustom: false, selectors: {} },
-        { id: 'blackAngusSteakhouse', name: 'Black Angus Steakhouse', signupUrl: 'https://blackangus.myguestaccount.com/guest/enroll?card-template=a4veuMKLoS4&template=19&referral_code=jmQGgiNeGkjanFdmGfGKerhdPmPJhQpka', isCustom: false, selectors: {} },
-        { id: 'blackBearDiner', name: 'Black Bear Diner', signupUrl: 'https://blackbeardiner.com/clubs/', isCustom: false, selectors: {} },
-        { id: 'bojangles', name: 'Bojangles\'', signupUrl: 'https://www.bojangles.com/', isCustom: false, selectors: {} },
-        { id: 'bonanzaSteakhouse', name: 'Bonanza Steakhouse', signupUrl: 'https://pon-bon.com/e-club#bonanza', isCustom: false, selectors: {} },
-        { id: 'bonefishGrill', name: 'Bonefish Grill', signupUrl: 'https://www.bonefishgrill.com/insider', isCustom: false, selectors: {} },
-        { id: 'booksAMillion', name: 'Books-A-Million', signupUrl: 'https://www.tkqlhce.com/click-2745940-15734439?sid=bday&url=https%3A%2F%2Fwww.booksamillion.com%2Femail_preferences%2Findex.html', isCustom: false, selectors: {} },
-        { id: 'bostonsPizza', name: 'Boston\'s Pizza', signupUrl: 'https://www.bostons.com/my-rewards/index.html', isCustom: false, selectors: {} },
-        { id: 'bricktownBrewery', name: 'Bricktown Brewery', signupUrl: 'https://bricktownbrewery.com/rewards/', isCustom: false, selectors: {} },
-        { id: 'brioItalianGrille', name: 'Brio Italian Grille', signupUrl: 'https://www.brioitalian.com/eclub/', isCustom: false, selectors: {} },
-        { id: 'brueggersBagels', name: 'Bruegger\'s Bagels', signupUrl: 'https://www.brueggers.com/rewards-program/', isCustom: false, selectors: {} },
-        { id: 'brusters', name: 'Bruster\'s', signupUrl: 'https://brusters.myguestaccount.com/guest/enroll?card-template=gz6U71JdL9Y&template=0&referral_code=AJjHACBKEkEDHrDpkLrKQNkGfDGDgNCEa', isCustom: false, selectors: {} },
-        { id: 'bubbaGumpShrimp', name: 'Bubba Gump Shrimp', signupUrl: 'http://assets.fbmta.com/clt/bbsgmp/lp/join/3/join.asp', isCustom: false, selectors: {} },
-        { id: 'bucaDiBeppo', name: 'Buca di Beppo', signupUrl: 'https://dineatbuca.com/eclub/', isCustom: false, selectors: {} },
-        { id: 'buffaloWildWings', name: 'Buffalo Wild Wings', signupUrl: 'https://www.buffalowildwings.com/rewards/', isCustom: false, selectors: {} }
-    ];
+async function getMasterRetailerDatabase() {
+    console.log("Fetching master retailers from local JSON file...");
+    try {
+        const response = await fetch(chrome.runtime.getURL('data/webscrapedRetailers.json'));
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status} for webscrapedRetailers.json`);
+        }
+        const masterRetailersArray = await response.json(); // This will be an array from your JSON file
 
-    return masterRetailersArray.reduce((acc, retailer) => {
-        acc[retailer.id] = retailer;
-        return acc;
-    }, {});
+        // Convert the array to an object keyed by retailer ID, as expected by the rest of your code
+        return masterRetailersArray.reduce((acc, retailer) => {
+            // Ensure retailer has an ID before adding to the object
+            if (retailer && retailer.id) {
+                acc[retailer.id] = retailer;
+            } else {
+                console.warn("Master retailer entry missing ID, skipping:", retailer);
+            }
+            return acc;
+        }, {});
+
+    } catch (error) {
+        console.error("Failed to fetch master retailers from file:", error);
+        return {}; // Return empty object on error
+    }
 }
+// function getMasterRetailerDatabase() {
+//     const masterRetailersArray = [
+//         { id: 'aw', name: 'A&W', signupUrl: 'https://awrestaurants.com/deals/', isCustom: false, selectors: {} },
+//         { id: 'abuelos', name: 'Abuelo\'s', signupUrl: 'https://www.abuelos.com/rewards/', isCustom: false, selectors: {} },
+//         { id: 'aceHardware', name: 'Ace Hardware', signupUrl: 'https://acehardware.dttq.net/oDgqO', isCustom: false, selectors: {} },
+//         { id: 'adidas', name: 'adidas', signupUrl: 'https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.adidas.com%2Fus%2Fcreatorsclubrewards&xcust=bday', isCustom: false, selectors: {} },
+//         { id: 'aerie', name: 'Aerie', signupUrl: 'https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.ae.com%2Fus%2Fen%2Fmyaccount%2Freal-rewards&xcust=bday-aerie', isCustom: false, selectors: {} },
+//         { id: 'alamoDrafthouseCinema', name: 'Alamo Drafthouse Cinema', signupUrl: 'https://drafthouse.com/victory', isCustom: false, selectors: {} },
+//         { id: 'amcTheatres', name: 'AMC Theatres', signupUrl: 'https://www.amctheatres.com/amcstubs', isCustom: false, selectors: {} },
+//         { id: 'americanEagle', name: 'American Eagle', signupUrl: 'https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.ae.com%2Fus%2Fen%2Fmyaccount%2Freal-rewards&xcust=bday-ae', isCustom: false, selectors: {} },
+//         { id: 'andysFrozenCustard', name: 'Andy\'s Frozen Custard', signupUrl: 'https://eatandys.myguestaccount.com/en-us/guest/enroll?card-template=gz6U71JdL9Y', isCustom: false, selectors: {} },
+//         { id: 'anthonysCoalFiredPizza', name: 'Anthony\'s Coal Fired Pizza', signupUrl: 'https://acfp.com/rewards/', isCustom: false, selectors: {} },
+//         { id: 'applebees', name: 'Applebee\'s', signupUrl: 'https://www.applebees.com/en/sign-up', isCustom: false, selectors: {} },
+//         { id: 'arbys', name: 'Arby\'s', signupUrl: 'https://www.arbys.com/deals/', isCustom: false, selectors: {} },
+//         { id: 'athleta', name: 'Athleta', signupUrl: 'https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fathleta.gap.com%2Fbrowse%2Finfo.do%3Fcid%3D1098761&xcust=bday', isCustom: false, selectors: {} },
+//         { id: 'atlantaBread', name: 'Atlanta Bread', signupUrl: 'https://atlantabread.com/rewards-and-gifting/', isCustom: false, selectors: {} },
+//         { id: 'auBonPain', name: 'Au Bon Pain', signupUrl: 'https://www.aubonpain.com/bon-rewards', isCustom: false, selectors: {} },
+//         { id: 'auntieAnnesPretzels', name: 'Auntie Anne\'s Pretzels', signupUrl: 'https://www.auntieannes.com/rewards/', isCustom: false, selectors: {} },
+//         { id: 'aveda', name: 'Aveda', signupUrl: 'https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.aveda.com%2Fav-loyalty-page%23tier1&xcust=bday', isCustom: false, selectors: {} },
+//         { id: 'backYardBurgers', name: 'Back Yard Burgers', signupUrl: 'https://www.backyardburgers.com/clubhouse/', isCustom: false, selectors: {} },
+//         { id: 'bahamaBreeze', name: 'Bahama Breeze', signupUrl: 'https://www.anrdoezrs.net/click-2745940-13032584?sid=bday&url=https%3A%2F%2Fwww.bahamabreeze.com', isCustom: false, selectors: {} },
+//         { id: 'bajaFresh', name: 'Baja Fresh', signupUrl: 'https://www.bajafresh.com/clubbaja/', isCustom: false, selectors: {} },
+//         { id: 'bakersSquare', name: 'Bakers Square', signupUrl: 'https://www.bakerssquare.com/promotions/', isCustom: false, selectors: {} },
+//         { id: 'bananaRepublic', name: 'Banana Republic', signupUrl: 'https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fbananarepublic.gap.com%2FcustomerService%2Finfo.do%3Fcid%3D1098875&xcust=bday', isCustom: false, selectors: {} },
+//         { id: 'bareminerals', name: 'bareMinerals', signupUrl: 'https://click.linksynergy.com/deeplink?id=96nyqW322pM&mid=42594&murl=https%3A%2F%2Fwww.bareminerals.com%2Fpages%2Frewards&u1=bday', isCustom: false, selectors: {} },
+//         { id: 'barkbox', name: 'BarkBox', signupUrl: 'https://www.dpbolvw.net/click-2745940-15736531?sid=bday&url=https%3A%2F%2Fwww.barkbox.com%2Fjoin%2Ffextgeneric', isCustom: false, selectors: {} },
+//         { id: 'barnesNoble', name: 'Barnes & Noble', signupUrl: 'https://www.anrdoezrs.net/click-2745940-12354093?sid=bday&url=https%3A%2F%2Fwww.barnesandnoble.com%2Fmembership%2F', isCustom: false, selectors: {} },
+//         { id: 'baskinRobbins', name: 'Baskin-Robbins', signupUrl: 'https://www.baskinrobbins.com/en/sign-up', isCustom: false, selectors: {} },
+//         { id: 'bassProShop', name: 'Bass Pro Shop', signupUrl: 'https://go.skimresources.com?id=26893X855785&xs=1&url=https%3A%2F%2Fwww.basspro.com%2Fshop%2FOutdoorRewardsApplication&xcust=bday', isCustom: false, selectors: {} },
+//         { id: 'bdsMongolianGrill', name: 'BD\'s Mongolian Grill', signupUrl: 'https://www.bdsgrill.com/rewards', isCustom: false, selectors: {} },
+//         { id: 'bebe', name: 'Bebe', signupUrl: 'https://www.anrdoezrs.net/click-2745940-15735597?sid=bday&url=https%3A%2F%2Fwww.bebe.com%2Faccount%2Flogin', isCustom: false, selectors: {} },
+//         { id: 'beefObradys', name: 'Beef \'O\' Brady\'s', signupUrl: 'https://beefobradys.myguestaccount.com/guest/enroll?card-template=1DLP0KWE8FA&template=2&referral_code=gNmrAeDHjmMPrnCaFJNcdJDBJJAjCPPja', isCustom: false, selectors: {} },
+//         { id: 'belk', name: 'Belk', signupUrl: 'https://www.jdoqocy.com/click-2745940-11602493?sid=bday&url=https%3A%2F%2Fwww.belk.com%2Femail-signup%2F', isCustom: false, selectors: {} },
+//         { id: 'benJerrysIceCream', name: 'Ben & Jerry\'s Ice Cream', signupUrl: 'https://www.benjerry.com/scoop-shops/flavor-fanatics', isCustom: false, selectors: {} },
+//         { id: 'benihana', name: 'Benihana', signupUrl: 'https://www.benihana.com/the-chefs-table/', isCustom: false, selectors: {} },
+//         { id: 'bennigans', name: 'Bennigans', signupUrl: 'https://bennigans.fbmta.com/members/UpdateProfile.aspx?Action=Subscribe&_Theme=23622320311&InputSource=W', isCustom: false, selectors: {} },
+//         { id: 'bertuccis', name: 'Bertucci\'s', signupUrl: 'https://www.bertuccis.com/eclub/', isCustom: false, selectors: {} },
+//         { id: 'biaggis', name: 'Biaggi\'s', signupUrl: 'https://biaggis.com/club-biaggis/', isCustom: false, selectors: {} },
+//         { id: 'bibibop', name: 'Bibibop', signupUrl: 'https://www.bibibop.com/rewards/', isCustom: false, selectors: {} },
+//         { id: 'bigBoy', name: 'Big Boy', signupUrl: 'https://www.bigboy.com/', isCustom: false, selectors: {} },
+//         { id: 'biggbyCoffee', name: 'Biggby Coffee', signupUrl: 'https://www.biggby.com/e-wards', isCustom: false, selectors: {} },
+//         { id: 'bjsRestaurant', name: 'BJ\'s Restaurant', signupUrl: 'https://www.bjsrestaurants.com/rewards', isCustom: false, selectors: {} },
+//         { id: 'blackAngusSteakhouse', name: 'Black Angus Steakhouse', signupUrl: 'https://blackangus.myguestaccount.com/guest/enroll?card-template=a4veuMKLoS4&template=19&referral_code=jmQGgiNeGkjanFdmGfGKerhdPmPJhQpka', isCustom: false, selectors: {} },
+//         { id: 'blackBearDiner', name: 'Black Bear Diner', signupUrl: 'https://blackbeardiner.com/clubs/', isCustom: false, selectors: {} },
+//         { id: 'bojangles', name: 'Bojangles\'', signupUrl: 'https://www.bojangles.com/', isCustom: false, selectors: {} },
+//         { id: 'bonanzaSteakhouse', name: 'Bonanza Steakhouse', signupUrl: 'https://pon-bon.com/e-club#bonanza', isCustom: false, selectors: {} },
+//         { id: 'bonefishGrill', name: 'Bonefish Grill', signupUrl: 'https://www.bonefishgrill.com/insider', isCustom: false, selectors: {} },
+//         { id: 'booksAMillion', name: 'Books-A-Million', signupUrl: 'https://www.tkqlhce.com/click-2745940-15734439?sid=bday&url=https%3A%2F%2Fwww.booksamillion.com%2Femail_preferences%2Findex.html', isCustom: false, selectors: {} },
+//         { id: 'bostonsPizza', name: 'Boston\'s Pizza', signupUrl: 'https://www.bostons.com/my-rewards/index.html', isCustom: false, selectors: {} },
+//         { id: 'bricktownBrewery', name: 'Bricktown Brewery', signupUrl: 'https://bricktownbrewery.com/rewards/', isCustom: false, selectors: {} },
+//         { id: 'brioItalianGrille', name: 'Brio Italian Grille', signupUrl: 'https://www.brioitalian.com/eclub/', isCustom: false, selectors: {} },
+//         { id: 'brueggersBagels', name: 'Bruegger\'s Bagels', signupUrl: 'https://www.brueggers.com/rewards-program/', isCustom: false, selectors: {} },
+//         { id: 'brusters', name: 'Bruster\'s', signupUrl: 'https://brusters.myguestaccount.com/guest/enroll?card-template=gz6U71JdL9Y&template=0&referral_code=AJjHACBKEkEDHrDpkLrKQNkGfDGDgNCEa', isCustom: false, selectors: {} },
+//         { id: 'bubbaGumpShrimp', name: 'Bubba Gump Shrimp', signupUrl: 'http://assets.fbmta.com/clt/bbsgmp/lp/join/3/join.asp', isCustom: false, selectors: {} },
+//         { id: 'bucaDiBeppo', name: 'Buca di Beppo', signupUrl: 'https://dineatbuca.com/eclub/', isCustom: false, selectors: {} },
+//         { id: 'buffaloWildWings', name: 'Buffalo Wild Wings', signupUrl: 'https://www.buffalowildwings.com/rewards/', isCustom: false, selectors: {} }
+//     ];
+
+//     return masterRetailersArray.reduce((acc, retailer) => {
+//         acc[retailer.id] = retailer;
+//         return acc;
+//     }, {});
+// }
 
 
 // --- Functions to manage CUSTOM retailers in chrome.storage.local ---
@@ -816,49 +841,69 @@ function showStatusMessage(message, type = "info") {
 async function loadAndDisplayRetailers() {
     console.log("Bulk Autofill UI: Loading and displaying retailers...");
     try {
-        // Assuming getMasterRetailerDatabase is defined elsewhere and returns an object
-        // If it also reads from storage, ensure it uses a unique key too.
-        const masterRetailers = getMasterRetailerDatabase();
-        console.log("DEBUG: masterRetailers:", masterRetailers);
+        // Get all base data sources
+        const masterRetailers = await getMasterRetailerDatabase(); // This is typically an object {id: retailer}
+        const webscrapedRetailersArray = await getWebscrapedRetailersFromStorage(); // This is typically an array
+        const customRetailersArray = await getCustomRetailers(); // This is typically an array
 
-        // Fetch webscraped retailers from STORAGE, not directly from file here.
-        const webscrapedRetailersArray = await getWebscrapedRetailersFromStorage();
-        console.log("DEBUG: webscrapedRetailers (raw array from storage):", webscrapedRetailersArray);
-        if (webscrapedRetailersArray.length === 0) {
-            console.warn("DEBUG: webscrapedRetailers from storage is empty! Check onInstalled listener and manifest.json.");
+        // Retrieve the universal list of failed retailer IDs from storage
+        const failedIdsResult = await chrome.storage.local.get([FAILED_RETAILER_IDS_KEY]);
+        const failedRetailerIds = new Set(failedIdsResult[FAILED_RETAILER_IDS_KEY] || []);
+        console.log("DEBUG: Loaded all failed retailer IDs from storage:", Array.from(failedRetailerIds));
+
+        // --- Step 1: Filter Master Retailers ---
+        const filteredMasterRetailersObject = {};
+        for (const id in masterRetailers) {
+            // If the master retailer's ID is NOT in the failed list, include it
+            if (!failedRetailerIds.has(id)) {
+                filteredMasterRetailersObject[id] = masterRetailers[id];
+            }
         }
+        console.log("DEBUG: Filtered Master Retailers (count):", Object.keys(filteredMasterRetailersObject).length);
 
-        const customRetailersArray = await getCustomRetailers();
-        console.log("DEBUG: customRetailersArray (raw array from storage):", customRetailersArray);
-        if (customRetailersArray.length === 0) {
-            console.warn("DEBUG: customRetailersArray from storage is empty!");
-        }
-
-        // Convert arrays to objects for merging
-        const webscrapedRetailersObject = webscrapedRetailersArray.reduce((obj, retailer) => {
-            if (retailer && retailer.id) { // Ensure retailer and id exist
+        // --- Step 2: Filter Webscraped Retailers ---
+        // Filter the array directly
+        const filteredWebscrapedRetailersArray = webscrapedRetailersArray.filter(retailer => {
+            // If the webscraped retailer's ID is NOT in the failed list, include it
+            return !failedRetailerIds.has(retailer.id);
+        });
+        // Convert the filtered array back to an object for consistent merging
+        const webscrapedRetailersObject = filteredWebscrapedRetailersArray.reduce((obj, retailer) => {
+            if (retailer && retailer.id) { // Basic check for valid retailer object
                 obj[retailer.id] = retailer;
             }
             return obj;
         }, {});
-        console.log("DEBUG: webscrapedRetailersObject:", webscrapedRetailersObject);
+        console.log("DEBUG: Filtered Webscraped Retailers (count):", Object.keys(webscrapedRetailersObject).length);
 
-        const customRetailersObject = customRetailersArray.reduce((obj, retailer) => {
-            if (retailer && retailer.id) { // Ensure retailer and id exist
+        // --- Step 3: Filter Custom Retailers ---
+        // Filter the array directly
+        const filteredCustomRetailersArray = customRetailersArray.filter(retailer => {
+            // If the custom retailer's ID is NOT in the failed list, include it
+            return !failedRetailerIds.has(retailer.id);
+        });
+        // Convert the filtered array back to an object for consistent merging
+        const customRetailersObject = filteredCustomRetailersArray.reduce((obj, retailer) => {
+            if (retailer && retailer.id) { // Basic check for valid retailer object
                 obj[retailer.id] = retailer;
             }
             return obj;
         }, {});
-        console.log("DEBUG: customRetailersObject:", customRetailersObject);
-
-        // Combine all retailers. Custom retailers will overwrite webscraped if IDs conflict.
-        allRetailers = { ...masterRetailers, ...webscrapedRetailersObject, ...customRetailersObject };
-        console.log("DEBUG: allRetailers (combined object):", allRetailers);
-        console.log("DEBUG: Number of combined retailers:", Object.keys(allRetailers).length);
+        console.log("DEBUG: Filtered Custom Retailers (count):", Object.keys(customRetailersObject).length);
 
 
+        // --- Step 4: Combine all filtered retailers ---
+        // The order of spread syntax here determines priority for overwriting if IDs conflict:
+        // custom > webscraped > master (meaning custom will override webscraped, which will override master)
+        allRetailers = {
+            ...filteredMasterRetailersObject,
+            ...webscrapedRetailersObject, // This will override master if IDs overlap
+            ...customRetailersObject      // This will override both master and webscraped if IDs overlap
+        };
+        console.log("DEBUG: Final combined (and filtered) allRetailers object (total count):", Object.keys(allRetailers).length);
+
+        // Render the list using the values of the combined object
         renderRetailerList(Object.values(allRetailers));
-        console.log("DEBUG: renderRetailerList called with:", Object.values(allRetailers));
 
         if (Object.keys(allRetailers).length === 0) {
             showStatusMessage("No retailers found. Add one above!", "info");
@@ -1272,6 +1317,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             showStatusMessage(`Starting autofill for ${selectedRetailers.length} selected retailers...`, 'info', 0);
 
             let autofillResults = {};
+            // Temporarily hold failed IDs from this specific autofill run
+            const currentFailedRetailerIds = new Set();
 
             for (const retailer of selectedRetailers) {
                 if (stopBulkAutofill) {
@@ -1284,11 +1331,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 let tab = null;
 
+                // --- DEBUG POINT 1: Check for invalid URL ---
                 if (!retailer.signupUrl || (!retailer.signupUrl.startsWith('http://') && !retailer.signupUrl.startsWith('https://'))) {
                     console.warn(`Bulk Autofill: Skipping invalid or non-http/https signup URL for retailer: ${retailer.name} (${retailer.signupUrl || 'No URL'})`);
                     autofillResults[retailer.name] = 'Skipped (Invalid URL)';
-                    updateAutofillStatusDisplay(autofillResults); // Use the correct function here
+                    updateAutofillStatusDisplay(autofillResults);
                     showStatusMessage(`Skipped ${retailer.name} due to invalid URL.`, 'warning', 3000);
+                    currentFailedRetailerIds.add(retailer.id); // Mark as failed due to invalid URL
+                    console.log(`DEBUG: Added ${retailer.id} to currentFailedRetailerIds (Invalid URL).`);
                     continue; // Skip to the next retailer in the loop
                 }
 
@@ -1301,18 +1351,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     tab = await new Promise((resolve, reject) => {
                         chrome.tabs.create({ url: retailer.signupUrl, active: false }, (newTab) => {
                             if (chrome.runtime.lastError) {
+                                // --- DEBUG POINT 2: Tab creation error ---
+                                console.error(`DEBUG: chrome.tabs.create error for ${retailer.name}:`, chrome.runtime.lastError.message);
                                 return reject(new Error(chrome.runtime.lastError.message));
                             }
                             resolve(newTab);
                         });
                     });
 
-                    // Wait for the tab to load. You might need a more robust way to detect page load completion.
-                    // For simplicity, we'll use a small delay here.
-                    // In a real scenario, you might listen to chrome.tabs.onUpdated and check status.
-                    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 3 seconds for page to load
+                    // Wait for the tab to load.
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second for page to load
 
-                    // Inject the content script if it's not already there (only for the first time or if it somehow got removed)
+                    // Inject the content script
                     await chrome.scripting.executeScript({
                         target: { tabId: tab.id },
                         files: ['content.js'] // Assuming your content script is named content.js
@@ -1327,31 +1377,69 @@ document.addEventListener('DOMContentLoaded', async () => {
                     } else if (response && response.cspErrorDetected) {
                         autofillResults[retailer.name] = `Failed (Page Error: CSP Violation)`;
                         showStatusMessage(`Autofill for ${retailer.name} failed due to a page error (CSP).`, 'error', 5000);
+                        currentFailedRetailerIds.add(retailer.id); // Add to current failed list
+                        console.log(`DEBUG: Added ${retailer.id} to currentFailedRetailerIds (CSP Violation).`);
                     } else if (response && response.status === 'error') {
                         autofillResults[retailer.name] = `Failed (${response.message})`;
                         showStatusMessage(`Autofill for ${retailer.name} failed: ${response.message}.`, 'error', 5000);
+                        currentFailedRetailerIds.add(retailer.id); // Add to current failed list
+                        console.log(`DEBUG: Added ${retailer.id} to currentFailedRetailerIds (Content Script Error).`);
                     } else if (response && response.status === 'warning') {
-                        autofillResults[retailer.name] = `Warning: ${response.message}`;
-                        showStatusMessage(`Autofill for ${retailer.name} resulted in a warning: ${response.message}.`, 'warning', 3000);
+                        // Treat specific warnings (like no fields found) as failures
+                        if (response.message.includes("No fields found or filled")) {
+                            autofillResults[retailer.name] = `Failed: ${response.message}`; // Mark as failed
+                            showStatusMessage(`Autofill for ${retailer.name} failed: ${response.message}.`, 'error', 5000);
+                            currentFailedRetailerIds.add(retailer.id); // Add to current failed list
+                            console.log(`DEBUG: Added ${retailer.id} to currentFailedRetailerIds (Warning: No fields filled).`);
+                        } else {
+                            autofillResults[retailer.name] = `Warning: ${response.message}`;
+                            showStatusMessage(`Autofill for ${retailer.name} resulted in a warning: ${response.message}.`, 'warning', 3000);
+                        }
                     } else {
                         autofillResults[retailer.name] = `Failed (Unexpected response or internal error)`;
                         showStatusMessage(`Autofill for ${retailer.name} failed due to an unexpected issue.`, 'error', 5000);
+                        currentFailedRetailerIds.add(retailer.id); // Add to current failed list
+                        console.log(`DEBUG: Added ${retailer.id} to currentFailedRetailerIds (Unexpected Response).`);
                     }
 
                 } catch (error) {
-                    console.error(`Bulk Autofill: Error processing ${retailer.name}:`, error);
+                    // --- DEBUG POINT 3: General error during tab creation or message sending ---
+                    console.error(`Bulk Autofill: Error processing ${retailer.name} (Tab/Messaging):`, error);
                     autofillResults[retailer.name] = `Error: ${error.message || 'Unknown error'}`;
                     showStatusMessage(`Error during autofill for ${retailer.name}.`, 'error', 5000);
+                    currentFailedRetailerIds.add(retailer.id); // Add to current failed list
+                    console.log(`DEBUG: Added ${retailer.id} to currentFailedRetailerIds (General Catch Error).`);
                 } finally {
                     updateAutofillStatusDisplay(autofillResults);
-                    // You might want to close the tab after processing, or leave it open
-                    // if (tab && tab.id) { // Check if tab was successfully created before trying to remove
-                    //     chrome.tabs.remove(tab.id); // Uncomment if you want to close tabs automatically
-                    // }
+                    // Optional: Close tab after processing
+                    if (tab && tab.id) { // Only attempt to remove if a tab was successfully created
+                        // chrome.tabs.remove(tab.id);
+                    }
                 }
-            }
+            } // End of selectedRetailers loop
+
             showStatusMessage('Bulk autofill process completed.', 'info', 5000);
-            updateAutofillStatusDisplay(autofillResults);
+            updateAutofillStatusDisplay(autofillResults); // Final update of statuses
+
+            // --- Start of New Functionality for Saving Failed Retailers ---
+            console.log("Bulk Autofill: Saving failed retailer IDs to storage and re-rendering list.");
+
+            // 1. Get any existing failed IDs from storage
+            const existingFailedResult = await chrome.storage.local.get([FAILED_RETAILER_IDS_KEY]);
+            const existingFailedIds = new Set(existingFailedResult[FAILED_RETAILER_IDS_KEY] || []);
+
+            // 2. Merge the newly failed IDs from this run with the existing ones
+            const allFailedIds = new Set([...existingFailedIds, ...currentFailedRetailerIds]);
+            console.log("DEBUG: Merged allFailedIds to save:", Array.from(allFailedIds));
+
+            // 3. Save the updated set of all failed IDs back to storage
+            await chrome.storage.local.set({ [FAILED_RETAILER_IDS_KEY]: Array.from(allFailedIds) });
+            console.log("DEBUG: Updated list of failed retailer IDs successfully saved to storage.");
+
+            // 4. Trigger a re-load and re-display of retailers.
+            // This will now use the updated 'failedRetailerIds' from storage to filter.
+            await loadAndDisplayRetailers();
+            // --- End of New Functionality ---
         });
     }
 
